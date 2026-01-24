@@ -1,0 +1,11 @@
+<svg width="600" height="900" viewBox="0 0 600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="900" fill="#1c1921"/>
+  <rect x="40" y="40" width="520" height="820" rx="32" fill="#141217" stroke="#2b2730" stroke-width="2"/>
+  <circle cx="300" cy="320" r="110" fill="#2b2730"/>
+  <rect x="170" y="470" width="260" height="32" rx="16" fill="#2b2730"/>
+  <rect x="140" y="530" width="320" height="22" rx="11" fill="#2b2730"/>
+  <rect x="170" y="580" width="260" height="22" rx="11" fill="#2b2730"/>
+  <text x="300" y="760" fill="#c7a26b" font-size="18" font-family="Palatino Linotype, serif" text-anchor="middle" letter-spacing="4">
+    MODELS SA
+  </text>
+</svg>

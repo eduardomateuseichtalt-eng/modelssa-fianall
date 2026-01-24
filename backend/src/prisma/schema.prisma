@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Model {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  age        Int
+  city       String?
+  bio        String?
+  avatarUrl  String?
+  coverUrl   String?
+  instagram  String?
+  whatsapp   String?
+  height     Int?
+  weight     Int?
+  bust       Int?
+  waist      Int?
+  hips       Int?
+  priceHour  Int?
+  isVerified Boolean  @default(false)
+  createdAt DateTime @default(now())
+  shots      Shot[]
+  media      Media[]
+  cityStats  CityStat[]
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  displayName  String?
+  role         String     @default("USER")
+  createdAt    DateTime   @default(now())
+  shotLikes    ShotLike[]
+}
+
+model Shot {
+  id        String     @id @default(uuid())
+  modelId   String
+  model     Model      @relation(fields: [modelId], references: [id])
+  type      ShotType   @default(VIDEO)
+  videoUrl  String?
+  imageUrl  String?
+  posterUrl String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  likes     ShotLike[]
+  likeCount Int        @default(0)
+}
+
+model ShotLike {
+  id        String   @id @default(uuid())
+  shotId    String
+  userId    String
+  shot      Shot     @relation(fields: [shotId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([shotId, userId])
+}
+
+model SiteAccess {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ShotType {
+  VIDEO
+  IMAGE
+}
+
+model Media {
+  id        String      @id @default(uuid())
+  modelId   String
+  model     Model       @relation(fields: [modelId], references: [id])
+  type      MediaType
+  status    MediaStatus @default(PENDING)
+  url       String
+  createdAt DateTime    @default(now())
+
+  @@index([modelId])
+}
+
+model CityStat {
+  id        String   @id @default(uuid())
+  modelId   String
+  model     Model    @relation(fields: [modelId], references: [id])
+  city      String
+  cityKey   String
+  color     String
+  count     Int
+  days      Int
+  createdAt DateTime @default(now())
+
+  @@index([modelId])
+  @@index([cityKey])
+}

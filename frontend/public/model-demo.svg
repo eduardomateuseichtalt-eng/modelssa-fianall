@@ -1,0 +1,11 @@
+<svg width="700" height="1050" viewBox="0 0 700 1050" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="700" height="1050" fill="#141217"/>
+  <rect x="50" y="50" width="600" height="950" rx="36" fill="#1c1921" stroke="#2b2730" stroke-width="2"/>
+  <circle cx="350" cy="280" r="120" fill="#2b2730"/>
+  <path d="M230 700C230 590 300 510 350 510C400 510 470 590 470 700V900H230V700Z" fill="#2b2730"/>
+  <path d="M180 430C190 360 260 300 350 300C440 300 510 360 520 430" stroke="#393540" stroke-width="12" stroke-linecap="round"/>
+  <rect x="220" y="860" width="260" height="110" rx="55" fill="#2b2730"/>
+  <text x="350" y="980" fill="#c7a26b" font-size="20" font-family="Palatino Linotype, serif" text-anchor="middle" letter-spacing="6">
+    models S.A
+  </text>
+</svg>
