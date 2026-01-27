@@ -77,6 +77,10 @@ const getVideoDuration = (file) =>
   });
 
 export default function ModelDashboard() {
+  const confirmMediaAccess = () =>
+    window.confirm(
+      "Voce autoriza o site a acessar a galeria ou a camera do seu dispositivo?"
+    );
   const [mediaFiles, setMediaFiles] = useState([]);
   const [mediaPreviews, setMediaPreviews] = useState([]);
   const [mediaError, setMediaError] = useState("");
@@ -405,14 +409,24 @@ export default function ModelDashboard() {
           <button
             className="btn btn-outline"
             type="button"
-            onClick={() => shotGalleryRef.current?.click()}
+            onClick={() => {
+              if (!confirmMediaAccess()) {
+                return;
+              }
+              shotGalleryRef.current?.click();
+            }}
           >
             Escolher da galeria
           </button>
           <button
             className="btn btn-outline"
             type="button"
-            onClick={() => shotCameraRef.current?.click()}
+            onClick={() => {
+              if (!confirmMediaAccess()) {
+                return;
+              }
+              shotCameraRef.current?.click();
+            }}
           >
             Usar camera
           </button>
@@ -506,14 +520,24 @@ export default function ModelDashboard() {
           <button
             className="btn btn-outline"
             type="button"
-            onClick={() => galleryInputRef.current?.click()}
+            onClick={() => {
+              if (!confirmMediaAccess()) {
+                return;
+              }
+              galleryInputRef.current?.click();
+            }}
           >
             Escolher da galeria
           </button>
           <button
             className="btn btn-outline"
             type="button"
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={() => {
+              if (!confirmMediaAccess()) {
+                return;
+              }
+              cameraInputRef.current?.click();
+            }}
           >
             Usar camera
           </button>

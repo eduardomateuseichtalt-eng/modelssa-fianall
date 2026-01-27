@@ -92,6 +92,10 @@ const getVideoDuration = (file) =>
   });
 
 export default function ModelRegister() {
+  const confirmMediaAccess = () =>
+    window.confirm(
+      "Voce autoriza o site a acessar a galeria ou a camera do seu dispositivo?"
+    );
   const storedPhone =
     typeof window !== "undefined"
       ? sessionStorage.getItem("model-register-phone") || ""
@@ -492,14 +496,24 @@ export default function ModelRegister() {
               <button
                 className="btn btn-outline"
                 type="button"
-                onClick={() => profileGalleryRef.current?.click()}
+                onClick={() => {
+                  if (!confirmMediaAccess()) {
+                    return;
+                  }
+                  profileGalleryRef.current?.click();
+                }}
               >
                 Escolher da galeria
               </button>
               <button
                 className="btn btn-outline"
                 type="button"
-                onClick={() => profileCameraRef.current?.click()}
+                onClick={() => {
+                  if (!confirmMediaAccess()) {
+                    return;
+                  }
+                  profileCameraRef.current?.click();
+                }}
               >
                 Usar camera
               </button>
@@ -555,14 +569,24 @@ export default function ModelRegister() {
               <button
                 className="btn btn-outline"
                 type="button"
-                onClick={() => galleryInputRef.current?.click()}
+                onClick={() => {
+                  if (!confirmMediaAccess()) {
+                    return;
+                  }
+                  galleryInputRef.current?.click();
+                }}
               >
                 Escolher da galeria
               </button>
               <button
                 className="btn btn-outline"
                 type="button"
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={() => {
+                  if (!confirmMediaAccess()) {
+                    return;
+                  }
+                  cameraInputRef.current?.click();
+                }}
               >
                 Usar camera
               </button>
