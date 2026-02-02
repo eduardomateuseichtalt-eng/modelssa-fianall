@@ -434,7 +434,7 @@ export default function Home() {
 
       <section className="section">
         <h2 className="section-title">
-          Em destaque <span>agora</span>
+          Modelos em destaque
         </h2>
         <p className="muted" style={{ marginTop: 10 }}>
           Uma vitrine com os perfis mais acessados da semana.
