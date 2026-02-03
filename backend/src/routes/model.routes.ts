@@ -199,6 +199,43 @@ router.patch("/:id/approve", requireAdmin, asyncHandler(async (req: Request, res
   return res.json(updated);
 }));
 
+router.delete("/by-email", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  const email = String(req.query.email || "").trim();
+
+  if (!email) {
+    return res.status(400).json({ error: "Email obrigatorio" });
+  }
+
+  const model = await prisma.model.findUnique({ where: { email } });
+
+  if (!model) {
+    return res.status(404).json({ error: "Modelo nao encontrada" });
+  }
+
+  const shots = await prisma.shot.findMany({
+    where: { modelId: model.id },
+    select: { id: true },
+  });
+  const shotIds = shots.map((shot) => shot.id);
+
+  const operations: Prisma.PrismaPromise<unknown>[] = [];
+  if (shotIds.length > 0) {
+    operations.push(
+      prisma.shotLike.deleteMany({ where: { shotId: { in: shotIds } } })
+    );
+  }
+  operations.push(
+    prisma.shot.deleteMany({ where: { modelId: model.id } }),
+    prisma.media.deleteMany({ where: { modelId: model.id } }),
+    prisma.cityStat.deleteMany({ where: { modelId: model.id } }),
+    prisma.model.delete({ where: { id: model.id } })
+  );
+
+  await prisma.$transaction(operations);
+
+  return res.json({ status: "deleted", email });
+}));
+
 router.delete("/:id", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
