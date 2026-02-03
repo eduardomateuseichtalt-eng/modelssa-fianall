@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
@@ -7,6 +7,13 @@ export default function ModelProfile() {
   const [model, setModel] = useState(null);
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactText, setContactText] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactError, setContactError] = useState("");
+  const [contactLoading, setContactLoading] = useState(false);
+  const contactSectionRef = useRef(null);
 
   useEffect(() => {
     apiFetch(`/api/models/${id}`)
@@ -114,9 +121,89 @@ export default function ModelProfile() {
           </div>
 
           <div className="form-actions">
-            <Link to="/contato" className="btn">
+            <button
+              className="btn"
+              type="button"
+              onClick={() =>
+                contactSectionRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                })
+              }
+            >
               Entrar em contato
-            </Link>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="section"
+        style={{ marginTop: 32 }}
+        ref={contactSectionRef}
+      >
+        <h2 className="section-title">Entrar em contato direto</h2>
+        <p className="muted" style={{ marginTop: 10 }}>
+          Envie uma mensagem para a modelo. As mensagens nao ficam salvas.
+        </p>
+
+        {contactMessage && <div className="notice">{contactMessage}</div>}
+        {contactError && <div className="notice">{contactError}</div>}
+
+        <div className="form-grid" style={{ marginTop: 16 }}>
+          <input
+            className="input"
+            placeholder="Seu nome (opcional)"
+            value={contactName}
+            onChange={(event) => setContactName(event.target.value)}
+          />
+          <input
+            className="input"
+            placeholder="WhatsApp (opcional)"
+            value={contactPhone}
+            onChange={(event) => setContactPhone(event.target.value)}
+          />
+          <textarea
+            className="textarea"
+            placeholder="Escreva sua mensagem"
+            value={contactText}
+            onChange={(event) => setContactText(event.target.value)}
+            rows={4}
+          />
+          <div className="form-actions">
+            <button
+              className="btn"
+              type="button"
+              disabled={contactLoading || contactText.trim().length === 0}
+              onClick={async () => {
+                setContactError("");
+                setContactMessage("");
+                const text = contactText.trim();
+                if (!text) {
+                  setContactError("Digite uma mensagem para enviar.");
+                  return;
+                }
+                setContactLoading(true);
+                try {
+                  await apiFetch(`/api/messages/${id}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      text,
+                      fromName: contactName.trim(),
+                      fromPhone: contactPhone.trim(),
+                    }),
+                  });
+                  setContactMessage("Mensagem enviada com sucesso.");
+                  setContactText("");
+                } catch (err) {
+                  setContactError(err.message || "Erro ao enviar mensagem.");
+                } finally {
+                  setContactLoading(false);
+                }
+              }}
+            >
+              {contactLoading ? "Enviando..." : "Enviar mensagem"}
+            </button>
           </div>
         </div>
       </div>

@@ -92,6 +92,10 @@ export default function ModelDashboard() {
   const [shotError, setShotError] = useState("");
   const [shotMessage, setShotMessage] = useState("");
   const [shotLoading, setShotLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [messageError, setMessageError] = useState("");
+  const [messageLoading, setMessageLoading] = useState(false);
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -108,8 +112,23 @@ export default function ModelDashboard() {
     }
   };
 
+  const loadMessages = async () => {
+    setMessageError("");
+    setMessageLoading(true);
+    try {
+      const data = await apiFetch("/api/messages/self");
+      setMessages(data.messages || []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch (err) {
+      setMessageError(err.message || "Erro ao carregar mensagens.");
+    } finally {
+      setMessageLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadMedia();
+    loadMessages();
   }, []);
 
   useEffect(() => {
@@ -389,10 +408,72 @@ export default function ModelDashboard() {
         Envie ate {MAX_PHOTOS} fotos e {MAX_VIDEOS} videos. Itens enviados ficam pendentes de aprovacao.
       </p>
 
+      {messageError && <div className="notice">{messageError}</div>}
       {shotMessage && <div className="notice">{shotMessage}</div>}
       {shotError && <div className="notice">{shotError}</div>}
       {message && <div className="notice">{message}</div>}
       {mediaError && <div className="notice">{mediaError}</div>}
+
+      <div className="media-uploader" style={{ marginTop: 20 }}>
+        <div className="media-uploader-head">
+          <div>
+            <h4>Mensagens de clientes</h4>
+            <p className="muted">
+              {unreadCount > 0
+                ? `Voce tem ${unreadCount} nova(s) mensagem(ns).`
+                : "Nenhuma nova mensagem no momento."}
+            </p>
+          </div>
+          <span className="media-count" title="Notificacoes">
+            {unreadCount}
+          </span>
+        </div>
+        <div className="media-actions">
+          <button
+            className="btn btn-outline"
+            type="button"
+            onClick={loadMessages}
+            disabled={messageLoading}
+          >
+            {messageLoading ? "Atualizando..." : "Atualizar"}
+          </button>
+          <button
+            className="btn"
+            type="button"
+            onClick={async () => {
+              try {
+                await apiFetch("/api/messages/self/read", { method: "POST" });
+                setUnreadCount(0);
+              } catch (err) {
+                setMessageError(err.message || "Erro ao marcar como lidas.");
+              }
+            }}
+          >
+            Marcar como lidas
+          </button>
+        </div>
+
+        {messages.length > 0 ? (
+          <div className="cards" style={{ marginTop: 16 }}>
+            {messages.map((item) => (
+              <div className="card" key={item.id}>
+                <h4>{item.fromName || "Cliente"}</h4>
+                {item.fromPhone ? (
+                  <p className="muted">{item.fromPhone}</p>
+                ) : null}
+                <p style={{ marginTop: 10 }}>{item.text}</p>
+                <p className="muted" style={{ marginTop: 10 }}>
+                  {new Date(item.createdAt).toLocaleString("pt-BR")}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 16 }}>
+            Nenhuma mensagem recebida ainda.
+          </p>
+        )}
+      </div>
 
       <div className="media-uploader" style={{ marginTop: 20 }}>
         <div className="media-uploader-head">

@@ -17,6 +17,7 @@ import mediaRoutes from "./routes/media.routes";
 import phoneRoutes from "./routes/phone.routes";
 import cityStatsRoutes from "./routes/city-stats.routes";
 import cacheImageRoutes from "./routes/cache-image.routes";
+import messagesRoutes from "./routes/messages.routes";
 
 // ========================
 // APP
@@ -164,6 +165,7 @@ app.use("/api/metrics", metricsRoutes);
 app.use("/api/media", mediaRoutes);
 app.use("/api/phone", phoneRoutes);
 app.use("/api/city-stats", cityStatsRoutes);
+app.use("/api/messages", messagesRoutes);
 app.use("/api", cacheImageRoutes);
 
 // ========================
