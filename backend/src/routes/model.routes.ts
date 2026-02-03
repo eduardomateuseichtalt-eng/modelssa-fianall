@@ -142,7 +142,10 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
 
 router.get("/", asyncHandler(async (_req: Request, res: Response) => {
   const models = await prisma.model.findMany({
-    where: { isVerified: true },
+    where: {
+      isVerified: true,
+      media: { some: { status: "APPROVED" } },
+    },
     select: {
       id: true,
       name: true,
