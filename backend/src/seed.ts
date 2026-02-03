@@ -13,6 +13,8 @@ const seedModelEmails = [
 ];
 
 async function main() {
+  const passwordHash = await bcrypt.hash("demo123", 10);
+
   if (seedModelEmails.length > 0) {
     const seededModels = await prisma.model.findMany({
       where: { email: { in: seedModelEmails } },
@@ -87,4 +89,3 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-1
