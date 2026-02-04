@@ -211,17 +211,23 @@ app.delete("/api/admin/clear-models", async (req, res) => {
   }
 
   try {
-    // 1) Tenta apagar via Prisma (pode falhar por FK)
-    const result = await prisma.model.deleteMany({});
-    return res.json({ success: true, deleted: result.count });
+    // 1) apaga tudo que depende de Model
+    const shots = await prisma.shot.deleteMany({});
+
+    // 2) agora apaga as models
+    const models = await prisma.model.deleteMany({});
+
+    return res.json({
+      success: true,
+      deletedShots: shots.count,
+      deletedModels: models.count,
+    });
   } catch (e: any) {
     console.error("CLEAR MODELS ERROR:", e);
 
-    // 2) Mostra o erro real pra voce (TEMPORARIO)
     return res.status(500).json({
-      error: "Erro ao apagar modelos",
+      error: "Erro ao apagar",
       details: e?.message || String(e),
-      code: e?.code || null,
     });
   }
 });
