@@ -6,7 +6,7 @@ const ADMIN_EMAIL = "eduardomateuseichtalt@gmail.com";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState(ADMIN_EMAIL);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -51,6 +51,8 @@ export default function AdminLogin() {
           <input
             className="input"
             type="email"
+            name="admin_email"
+            autoComplete="username"
             placeholder="Email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
