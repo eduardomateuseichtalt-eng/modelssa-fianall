@@ -6,7 +6,6 @@ dotenv.config({ path: path.resolve(__dirname, "..", ".env"), override: true });
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import cors from "cors";
-import type { CorsOptions } from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "./lib/prisma";
@@ -25,30 +24,23 @@ import messagesRoutes from "./routes/messages.routes";
 // ========================
 const app = express();
 
-const allowedOrigins = [
+const allowedOrigins = new Set([
   "https://modelssa-fianall.vercel.app",
   "http://localhost:5173",
   "http://localhost:3000",
-];
+]);
 
-const corsOptions: CorsOptions = {
-  origin: function (origin, callback) {
-    // Permite requests sem origin (ex: Postman/curl).
-    if (!origin) return callback(null, true);
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, cb) => {
+    // permite requests sem origin (Postman/healthcheck)
+    if (!origin) return cb(null, true);
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
+    if (allowedOrigins.has(origin)) return cb(null, true);
+
+    return cb(new Error(`CORS blocked for origin: ${origin}`));
   },
-  credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "x-admin-key",
-    "x-admin-reset-key",
-  ],
+  allowedHeaders: ["Content-Type", "Authorization", "x-admin-key"],
 };
 
 app.use(cors(corsOptions));
