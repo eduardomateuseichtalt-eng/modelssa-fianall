@@ -156,6 +156,41 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+app.post("/api/auth/admin-reset", async (req, res) => {
+  try {
+    const resetKey = process.env.ADMIN_RESET_KEY || "";
+    const providedKey = String(req.headers["x-admin-reset-key"] || "");
+
+    if (!resetKey || providedKey !== resetKey) {
+      return res.status(403).json({ error: "Acesso restrito" });
+    }
+
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Dados obrigatorios ausentes" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const updated = await prisma.user.upsert({
+      where: { email },
+      update: {
+        passwordHash,
+        role: "ADMIN",
+      },
+      create: {
+        email,
+        passwordHash,
+        role: "ADMIN",
+      },
+    });
+
+    return res.json({ status: "ok", id: updated.id, email: updated.email });
+  } catch (error) {
+    console.error("Admin reset error:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
 // ========================
 // MODELOS
 // ========================
@@ -167,6 +202,24 @@ app.use("/api/phone", phoneRoutes);
 app.use("/api/city-stats", cityStatsRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api", cacheImageRoutes);
+
+app.delete("/api/admin/clear-models", async (req, res) => {
+  const secret = req.query.secret;
+
+  if (secret !== "APAGAR_MODELOS_123") {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const result = await prisma.model.deleteMany({});
+    return res.json({
+      success: true,
+      deleted: result.count
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Erro ao apagar modelos" });
+  }
+});
 
 // ========================
 // HEALTH CHECK
