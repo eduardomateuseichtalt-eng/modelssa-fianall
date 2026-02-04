@@ -203,29 +203,6 @@ app.use("/api/city-stats", cityStatsRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api", cacheImageRoutes);
 
-app.delete("/api/admin/clear-models", async (req, res) => {
-  const secret = req.query.secret;
-
-  if (secret !== "APAGAR_MODELOS_123") {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  try {
-    await prisma.$executeRawUnsafe(
-      `TRUNCATE TABLE "Model" RESTART IDENTITY CASCADE;`
-    );
-
-    return res.json({ success: true, truncated: true });
-  } catch (e: any) {
-    console.error("TRUNCATE ERROR:", e);
-
-    return res.status(500).json({
-      error: "Falha no TRUNCATE",
-      details: e?.message || String(e),
-    });
-  }
-});
-
 // ========================
 // HEALTH CHECK
 // ========================
