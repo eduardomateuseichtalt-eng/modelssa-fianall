@@ -191,6 +191,30 @@ app.post("/api/auth/admin-reset", async (req, res) => {
   }
 });
 
+app.post("/api/admin/bootstrap", async (req, res) => {
+  const { key, email, password } = req.body;
+
+  if (!process.env.ADMIN_KEY_RESET || key !== process.env.ADMIN_KEY_RESET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const admin = await prisma.user.upsert({
+      where: { email },
+      update: { passwordHash, role: "ADMIN" },
+      create: { email, passwordHash, role: "ADMIN" },
+    });
+
+    return res.json({ success: true, adminId: admin.id });
+  } catch (e: any) {
+    return res
+      .status(500)
+      .json({ error: "bootstrap failed", details: e?.message || String(e) });
+  }
+});
+
 // ========================
 // MODELOS
 // ========================
