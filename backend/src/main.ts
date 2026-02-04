@@ -24,30 +24,29 @@ import messagesRoutes from "./routes/messages.routes";
 // ========================
 const app = express();
 
-const allowedOrigins = new Set(
-  [
-    process.env.FRONTEND_URL,
-    process.env.FRONTEND_URL_PREVIEW,
-    "http://localhost:5173",
-  ].filter(Boolean) as string[]
-);
+const ALLOWED_ORIGINS = [
+  "https://modelssa-fianall-i0wec9fmp-eduardomateuseichtalt-engs-projects.vercel.app",
+  "http://localhost:5173",
+];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: (origin, cb) => {
       if (!origin) {
-        return callback(null, true);
+        return cb(null, true);
       }
-      if (allowedOrigins.has(origin)) {
-        return callback(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) {
+        return cb(null, true);
       }
-      if (/\.vercel\.app$/.test(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
+      return cb(new Error("Not allowed by CORS"));
     },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-admin-key"],
+    credentials: true,
   })
 );
+
+app.options("*", cors());
 app.use(express.json());
 
 const PORT = Number(process.env.PORT) || 4000;
