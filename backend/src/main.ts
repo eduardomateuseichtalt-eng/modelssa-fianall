@@ -211,22 +211,16 @@ app.delete("/api/admin/clear-models", async (req, res) => {
   }
 
   try {
-    // 1) apaga tudo que depende de Model
-    const shots = await prisma.shot.deleteMany({});
+    await prisma.$executeRawUnsafe(
+      `TRUNCATE TABLE "Model" RESTART IDENTITY CASCADE;`
+    );
 
-    // 2) agora apaga as models
-    const models = await prisma.model.deleteMany({});
-
-    return res.json({
-      success: true,
-      deletedShots: shots.count,
-      deletedModels: models.count,
-    });
+    return res.json({ success: true, truncated: true });
   } catch (e: any) {
-    console.error("CLEAR MODELS ERROR:", e);
+    console.error("TRUNCATE ERROR:", e);
 
     return res.status(500).json({
-      error: "Erro ao apagar",
+      error: "Falha no TRUNCATE",
       details: e?.message || String(e),
     });
   }
