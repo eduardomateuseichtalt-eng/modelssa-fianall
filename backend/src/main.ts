@@ -49,6 +49,49 @@ app.use(
 app.options("*", cors());
 app.use(express.json());
 
+app.post("/api/admin/reset-admin", async (req, res) => {
+  const adminKey = req.header("x-admin-key");
+  if (!process.env.ADMIN_RESET_KEY || adminKey !== process.env.ADMIN_RESET_KEY) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const { email, password, displayName } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Missing email/password" });
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const admin = await prisma.user.upsert({
+      where: { email },
+      update: {
+        passwordHash,
+        role: "ADMIN",
+        displayName: displayName ?? "Admin",
+      },
+      create: {
+        email,
+        passwordHash,
+        role: "ADMIN",
+        displayName: displayName ?? "Admin",
+      },
+    });
+
+    return res.json({
+      success: true,
+      adminId: admin.id,
+      email: admin.email,
+    });
+  } catch (e: any) {
+    return res.status(500).json({
+      error: "reset failed",
+      details: e?.message || String(e),
+    });
+  }
+});
+
 const PORT = Number(process.env.PORT) || 4000;
 
 // ========================
