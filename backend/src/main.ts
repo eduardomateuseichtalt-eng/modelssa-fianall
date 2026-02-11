@@ -41,7 +41,7 @@ const corsOptions: cors.CorsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-admin-key"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-admin-reset-key"],
 };
 
 app.use(cors(corsOptions));
@@ -244,9 +244,16 @@ app.use((_req, res) => {
   res.status(404).json({ error: "Rota nao encontrada" });
 });
 
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const msg = String(err?.message || "");
+
+  // Se for erro de CORS, devolve 403 (nao 500)
+  if (msg.startsWith("CORS bloqueado para a origem:")) {
+    return res.status(403).json({ error: msg });
+  }
+
   console.error("API error:", err);
-  res.status(500).json({ error: "Erro interno do servidor" });
+  return res.status(500).json({ error: "Erro interno do servidor" });
 });
 
 // ========================
