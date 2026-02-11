@@ -37,8 +37,9 @@ const corsOptions: cors.CorsOptions = {
 
     if (allowedOrigins.has(origin)) return cb(null, true);
 
-    return cb(new Error(`CORS blocked for origin: ${origin}`));
+    return cb(new Error(`CORS bloqueado para a origem: ${origin}`));
   },
+  credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "x-admin-key"],
 };
