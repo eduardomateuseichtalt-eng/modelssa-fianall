@@ -47,7 +47,9 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(403).json({ error: "Acesso restrito" });
   }
 
-  if (user.email !== "eduardomateuseichtalt@gmail.com") {
+  // If an admin email is configured, restrict admin routes to it.
+  const adminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  if (adminEmail && user.email.toLowerCase() !== adminEmail) {
     return res.status(403).json({ error: "Acesso restrito" });
   }
 
