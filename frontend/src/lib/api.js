@@ -17,11 +17,28 @@ export async function apiFetch(path, options = {}) {
     ...options,
     headers,
   });
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
+
+  let data = null;
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    data = await response.json().catch(() => null);
+  } else {
+    const text = await response.text();
+    data = text ? { error: text } : {};
+  }
 
   if (!response.ok) {
-    const message = data.error || data.message || "Request failed";
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+    }
+
+    const message =
+      (data && data.error) ||
+      (data && data.message) ||
+      `Erro HTTP ${response.status}`;
+
     throw new Error(message);
   }
 

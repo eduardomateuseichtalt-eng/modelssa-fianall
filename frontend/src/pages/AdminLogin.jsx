@@ -33,6 +33,7 @@ export default function AdminLogin() {
       localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      console.log("ADMIN LOGIN OK -> indo para /admin/aprovacoes");
       navigate("/admin/aprovacoes");
     } catch (err) {
       setError(err.message || "Erro ao fazer login");
