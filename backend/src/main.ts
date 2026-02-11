@@ -26,6 +26,7 @@ const app = express();
 
 const allowedOrigins = new Set([
   "https://modelssa-fianall.vercel.app",
+  "https://backend-model-s.onrender.com",
   "http://localhost:5173",
   "http://localhost:3000",
 ]);
