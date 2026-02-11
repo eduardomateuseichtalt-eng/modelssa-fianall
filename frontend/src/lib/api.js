@@ -4,7 +4,12 @@ export async function apiFetch(path, options = {}) {
   const headers = new Headers(options.headers || {});
   const token = localStorage.getItem("accessToken");
 
-  if (token && !headers.has("Authorization")) {
+  const isPublic =
+    path.startsWith("/api/auth/login") ||
+    path.startsWith("/api/auth/register") ||
+    path.startsWith("/api/auth/refresh");
+
+  if (!isPublic && token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 

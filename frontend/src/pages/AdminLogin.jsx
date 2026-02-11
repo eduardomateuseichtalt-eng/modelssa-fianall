@@ -2,8 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
-const ADMIN_EMAIL = "eduardomateuseichtalt@gmail.com";
-
 export default function AdminLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -18,13 +16,16 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
       const data = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      if (data.user?.role !== "ADMIN" || data.user?.email !== ADMIN_EMAIL) {
+      if (data.user?.role !== "ADMIN") {
         throw new Error("Acesso restrito");
       }
 
