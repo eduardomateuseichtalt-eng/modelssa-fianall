@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 
-const ADMIN_EMAIL = "eduardomateuseichtalt@gmail.com";
+const ADMIN_EMAIL = "eduardoeichtalt@gmail.com";
 
 export default function AdminRoute({ children }) {
   const token = localStorage.getItem("accessToken");
