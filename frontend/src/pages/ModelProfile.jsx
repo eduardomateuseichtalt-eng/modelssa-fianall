@@ -49,6 +49,11 @@ export default function ModelProfile() {
     );
   }
 
+  const wa = String(model.whatsapp || "").replace(/\D/g, "");
+  const waMsg = encodeURIComponent(
+    `Olá ${model.name}, vi seu perfil no Model's S.A e gostaria de falar com você.`
+  );
+
   return (
     <div className="page">
       <div className="profile">
@@ -132,6 +137,16 @@ export default function ModelProfile() {
             >
               Entrar em contato
             </button>
+            {wa && wa.length >= 10 && (
+              <a
+                className="btn btn-outline"
+                href={`https://wa.me/${wa}?text=${waMsg}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Falar no WhatsApp
+              </a>
+            )}
           </div>
         </div>
       </div>
