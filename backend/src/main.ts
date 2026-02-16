@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "./lib/prisma";
 import { initRedis } from "./lib/redis";
+import { redis } from "./lib/redis";
 import modelRoutes from "./routes/model.routes";
 import shotRoutes from "./routes/shot.routes";
 import metricsRoutes from "./routes/metrics.routes";
@@ -48,6 +49,21 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(express.json());
+
+app.get("/api/health/redis", async (_req, res) => {
+  try {
+    await initRedis();
+
+    await redis.set("health:redis", "ok", { EX: 15 });
+    const value = await redis.get("health:redis");
+    return res.json({ status: "ok", value });
+  } catch (e: any) {
+    console.error("Redis health error:", e?.message || e);
+    return res
+      .status(500)
+      .json({ status: "error", message: e?.message || String(e) });
+  }
+});
 
 const PORT = Number(process.env.PORT) || 4000;
 
