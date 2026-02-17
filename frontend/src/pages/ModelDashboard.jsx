@@ -96,6 +96,12 @@ export default function ModelDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageError, setMessageError] = useState("");
   const [messageLoading, setMessageLoading] = useState(false);
+  const [passwordCurrent, setPasswordCurrent] = useState("");
+  const [passwordNext, setPasswordNext] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -394,6 +400,46 @@ export default function ModelDashboard() {
     }
   };
 
+  const handleChangePassword = async () => {
+    setPasswordError("");
+    setPasswordMessage("");
+
+    if (!passwordCurrent || !passwordNext || !passwordConfirm) {
+      setPasswordError("Preencha todos os campos para alterar a senha.");
+      return;
+    }
+
+    if (passwordNext.length < 6) {
+      setPasswordError("A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (passwordNext !== passwordConfirm) {
+      setPasswordError("As senhas nao conferem.");
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const response = await apiFetch("/api/models/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: passwordCurrent,
+          newPassword: passwordNext,
+        }),
+      });
+      setPasswordMessage(response.message || "Senha atualizada com sucesso.");
+      setPasswordCurrent("");
+      setPasswordNext("");
+      setPasswordConfirm("");
+    } catch (err) {
+      setPasswordError(err.message || "Erro ao atualizar senha.");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const pendingCount = currentMedia.filter((item) => item.status === "PENDING")
     .length;
   const approvedCount = currentMedia.filter((item) => item.status === "APPROVED")
@@ -413,6 +459,50 @@ export default function ModelDashboard() {
       {shotError && <div className="notice">{shotError}</div>}
       {message && <div className="notice">{message}</div>}
       {mediaError && <div className="notice">{mediaError}</div>}
+
+      <div className="media-uploader" style={{ marginTop: 20 }}>
+        <div className="media-uploader-head">
+          <div>
+            <h4>Seguranca da conta</h4>
+            <p className="muted">Atualize sua senha quando precisar.</p>
+          </div>
+        </div>
+        {passwordMessage ? <div className="notice">{passwordMessage}</div> : null}
+        {passwordError ? <div className="notice">{passwordError}</div> : null}
+        <div className="form-grid">
+          <input
+            className="input"
+            type="password"
+            placeholder="Senha atual"
+            value={passwordCurrent}
+            onChange={(event) => setPasswordCurrent(event.target.value)}
+          />
+          <input
+            className="input"
+            type="password"
+            placeholder="Nova senha"
+            value={passwordNext}
+            onChange={(event) => setPasswordNext(event.target.value)}
+          />
+          <input
+            className="input"
+            type="password"
+            placeholder="Confirmar nova senha"
+            value={passwordConfirm}
+            onChange={(event) => setPasswordConfirm(event.target.value)}
+          />
+          <div className="form-actions" style={{ marginTop: 4 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={handleChangePassword}
+              disabled={passwordLoading}
+            >
+              {passwordLoading ? "Atualizando..." : "Atualizar senha"}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="media-uploader" style={{ marginTop: 20 }}>
         <div className="media-uploader-head">

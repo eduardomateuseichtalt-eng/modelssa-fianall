@@ -11,6 +11,8 @@ import jwt from "jsonwebtoken";
 import { prisma } from "./lib/prisma";
 import { initRedis } from "./lib/redis";
 import { redis } from "./lib/redis";
+import { gen6, normalizePhone, hashCode } from "./lib/otp";
+import { sendWhatsAppText } from "./lib/whatsapp";
 import modelRoutes from "./routes/model.routes";
 import shotRoutes from "./routes/shot.routes";
 import metricsRoutes from "./routes/metrics.routes";

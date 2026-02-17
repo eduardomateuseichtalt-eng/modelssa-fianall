@@ -768,6 +768,30 @@ select {
   gap: 12px;
 }
 
+.auth-row {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.auth-link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
 .media-uploader {
   border: 1px dashed rgba(255, 255, 255, 0.12);
   border-radius: 18px;

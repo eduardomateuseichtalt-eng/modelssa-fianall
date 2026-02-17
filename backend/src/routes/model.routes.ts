@@ -3,11 +3,49 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { requireAdmin } from "../lib/auth";
+import { requireAdmin, requireAuth } from "../lib/auth";
+import { redis } from "../lib/redis";
+import { gen6, hashCode, normalizePhone } from "../lib/otp";
+import { sendWhatsAppText } from "../lib/whatsapp";
 import { asyncHandler } from "../lib/async-handler";
 
 const router = Router();
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret_dev";
+const RESET_CODE_TTL_SECONDS = 10 * 60;
+const RESET_SEND_LIMIT_PER_EMAIL = 5;
+const RESET_SEND_LIMIT_PER_IP = 10;
+const RESET_VERIFY_ATTEMPT_LIMIT = 8;
+const RESET_RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
+const DEFAULT_COUNTRY_CODE = process.env.SMS_DEFAULT_COUNTRY_CODE || "55";
+
+function getClientIp(req: Request) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  if (Array.isArray(forwarded)) {
+    return forwarded[0];
+  }
+  return req.ip || "unknown";
+}
+
+async function incrementWithExpiry(key: string, ttlSeconds: number) {
+  const count = await redis.incr(key);
+  if (count === 1) {
+    await redis.expire(key, ttlSeconds);
+  }
+  return count;
+}
+
+function formatWhatsAppDigits(phoneDigits: string) {
+  if (phoneDigits.startsWith(DEFAULT_COUNTRY_CODE)) {
+    return phoneDigits;
+  }
+  if (phoneDigits.length <= 11) {
+    return `${DEFAULT_COUNTRY_CODE}${phoneDigits}`;
+  }
+  return phoneDigits;
+}
 
 router.post("/register", asyncHandler(async (req: Request, res: Response) => {
   const {
@@ -138,6 +176,170 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
       role: "MODEL",
     },
   });
+}));
+
+router.post("/forgot-password", asyncHandler(async (req: Request, res: Response) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+
+  if (!email) {
+    return res.status(400).json({ error: "Email obrigatorio." });
+  }
+
+  const ip = getClientIp(req);
+  const emailKey = `model:reset:send:email:${email}`;
+  const ipKey = `model:reset:send:ip:${ip}`;
+
+  const [emailCount, ipCount] = await Promise.all([
+    incrementWithExpiry(emailKey, RESET_RATE_LIMIT_WINDOW_SECONDS),
+    incrementWithExpiry(ipKey, RESET_RATE_LIMIT_WINDOW_SECONDS),
+  ]);
+
+  if (emailCount > RESET_SEND_LIMIT_PER_EMAIL || ipCount > RESET_SEND_LIMIT_PER_IP) {
+    return res.status(429).json({ error: "Limite de tentativas excedido. Tente mais tarde." });
+  }
+
+  const model = await prisma.model.findUnique({
+    where: { email },
+    select: {
+      whatsapp: true,
+    },
+  });
+
+  // Resposta neutra para nao expor se o email existe.
+  if (!model) {
+    return res.json({ success: true, expiresIn: RESET_CODE_TTL_SECONDS });
+  }
+
+  const rawWhatsappDigits = normalizePhone(String(model.whatsapp || ""));
+  if (rawWhatsappDigits.length < 10) {
+    return res.status(400).json({
+      error: "Nao foi possivel recuperar a senha. Atualize seu WhatsApp no cadastro.",
+    });
+  }
+  const whatsappDigits = formatWhatsAppDigits(rawWhatsappDigits);
+
+  const code = gen6();
+  const codeKey = `model:reset:code:${email}`;
+  const attemptKey = `model:reset:attempts:${email}`;
+
+  await Promise.all([
+    redis.set(codeKey, hashCode(email, code), { EX: RESET_CODE_TTL_SECONDS }),
+    redis.del(attemptKey),
+  ]);
+
+  try {
+    await sendWhatsAppText(
+      whatsappDigits,
+      `Codigo de recuperacao de senha: ${code}. Valido por 10 minutos.`
+    );
+  } catch (error) {
+    console.error("Model forgot password send error:", error);
+    return res.status(500).json({ error: "Falha ao enviar o codigo." });
+  }
+
+  return res.json({ success: true, expiresIn: RESET_CODE_TTL_SECONDS });
+}));
+
+router.post("/reset-password", asyncHandler(async (req: Request, res: Response) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const code = String(req.body?.code || "").replace(/\D/g, "");
+  const newPassword = String(req.body?.newPassword || "");
+
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ error: "Dados obrigatorios ausentes." });
+  }
+
+  if (code.length !== 6) {
+    return res.status(400).json({ error: "Codigo invalido." });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "A nova senha deve ter pelo menos 6 caracteres." });
+  }
+
+  const attemptKey = `model:reset:attempts:${email}`;
+  const attempts = await incrementWithExpiry(attemptKey, RESET_CODE_TTL_SECONDS);
+
+  if (attempts > RESET_VERIFY_ATTEMPT_LIMIT) {
+    return res.status(429).json({ error: "Muitas tentativas. Tente mais tarde." });
+  }
+
+  const codeKey = `model:reset:code:${email}`;
+  const storedHash = await redis.get(codeKey);
+
+  if (!storedHash) {
+    return res.status(400).json({ error: "Codigo expirado." });
+  }
+
+  if (storedHash !== hashCode(email, code)) {
+    return res.status(400).json({ error: "Codigo incorreto." });
+  }
+
+  const model = await prisma.model.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+
+  if (!model) {
+    return res.status(400).json({ error: "Conta nao encontrada." });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+
+  await Promise.all([
+    prisma.model.update({
+      where: { email },
+      data: { password: passwordHash },
+    }),
+    redis.del(codeKey),
+    redis.del(attemptKey),
+  ]);
+
+  return res.json({ success: true, message: "Senha redefinida com sucesso." });
+}));
+
+router.post("/change-password", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const user = res.locals.user as { id: string; role: string } | undefined;
+  if (!user || user.role !== "MODEL") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const currentPassword = String(req.body?.currentPassword || "");
+  const newPassword = String(req.body?.newPassword || "");
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "Dados obrigatorios ausentes." });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "A nova senha deve ter pelo menos 6 caracteres." });
+  }
+
+  if (currentPassword === newPassword) {
+    return res.status(400).json({ error: "A nova senha deve ser diferente da atual." });
+  }
+
+  const model = await prisma.model.findUnique({
+    where: { id: user.id },
+    select: { id: true, password: true },
+  });
+
+  if (!model) {
+    return res.status(404).json({ error: "Modelo nao encontrada" });
+  }
+
+  const valid = await bcrypt.compare(currentPassword, model.password);
+  if (!valid) {
+    return res.status(401).json({ error: "Senha atual incorreta." });
+  }
+
+  const nextHash = await bcrypt.hash(newPassword, 10);
+  await prisma.model.update({
+    where: { id: user.id },
+    data: { password: nextHash },
+  });
+
+  return res.json({ success: true, message: "Senha atualizada com sucesso." });
 }));
 
 router.get("/", asyncHandler(async (_req: Request, res: Response) => {
