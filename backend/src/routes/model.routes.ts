@@ -356,6 +356,7 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       email: true,
       whatsapp: true,
       city: true,
+      bio: true,
     },
   });
 
@@ -375,6 +376,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   const name = String(req.body?.name || "").trim();
   const whatsappRaw = String(req.body?.whatsapp || "").trim();
   const cityRaw = String(req.body?.city || "").trim();
+  const bioRaw = String(req.body?.bio || "").trim();
 
   if (!name) {
     return res.status(400).json({ error: "Nome artistico obrigatorio." });
@@ -391,6 +393,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       name,
       whatsapp: whatsappRaw || null,
       city: cityRaw || null,
+      bio: bioRaw || null,
     },
     select: {
       id: true,
@@ -398,6 +401,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       email: true,
       whatsapp: true,
       city: true,
+      bio: true,
     },
   });
 

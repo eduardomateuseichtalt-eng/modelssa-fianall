@@ -107,6 +107,7 @@ export default function ModelDashboard() {
   const [profileName, setProfileName] = useState("");
   const [profileWhatsapp, setProfileWhatsapp] = useState("");
   const [profileCity, setProfileCity] = useState("");
+  const [profileBio, setProfileBio] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -149,6 +150,7 @@ export default function ModelDashboard() {
       setProfileName(data.name || "");
       setProfileWhatsapp(data.whatsapp || "");
       setProfileCity(data.city || "");
+      setProfileBio(data.bio || "");
     } catch (err) {
       setProfileError(err.message || "Erro ao carregar cadastro.");
     } finally {
@@ -494,12 +496,14 @@ export default function ModelDashboard() {
           name: profileName,
           whatsapp: profileWhatsapp,
           city: profileCity,
+          bio: profileBio,
         }),
       });
 
       setProfileName(data.name || "");
       setProfileWhatsapp(data.whatsapp || "");
       setProfileCity(data.city || "");
+      setProfileBio(data.bio || "");
       setProfileMessage("Cadastro atualizado com sucesso.");
 
       const storedUser = localStorage.getItem("user");
@@ -617,6 +621,13 @@ export default function ModelDashboard() {
                   placeholder="Cidade"
                   value={profileCity}
                   onChange={(event) => setProfileCity(event.target.value)}
+                />
+                <textarea
+                  className="textarea"
+                  rows={4}
+                  placeholder="Descricao do perfil"
+                  value={profileBio}
+                  onChange={(event) => setProfileBio(event.target.value)}
                 />
                 <div className="form-actions" style={{ marginTop: 4 }}>
                   <button
