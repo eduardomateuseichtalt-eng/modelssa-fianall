@@ -4,7 +4,6 @@ import Home from "./pages/Home";
 import Modelos from "./pages/Modelos";
 import ModelProfile from "./pages/ModelProfile";
 import ModelRegister from "./pages/ModelRegister";
-import ModelPhone from "./pages/ModelPhone";
 import ModelValidation from "./pages/ModelValidation";
 import ModelCode from "./pages/ModelCode";
 import ModelFaceAuth from "./pages/ModelFaceAuth";
@@ -33,7 +32,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/modelos" element={<Modelos />} />
         <Route path="/modelos/:id" element={<ModelProfile />} />
-        <Route path="/seja-modelo" element={<ModelPhone />} />
+        <Route path="/seja-modelo" element={<ModelRegister />} />
         <Route path="/seja-modelo/validacao" element={<ModelValidation />} />
         <Route path="/seja-modelo/codigo" element={<ModelCode />} />
         <Route path="/seja-modelo/autenticacao-facial" element={<ModelFaceAuth />} />
