@@ -53,6 +53,32 @@ export default function ModelProfile() {
   const waMsg = encodeURIComponent(
     `Olá ${model.name}, vi seu perfil no Model's S.A e gostaria de falar com você.`
   );
+  const waWebUrl = wa ? `https://wa.me/${wa}?text=${waMsg}` : "";
+  const waAppUrl = wa ? `whatsapp://send?phone=${wa}&text=${waMsg}` : "";
+
+  const handleOpenWhatsApp = (event) => {
+    event.preventDefault();
+
+    if (!waAppUrl || !waWebUrl) {
+      return;
+    }
+
+    const fallbackTimer = window.setTimeout(() => {
+      window.location.href = waWebUrl;
+    }, 1200);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        window.clearTimeout(fallbackTimer);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange, {
+      once: true,
+    });
+
+    window.location.href = waAppUrl;
+  };
 
   return (
     <div className="page">
@@ -140,7 +166,8 @@ export default function ModelProfile() {
             {wa && wa.length >= 10 && (
               <a
                 className="btn btn-outline"
-                href={`https://wa.me/${wa}?text=${waMsg}`}
+                href={waWebUrl}
+                onClick={handleOpenWhatsApp}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -225,3 +252,4 @@ export default function ModelProfile() {
     </div>
   );
 }
+
