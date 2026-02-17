@@ -768,6 +768,101 @@ select {
   gap: 12px;
 }
 
+.model-area-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.model-hamburger {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(15, 14, 18, 0.9);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.model-hamburger span {
+  width: 20px;
+  height: 2px;
+  background: var(--gold);
+}
+
+.model-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 250;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.model-menu-drawer {
+  width: min(92vw, 420px);
+  height: 100vh;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  padding: 20px 18px;
+  overflow-y: auto;
+}
+
+.model-menu-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.model-menu-head h3 {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.model-menu-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.model-menu-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.model-menu-tab {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  padding: 10px 12px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.model-menu-tab.active {
+  color: var(--gold);
+  border-color: rgba(199, 162, 107, 0.5);
+  background: rgba(199, 162, 107, 0.12);
+}
+
 .auth-row {
   margin-top: 14px;
   display: flex;
@@ -1689,6 +1784,10 @@ select {
 @media (max-width: 640px) {
   .page {
     padding: 36px 6vw 60px;
+  }
+
+  .model-area-head {
+    align-items: center;
   }
 
   .nav-wrap {

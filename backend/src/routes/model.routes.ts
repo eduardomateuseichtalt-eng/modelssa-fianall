@@ -342,6 +342,68 @@ router.post("/change-password", requireAuth, asyncHandler(async (req: Request, r
   return res.json({ success: true, message: "Senha atualizada com sucesso." });
 }));
 
+router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res: Response) => {
+  const user = res.locals.user as { id: string; role: string } | undefined;
+  if (!user || user.role !== "MODEL") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const model = await prisma.model.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      whatsapp: true,
+      city: true,
+    },
+  });
+
+  if (!model) {
+    return res.status(404).json({ error: "Modelo nao encontrada" });
+  }
+
+  return res.json(model);
+}));
+
+router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const user = res.locals.user as { id: string; role: string } | undefined;
+  if (!user || user.role !== "MODEL") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const name = String(req.body?.name || "").trim();
+  const whatsappRaw = String(req.body?.whatsapp || "").trim();
+  const cityRaw = String(req.body?.city || "").trim();
+
+  if (!name) {
+    return res.status(400).json({ error: "Nome artistico obrigatorio." });
+  }
+
+  const whatsappDigits = normalizePhone(whatsappRaw);
+  if (whatsappRaw && (whatsappDigits.length < 10 || whatsappDigits.length > 15)) {
+    return res.status(400).json({ error: "Telefone invalido." });
+  }
+
+  const updated = await prisma.model.update({
+    where: { id: user.id },
+    data: {
+      name,
+      whatsapp: whatsappRaw || null,
+      city: cityRaw || null,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      whatsapp: true,
+      city: true,
+    },
+  });
+
+  return res.json(updated);
+}));
+
 router.get("/", asyncHandler(async (_req: Request, res: Response) => {
   const models = await prisma.model.findMany({
     where: {

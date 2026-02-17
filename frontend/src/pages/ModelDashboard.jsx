@@ -102,6 +102,15 @@ export default function ModelDashboard() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuTab, setMenuTab] = useState("profile");
+  const [profileName, setProfileName] = useState("");
+  const [profileWhatsapp, setProfileWhatsapp] = useState("");
+  const [profileAddress, setProfileAddress] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -132,10 +141,37 @@ export default function ModelDashboard() {
     }
   };
 
+  const loadAccountProfile = async () => {
+    setProfileLoading(true);
+    setProfileError("");
+    try {
+      const data = await apiFetch("/api/models/self/profile");
+      setProfileName(data.name || "");
+      setProfileWhatsapp(data.whatsapp || "");
+      setProfileAddress(data.city || "");
+    } catch (err) {
+      setProfileError(err.message || "Erro ao carregar cadastro.");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadMedia();
     loadMessages();
+    loadAccountProfile();
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     return () => {
@@ -440,6 +476,49 @@ export default function ModelDashboard() {
     }
   };
 
+  const handleSaveProfile = async () => {
+    setProfileError("");
+    setProfileMessage("");
+
+    if (!profileName.trim()) {
+      setProfileError("Nome artistico obrigatorio.");
+      return;
+    }
+
+    setProfileSaving(true);
+    try {
+      const data = await apiFetch("/api/models/self/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: profileName,
+          whatsapp: profileWhatsapp,
+          city: profileAddress,
+        }),
+      });
+
+      setProfileName(data.name || "");
+      setProfileWhatsapp(data.whatsapp || "");
+      setProfileAddress(data.city || "");
+      setProfileMessage("Cadastro atualizado com sucesso.");
+
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          parsed.displayName = data.name || parsed.displayName;
+          localStorage.setItem("user", JSON.stringify(parsed));
+        } catch {
+          // Ignora parse invalido de cache local
+        }
+      }
+    } catch (err) {
+      setProfileError(err.message || "Erro ao atualizar cadastro.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   const pendingCount = currentMedia.filter((item) => item.status === "PENDING")
     .length;
   const approvedCount = currentMedia.filter((item) => item.status === "APPROVED")
@@ -447,12 +526,27 @@ export default function ModelDashboard() {
 
   return (
     <div className="page">
-      <h1 className="section-title">
-        Minha <span>midia</span>
-      </h1>
-      <p className="muted" style={{ marginTop: 10 }}>
-        Envie ate {MAX_PHOTOS} fotos e {MAX_VIDEOS} videos. Itens enviados ficam pendentes de aprovacao.
-      </p>
+      <div className="model-area-head">
+        <div>
+          <h1 className="section-title">
+            Minha <span>midia</span>
+          </h1>
+          <p className="muted" style={{ marginTop: 10 }}>
+            Envie ate {MAX_PHOTOS} fotos e {MAX_VIDEOS} videos. Itens enviados ficam pendentes de aprovacao.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="model-hamburger"
+          aria-label="Abrir menu da conta"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(true)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+      </div>
 
       {messageError && <div className="notice">{messageError}</div>}
       {shotMessage && <div className="notice">{shotMessage}</div>}
@@ -460,49 +554,121 @@ export default function ModelDashboard() {
       {message && <div className="notice">{message}</div>}
       {mediaError && <div className="notice">{mediaError}</div>}
 
-      <div className="media-uploader" style={{ marginTop: 20 }}>
-        <div className="media-uploader-head">
-          <div>
-            <h4>Seguranca da conta</h4>
-            <p className="muted">Atualize sua senha quando precisar.</p>
-          </div>
+      {menuOpen ? (
+        <div className="model-menu-overlay" onClick={() => setMenuOpen(false)}>
+          <aside
+            className="model-menu-drawer"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="model-menu-head">
+              <div>
+                <h3>Conta da modelo</h3>
+                <p className="muted">Ajustes de cadastro e seguranca.</p>
+              </div>
+              <button
+                type="button"
+                className="model-menu-close"
+                aria-label="Fechar menu"
+                onClick={() => setMenuOpen(false)}
+              >
+                x
+              </button>
+            </div>
+
+            <div className="model-menu-tabs">
+              <button
+                type="button"
+                className={`model-menu-tab ${menuTab === "profile" ? "active" : ""}`}
+                onClick={() => setMenuTab("profile")}
+              >
+                Alterar cadastro
+              </button>
+              <button
+                type="button"
+                className={`model-menu-tab ${menuTab === "security" ? "active" : ""}`}
+                onClick={() => setMenuTab("security")}
+              >
+                Seguranca
+              </button>
+            </div>
+
+            {menuTab === "profile" ? (
+              <div className="form-grid">
+                {profileLoading ? <p className="muted">Carregando cadastro...</p> : null}
+                {profileMessage ? <div className="notice">{profileMessage}</div> : null}
+                {profileError ? <div className="notice">{profileError}</div> : null}
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Nome artistico"
+                  value={profileName}
+                  onChange={(event) => setProfileName(event.target.value)}
+                />
+                <input
+                  className="input"
+                  type="tel"
+                  placeholder="Telefone / WhatsApp"
+                  value={profileWhatsapp}
+                  onChange={(event) => setProfileWhatsapp(event.target.value)}
+                />
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Endereco"
+                  value={profileAddress}
+                  onChange={(event) => setProfileAddress(event.target.value)}
+                />
+                <div className="form-actions" style={{ marginTop: 4 }}>
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={profileSaving}
+                    onClick={handleSaveProfile}
+                  >
+                    {profileSaving ? "Salvando..." : "Salvar cadastro"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="form-grid">
+                {passwordMessage ? <div className="notice">{passwordMessage}</div> : null}
+                {passwordError ? <div className="notice">{passwordError}</div> : null}
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Senha atual"
+                  value={passwordCurrent}
+                  onChange={(event) => setPasswordCurrent(event.target.value)}
+                />
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Nova senha"
+                  value={passwordNext}
+                  onChange={(event) => setPasswordNext(event.target.value)}
+                />
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Confirmar nova senha"
+                  value={passwordConfirm}
+                  onChange={(event) => setPasswordConfirm(event.target.value)}
+                />
+                <div className="form-actions" style={{ marginTop: 4 }}>
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={handleChangePassword}
+                    disabled={passwordLoading}
+                  >
+                    {passwordLoading ? "Atualizando..." : "Atualizar senha"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </aside>
         </div>
-        {passwordMessage ? <div className="notice">{passwordMessage}</div> : null}
-        {passwordError ? <div className="notice">{passwordError}</div> : null}
-        <div className="form-grid">
-          <input
-            className="input"
-            type="password"
-            placeholder="Senha atual"
-            value={passwordCurrent}
-            onChange={(event) => setPasswordCurrent(event.target.value)}
-          />
-          <input
-            className="input"
-            type="password"
-            placeholder="Nova senha"
-            value={passwordNext}
-            onChange={(event) => setPasswordNext(event.target.value)}
-          />
-          <input
-            className="input"
-            type="password"
-            placeholder="Confirmar nova senha"
-            value={passwordConfirm}
-            onChange={(event) => setPasswordConfirm(event.target.value)}
-          />
-          <div className="form-actions" style={{ marginTop: 4 }}>
-            <button
-              className="btn"
-              type="button"
-              onClick={handleChangePassword}
-              disabled={passwordLoading}
-            >
-              {passwordLoading ? "Atualizando..." : "Atualizar senha"}
-            </button>
-          </div>
-        </div>
-      </div>
+      ) : null}
 
       <div className="media-uploader" style={{ marginTop: 20 }}>
         <div className="media-uploader-head">
