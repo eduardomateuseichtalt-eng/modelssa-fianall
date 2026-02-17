@@ -581,7 +581,7 @@ export default function ModelDashboard() {
                 className={`model-menu-tab ${menuTab === "profile" ? "active" : ""}`}
                 onClick={() => setMenuTab("profile")}
               >
-                Alterar cadastro
+                Atualização de perfil
               </button>
               <button
                 type="button"
