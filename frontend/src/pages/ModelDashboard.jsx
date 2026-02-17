@@ -106,7 +106,7 @@ export default function ModelDashboard() {
   const [menuTab, setMenuTab] = useState("profile");
   const [profileName, setProfileName] = useState("");
   const [profileWhatsapp, setProfileWhatsapp] = useState("");
-  const [profileAddress, setProfileAddress] = useState("");
+  const [profileCity, setProfileCity] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -148,7 +148,7 @@ export default function ModelDashboard() {
       const data = await apiFetch("/api/models/self/profile");
       setProfileName(data.name || "");
       setProfileWhatsapp(data.whatsapp || "");
-      setProfileAddress(data.city || "");
+      setProfileCity(data.city || "");
     } catch (err) {
       setProfileError(err.message || "Erro ao carregar cadastro.");
     } finally {
@@ -493,13 +493,13 @@ export default function ModelDashboard() {
         body: JSON.stringify({
           name: profileName,
           whatsapp: profileWhatsapp,
-          city: profileAddress,
+          city: profileCity,
         }),
       });
 
       setProfileName(data.name || "");
       setProfileWhatsapp(data.whatsapp || "");
-      setProfileAddress(data.city || "");
+      setProfileCity(data.city || "");
       setProfileMessage("Cadastro atualizado com sucesso.");
 
       const storedUser = localStorage.getItem("user");
@@ -614,9 +614,9 @@ export default function ModelDashboard() {
                 <input
                   className="input"
                   type="text"
-                  placeholder="Endereco"
-                  value={profileAddress}
-                  onChange={(event) => setProfileAddress(event.target.value)}
+                  placeholder="Cidade"
+                  value={profileCity}
+                  onChange={(event) => setProfileCity(event.target.value)}
                 />
                 <div className="form-actions" style={{ marginTop: 4 }}>
                   <button
