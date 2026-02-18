@@ -303,16 +303,6 @@ export default function Home() {
                   <span>Cadastrar como acompanhante</span>
                   <span className="popular-chevron" aria-hidden="true" />
                 </Link>
-                <Link to="/sobre" className="popular-item">
-                  <span className="popular-icon" aria-hidden="true" />
-                  <span>Como e ser acompanhante</span>
-                  <span className="popular-chevron" aria-hidden="true" />
-                </Link>
-                <Link to="/sobre" className="popular-item">
-                  <span className="popular-icon" aria-hidden="true" />
-                  <span>Saiba mais acompanhante</span>
-                  <span className="popular-chevron" aria-hidden="true" />
-                </Link>
               </div>
             </div>
 
