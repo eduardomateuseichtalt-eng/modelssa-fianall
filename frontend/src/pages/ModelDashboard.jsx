@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
 
 const MAX_PHOTOS = 12;
@@ -18,6 +18,13 @@ const formatSize = (value) => {
   const kb = value / 1024;
   return `${Math.round(kb)} KB`;
 };
+
+const formatCurrency = (value) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(value);
 
 const stripImageMetadata = (file) =>
   new Promise((resolve, reject) => {
@@ -112,6 +119,10 @@ export default function ModelDashboard() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileMessage, setProfileMessage] = useState("");
+  const [calcRate, setCalcRate] = useState(200);
+  const [calcDailyCount, setCalcDailyCount] = useState(4);
+  const [calcWeeklyDays, setCalcWeeklyDays] = useState(5);
+  const [calcCity, setCalcCity] = useState("");
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -527,6 +538,10 @@ export default function ModelDashboard() {
     .length;
   const approvedCount = currentMedia.filter((item) => item.status === "APPROVED")
     .length;
+  const calcMonthlyTotal = useMemo(
+    () => calcRate * calcDailyCount * calcWeeklyDays * 4,
+    [calcRate, calcDailyCount, calcWeeklyDays]
+  );
 
   return (
     <div className="page">
@@ -680,6 +695,90 @@ export default function ModelDashboard() {
           </aside>
         </div>
       ) : null}
+
+      <div className="calc-shell" style={{ marginTop: 20 }}>
+        <div className="calc-card">
+          <h2>Calcule seus ganhos</h2>
+          <p className="muted">Valor de cada atendimento</p>
+
+          <div className="calc-rate">
+            <button
+              type="button"
+              className="calc-step"
+              onClick={() => setCalcRate((prev) => Math.max(50, prev - 50))}
+            >
+              -
+            </button>
+            <div className="calc-amount">
+              <strong>{formatCurrency(calcRate)}</strong>
+              <span>/h</span>
+            </div>
+            <button
+              type="button"
+              className="calc-step"
+              onClick={() => setCalcRate((prev) => Math.min(2000, prev + 50))}
+            >
+              +
+            </button>
+          </div>
+
+          <div className="calc-highlight">100% do valor de atendimento e seu</div>
+
+          <div className="calc-range">
+            <div className="calc-range-head">
+              <span>{calcDailyCount} atendimentos por dia</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="12"
+              value={calcDailyCount}
+              onChange={(event) => setCalcDailyCount(Number(event.target.value))}
+            />
+          </div>
+
+          <div className="calc-range">
+            <div className="calc-range-head">
+              <span>{calcWeeklyDays} dias por semana</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="7"
+              value={calcWeeklyDays}
+              onChange={(event) => setCalcWeeklyDays(Number(event.target.value))}
+            />
+          </div>
+
+          <div className="calc-total">
+            <p>Total de ganhos por mes</p>
+            <h3>{formatCurrency(calcMonthlyTotal)}/mes</h3>
+          </div>
+        </div>
+
+        <div className="calc-card calc-secondary">
+          <h2>Dicas personalizadas</h2>
+          <p className="muted">Insira sua cidade abaixo</p>
+          <div className="calc-city">
+            <input
+              className="input"
+              type="text"
+              placeholder="Ex.: Sao Paulo - SP"
+              value={calcCity}
+              onChange={(event) => setCalcCity(event.target.value)}
+            />
+          </div>
+          <p className="calc-note">
+            {calcCity
+              ? `Com a media de ${formatCurrency(calcRate)} por atendimento em ${calcCity},
+              voce pode simular ate ${formatCurrency(calcMonthlyTotal)} por mes.`
+              : "Digite sua cidade para comparar com a media local."}
+          </p>
+          <p className="muted" style={{ marginTop: 18 }}>
+            Esta calculadora e uma simulacao. Os valores estimados nao representam garantia de faturamento.
+          </p>
+        </div>
+      </div>
 
       <div className="media-uploader" style={{ marginTop: 20 }}>
         <div className="media-uploader-head">
