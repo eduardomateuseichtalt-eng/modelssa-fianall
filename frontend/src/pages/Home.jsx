@@ -325,25 +325,6 @@ export default function Home() {
             </div>
 
             <div className="promo-section">
-              <div className="promo-grid">
-                <div className="promo-tile">
-                  <span className="promo-icon">★</span>
-                  <p>Um dos sites mais visitados do pais</p>
-                </div>
-                <div className="promo-tile">
-                  <span className="promo-icon">◎</span>
-                  <p>Anuncie de graca</p>
-                </div>
-                <div className="promo-tile">
-                  <span className="promo-icon">◉</span>
-                  <p>Escolha deixar seu perfil para todos ou so clientes premium</p>
-                </div>
-                <div className="promo-tile">
-                  <span className="promo-icon">♡</span>
-                  <p>+ de 9 milhoes de visitantes por mes</p>
-                </div>
-              </div>
-
               <div className="service-section">
                 <h3>Acesse os servicos mais buscados na sua cidade</h3>
                 <div className="service-tags">
@@ -497,4 +478,5 @@ export default function Home() {
     </div>
   );
 }
+
 
