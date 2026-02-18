@@ -314,10 +314,6 @@ export default function Home() {
               </p>
               <div className="trust-grid">
                 <div className="trust-card">
-                  <div className="trust-icon">✓</div>
-                  <p>100% das acompanhantes com documentos verificados</p>
-                </div>
-                <div className="trust-card">
                   <div className="trust-icon">▣</div>
                   <p>Fotos e videos verificados</p>
                 </div>
@@ -442,6 +438,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
