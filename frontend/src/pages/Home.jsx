@@ -323,23 +323,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            <div className="promo-section">
-              <div className="city-section">
-                <div className="city-icon">♀</div>
-                <h3>Acompanhantes Femininas</h3>
-                <p>
-                  Encontre acompanhantes mulheres para atendimentos individuais,
-                  casais, duplas, trios e em grupos.
-                </p>
-                <div className="city-divider" />
-                <p className="city-links">
-                  Porto Alegre, Ribeirao Preto, Goiania, Uberlandia, Sao Paulo,
-                  Curitiba, Rio de Janeiro, Maceio, Cascavel, Belo Horizonte,
-                  Caxias do Sul, Joinville, Belem, Porto Velho e Sete Lagoas.
-                </p>
-              </div>
-            </div>
           </div>
 
         </div>
@@ -459,5 +442,7 @@ export default function Home() {
     </div>
   );
 }
+
+
 
 
