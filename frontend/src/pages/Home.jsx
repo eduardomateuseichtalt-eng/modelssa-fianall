@@ -325,14 +325,6 @@ export default function Home() {
             </div>
 
             <div className="promo-section">
-              <div className="promo-card">
-                <h3>Crie seu perfil de graca</h3>
-                <p>no maior site de acompanhantes do Brasil</p>
-                <Link to="/cadastro" className="btn promo-cta">
-                  Cadastre-se gratis
-                </Link>
-              </div>
-
               <div className="promo-grid">
                 <div className="promo-tile">
                   <span className="promo-icon">★</span>
