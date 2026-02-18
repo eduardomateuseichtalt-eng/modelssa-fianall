@@ -325,25 +325,6 @@ export default function Home() {
             </div>
 
             <div className="promo-section">
-              <div className="service-section">
-                <h3>Acesse os servicos mais buscados na sua cidade</h3>
-                <div className="service-tags">
-                  <span>Com Local</span>
-                  <span>Sexo Anal</span>
-                  <span>Ate R$119,90</span>
-                  <span>Em expediente</span>
-                  <span>Jovem</span>
-                  <span>Com audio</span>
-                  <span>Madura</span>
-                  <span>A domicilio</span>
-                  <span>BDSM</span>
-                  <span>Magrinha</span>
-                </div>
-                <Link to="/modelos" className="service-cta">
-                  Buscar por cidade
-                </Link>
-              </div>
-
               <div className="city-section">
                 <div className="city-icon">♀</div>
                 <h3>Acompanhantes Femininas</h3>
