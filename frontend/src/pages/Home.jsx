@@ -314,16 +314,8 @@ export default function Home() {
               </p>
               <div className="trust-grid">
                 <div className="trust-card">
-                  <div className="trust-icon">◎</div>
-                  <p>Midia de comparacao 360° atualizada</p>
-                </div>
-                <div className="trust-card">
                   <div className="trust-icon">✓</div>
                   <p>100% das acompanhantes com documentos verificados</p>
-                </div>
-                <div className="trust-card">
-                  <div className="trust-icon">◯</div>
-                  <p>Verificacao facial de rotina</p>
                 </div>
                 <div className="trust-card">
                   <div className="trust-icon">▣</div>
@@ -513,3 +505,4 @@ export default function Home() {
     </div>
   );
 }
+
