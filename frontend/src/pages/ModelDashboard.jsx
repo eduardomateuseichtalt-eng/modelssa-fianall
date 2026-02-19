@@ -112,9 +112,16 @@ export default function ModelDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState("profile");
   const [profileName, setProfileName] = useState("");
+  const [profileInstagram, setProfileInstagram] = useState("");
   const [profileWhatsapp, setProfileWhatsapp] = useState("");
   const [profileCity, setProfileCity] = useState("");
   const [profileBio, setProfileBio] = useState("");
+  const [profileHeight, setProfileHeight] = useState("");
+  const [profileWeight, setProfileWeight] = useState("");
+  const [profileBust, setProfileBust] = useState("");
+  const [profileWaist, setProfileWaist] = useState("");
+  const [profileHips, setProfileHips] = useState("");
+  const [profilePriceHour, setProfilePriceHour] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -159,9 +166,16 @@ export default function ModelDashboard() {
     try {
       const data = await apiFetch("/api/models/self/profile");
       setProfileName(data.name || "");
+      setProfileInstagram(data.instagram || "");
       setProfileWhatsapp(data.whatsapp || "");
       setProfileCity(data.city || "");
       setProfileBio(data.bio || "");
+      setProfileHeight(data.height ?? "");
+      setProfileWeight(data.weight ?? "");
+      setProfileBust(data.bust ?? "");
+      setProfileWaist(data.waist ?? "");
+      setProfileHips(data.hips ?? "");
+      setProfilePriceHour(data.priceHour ?? "");
     } catch (err) {
       setProfileError(err.message || "Erro ao carregar cadastro.");
     } finally {
@@ -505,16 +519,30 @@ export default function ModelDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: profileName,
+          instagram: profileInstagram,
           whatsapp: profileWhatsapp,
           city: profileCity,
           bio: profileBio,
+          height: profileHeight,
+          weight: profileWeight,
+          bust: profileBust,
+          waist: profileWaist,
+          hips: profileHips,
+          priceHour: profilePriceHour,
         }),
       });
 
       setProfileName(data.name || "");
+      setProfileInstagram(data.instagram || "");
       setProfileWhatsapp(data.whatsapp || "");
       setProfileCity(data.city || "");
       setProfileBio(data.bio || "");
+      setProfileHeight(data.height ?? "");
+      setProfileWeight(data.weight ?? "");
+      setProfileBust(data.bust ?? "");
+      setProfileWaist(data.waist ?? "");
+      setProfileHips(data.hips ?? "");
+      setProfilePriceHour(data.priceHour ?? "");
       setProfileMessage("Cadastro atualizado com sucesso.");
 
       const storedUser = localStorage.getItem("user");
@@ -625,6 +653,13 @@ export default function ModelDashboard() {
                 />
                 <input
                   className="input"
+                  type="text"
+                  placeholder="Instagram"
+                  value={profileInstagram}
+                  onChange={(event) => setProfileInstagram(event.target.value)}
+                />
+                <input
+                  className="input"
                   type="tel"
                   placeholder="Telefone / WhatsApp"
                   value={profileWhatsapp}
@@ -644,6 +679,53 @@ export default function ModelDashboard() {
                   value={profileBio}
                   onChange={(event) => setProfileBio(event.target.value)}
                 />
+                <div
+                  className="form-grid"
+                  style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
+                >
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Altura (cm)"
+                    value={profileHeight}
+                    onChange={(event) => setProfileHeight(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Peso (kg)"
+                    value={profileWeight}
+                    onChange={(event) => setProfileWeight(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Busto (cm)"
+                    value={profileBust}
+                    onChange={(event) => setProfileBust(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Cintura (cm)"
+                    value={profileWaist}
+                    onChange={(event) => setProfileWaist(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Quadril (cm)"
+                    value={profileHips}
+                    onChange={(event) => setProfileHips(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Valor por hora"
+                    value={profilePriceHour}
+                    onChange={(event) => setProfilePriceHour(event.target.value)}
+                  />
+                </div>
                 <div className="form-actions" style={{ marginTop: 4 }}>
                   <button
                     className="btn"

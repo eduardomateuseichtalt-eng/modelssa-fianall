@@ -108,6 +108,18 @@ export default function ModelProfile() {
               <span>Peso</span>
             </div>
             <div className="stat">
+              <strong>{model.bust || "--"}</strong>
+              <span>Busto</span>
+            </div>
+            <div className="stat">
+              <strong>{model.waist || "--"}</strong>
+              <span>Cintura</span>
+            </div>
+            <div className="stat">
+              <strong>{model.hips || "--"}</strong>
+              <span>Quadril</span>
+            </div>
+            <div className="stat">
               <strong>{model.priceHour || "--"}</strong>
               <span>Por hora</span>
             </div>

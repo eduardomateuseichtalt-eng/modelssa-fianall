@@ -354,9 +354,16 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       id: true,
       name: true,
       email: true,
+      instagram: true,
       whatsapp: true,
       city: true,
       bio: true,
+      height: true,
+      weight: true,
+      bust: true,
+      waist: true,
+      hips: true,
+      priceHour: true,
     },
   });
 
@@ -374,9 +381,25 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   }
 
   const name = String(req.body?.name || "").trim();
+  const instagramRaw = String(req.body?.instagram || "").trim();
   const whatsappRaw = String(req.body?.whatsapp || "").trim();
   const cityRaw = String(req.body?.city || "").trim();
   const bioRaw = String(req.body?.bio || "").trim();
+  const heightRaw = req.body?.height;
+  const weightRaw = req.body?.weight;
+  const bustRaw = req.body?.bust;
+  const waistRaw = req.body?.waist;
+  const hipsRaw = req.body?.hips;
+  const priceHourRaw = req.body?.priceHour;
+
+  const toNumberOrNull = (value?: number | string | null) => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const parsed =
+      typeof value === "number" ? value : Number(String(value).trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  };
 
   if (!name) {
     return res.status(400).json({ error: "Nome artistico obrigatorio." });
@@ -391,17 +414,31 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
     where: { id: user.id },
     data: {
       name,
+      instagram: instagramRaw || null,
       whatsapp: whatsappRaw || null,
       city: cityRaw || null,
       bio: bioRaw || null,
+      height: toNumberOrNull(heightRaw),
+      weight: toNumberOrNull(weightRaw),
+      bust: toNumberOrNull(bustRaw),
+      waist: toNumberOrNull(waistRaw),
+      hips: toNumberOrNull(hipsRaw),
+      priceHour: toNumberOrNull(priceHourRaw),
     },
     select: {
       id: true,
       name: true,
       email: true,
+      instagram: true,
       whatsapp: true,
       city: true,
       bio: true,
+      height: true,
+      weight: true,
+      bust: true,
+      waist: true,
+      hips: true,
+      priceHour: true,
     },
   });
 
