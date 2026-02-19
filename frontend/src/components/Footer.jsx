@@ -10,7 +10,7 @@ export default function Footer() {
             <span>models S.A</span>
           </div>
           <p className="muted" style={{ marginTop: 12 }}>
-            Plataforma premium para talentos, agencias e anunciantes.
+            Plataforma Premium para Anunciantes de Alto Padrão
           </p>
         </div>
 
