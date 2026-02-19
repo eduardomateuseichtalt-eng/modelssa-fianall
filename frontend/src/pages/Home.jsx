@@ -387,34 +387,6 @@ export default function Home() {
 
       <section className="section">
         <h2 className="section-title">
-          <span>models</span>
-        </h2>
-        <div className="cards">
-          <div className="card">
-            <h4>Galeria premium</h4>
-            <p className="muted">
-              Portfolios com imagens grandes, destaques e lista completa de
-              servicos.
-            </p>
-          </div>
-          <div className="card">
-            <h4>Cadastro rapido</h4>
-            <p className="muted">
-              Formulario direto, valida dados obrigatorios e envia para
-              aprovacao.
-            </p>
-          </div>
-          <div className="card">
-            <h4>Perfis verificados</h4>
-            <p className="muted">
-              Publicacao somente apos aprovacao manual e confirmacao de idade.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">
           Para <span>marcas</span>
         </h2>
         <p className="muted" style={{ marginTop: 10 }}>
