@@ -309,8 +309,7 @@ export default function Home() {
             <div className="trust-section">
               <h3>Contrate com mais seguranca e praticidade</h3>
               <p className="muted">
-                Na Models S.A, voce encontra mais de 6 mil anuncios verificados e
-                contrata sem complicacoes.
+                na Models S.A, voce encontra anúncios verificados e contrata sem complicações
               </p>
               <div className="trust-grid">
                 <div className="trust-card">
