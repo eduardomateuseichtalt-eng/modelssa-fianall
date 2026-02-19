@@ -154,7 +154,6 @@ export default function Home() {
               A MELHOR PLATAFORMA DE ACOMPANHANTES. AONDE A BELEZA SE CONECTA
               A MOMENTOS INESQUECIVEIS
             </h2>
-            <p className="hero-stat">Cerca de 50 mil acessos por dia</p>
             <div className="hero-actions hero-actions-alt">
               <Link to="/seja-modelo" className="btn">
                 Anunciar como acompanhante
