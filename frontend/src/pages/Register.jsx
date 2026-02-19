@@ -32,7 +32,7 @@ export default function Register() {
     <div className="page-tight">
       <div className="form-shell">
         <h2>Criar conta</h2>
-        <p className="muted">Acesso rapido para anunciantes e agencias.</p>
+        <p className="muted">acesso rapido e descomplicado para cadasto de novos clientes</p>
 
         {message && <div className="notice">{message}</div>}
 
