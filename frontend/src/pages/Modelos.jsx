@@ -102,35 +102,6 @@ export default function Modelos() {
         </div>
       )}
 
-      <section className="section" id="avaliacoes">
-        <h2 className="section-title">
-          Avaliacoes de <span>clientes</span>
-        </h2>
-        <p className="muted" style={{ marginTop: 10 }}>
-          Depoimentos reais ajudam a escolher com mais seguranca. Assim que os
-          clientes publicarem avaliacoes, elas vao aparecer aqui.
-        </p>
-        <div className="cards">
-          <div className="card">
-            <h4>Atendimento impecavel</h4>
-            <p className="muted">
-              Experiencia segura, comunicacao clara e perfil fiel ao anunciado.
-            </p>
-          </div>
-          <div className="card">
-            <h4>Perfil verificado</h4>
-            <p className="muted">
-              Confirmacao de identidade e fotos atuais antes de liberar o anuncio.
-            </p>
-          </div>
-          <div className="card">
-            <h4>Ambiente discreto</h4>
-            <p className="muted">
-              Privacidade garantida para clientes e modelos durante o contato.
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
