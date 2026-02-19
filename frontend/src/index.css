@@ -161,6 +161,29 @@ select {
   letter-spacing: 0.1em;
 }
 
+.nav-hamburger {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(15, 14, 18, 0.9);
+  display: none;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.nav-hamburger span {
+  width: 18px;
+  height: 2px;
+  background: var(--gold);
+}
+
+.mobile-nav {
+  display: none;
+}
+
 .hero {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -1779,6 +1802,37 @@ select {
   .nav-links {
     display: none;
   }
+
+  .nav-hamburger {
+    display: grid;
+  }
+
+  .mobile-nav {
+    display: grid;
+    gap: 12px;
+    padding: 0 8vw 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .mobile-nav-section {
+    display: grid;
+    gap: 10px;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .mobile-nav-section .pill,
+  .mobile-nav-section a,
+  .mobile-nav-section button {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mobile-nav-section .nav-cta {
+    display: inline-flex;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1792,6 +1846,10 @@ select {
 
   .nav-wrap {
     padding: 14px 6vw;
+  }
+
+  .mobile-nav {
+    padding: 0 6vw 14px;
   }
 
   .hero-actions {
