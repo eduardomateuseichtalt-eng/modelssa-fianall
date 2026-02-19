@@ -364,7 +364,7 @@ export default function ModelRegister() {
       <div className="form-shell">
         <h2>Seja modelo</h2>
         <p className="muted">
-          Preencha seus dados para analise. Enviamos retorno por email.
+          {"Preencha seus dados para analise. dentro de 24 horas seu perfil estar\u00e1 ativo entre para fazer novas atualiza\u00e7\u00f5es no seu perfil."}
         </p>
 
         {message && <div className="notice">{message}</div>}
