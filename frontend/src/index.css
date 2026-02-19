@@ -1812,6 +1812,23 @@ select {
     gap: 12px;
     padding: 0 8vw 14px;
     border-top: 1px solid var(--border);
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transform: translateY(-6px);
+    transition:
+      max-height 0.28s ease,
+      opacity 0.2s ease,
+      transform 0.22s ease,
+      padding 0.22s ease;
+    pointer-events: none;
+  }
+
+  .mobile-nav.open {
+    max-height: 680px;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
   }
 
   .mobile-nav-section {

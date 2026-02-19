@@ -93,7 +93,7 @@ export default function Navbar() {
         <button
           type="button"
           className="nav-hamburger"
-          aria-label="Abrir menu"
+          aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
           aria-expanded={mobileMenuOpen}
           onClick={() => setMobileMenuOpen((prev) => !prev)}
         >
@@ -103,84 +103,76 @@ export default function Navbar() {
         </button>
       </div>
 
-      {mobileMenuOpen ? (
-        <div className="mobile-nav">
-          <nav className="mobile-nav-section">
-            <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>
-              Inicio
-            </NavLink>
-            <NavLink to="/modelos" onClick={() => setMobileMenuOpen(false)}>
-              Modelos
-            </NavLink>
-            <NavLink to="/seja-modelo" onClick={() => setMobileMenuOpen(false)}>
-              Seja modelo
-            </NavLink>
-            <NavLink to="/anuncie" onClick={() => setMobileMenuOpen(false)}>
-              Anuncie
-            </NavLink>
-            <NavLink to="/contato" onClick={() => setMobileMenuOpen(false)}>
-              Contato
-            </NavLink>
-          </nav>
+      <div className={`mobile-nav ${mobileMenuOpen ? "open" : ""}`}>
+        <nav className="mobile-nav-section">
+          <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>
+            Inicio
+          </NavLink>
+          <NavLink to="/modelos" onClick={() => setMobileMenuOpen(false)}>
+            Modelos
+          </NavLink>
+          <NavLink to="/seja-modelo" onClick={() => setMobileMenuOpen(false)}>
+            Seja modelo
+          </NavLink>
+          <NavLink to="/anuncie" onClick={() => setMobileMenuOpen(false)}>
+            Anuncie
+          </NavLink>
+          <NavLink to="/contato" onClick={() => setMobileMenuOpen(false)}>
+            Contato
+          </NavLink>
+        </nav>
 
-          <div className="mobile-nav-section">
-            {user ? (
-              <>
-                <span className="pill">Ola, {user.displayName || "Usuario"}</span>
-                {user.role === "ADMIN" ? (
-                  <NavLink
-                    to="/admin/aprovacoes"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Admin
-                  </NavLink>
-                ) : null}
-                {user.role === "MODEL" ? (
-                  <>
-                    <NavLink
-                      to="/modelo/area"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Minha conta
-                    </NavLink>
-                    <NavLink
-                      to="/modelo/estatisticas"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Estatisticas
-                    </NavLink>
-                  </>
-                ) : null}
-                <button className="pill" type="button" onClick={handleLogout}>
-                  Sair
-                </button>
-              </>
-            ) : (
-              <>
-                <NavLink to="/login" onClick={() => setMobileMenuOpen(false)}>
-                  Entrar
-                </NavLink>
-                <NavLink to="/cadastro" onClick={() => setMobileMenuOpen(false)}>
-                  Cadastro
-                </NavLink>
+        <div className="mobile-nav-section">
+          {user ? (
+            <>
+              <span className="pill">Ola, {user.displayName || "Usuario"}</span>
+              {user.role === "ADMIN" ? (
                 <NavLink
-                  to="/modelo/login"
+                  to="/admin/aprovacoes"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Area da modelo
+                  Admin
                 </NavLink>
-              </>
-            )}
-            <NavLink
-              to="/seja-modelo"
-              className="nav-cta"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Quero anunciar
-            </NavLink>
-          </div>
+              ) : null}
+              {user.role === "MODEL" ? (
+                <>
+                  <NavLink to="/modelo/area" onClick={() => setMobileMenuOpen(false)}>
+                    Minha conta
+                  </NavLink>
+                  <NavLink
+                    to="/modelo/estatisticas"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Estatisticas
+                  </NavLink>
+                </>
+              ) : null}
+              <button className="pill" type="button" onClick={handleLogout}>
+                Sair
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" onClick={() => setMobileMenuOpen(false)}>
+                Entrar
+              </NavLink>
+              <NavLink to="/cadastro" onClick={() => setMobileMenuOpen(false)}>
+                Cadastro
+              </NavLink>
+              <NavLink to="/modelo/login" onClick={() => setMobileMenuOpen(false)}>
+                Area da modelo
+              </NavLink>
+            </>
+          )}
+          <NavLink
+            to="/seja-modelo"
+            className="nav-cta"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Quero anunciar
+          </NavLink>
         </div>
-      ) : null}
+      </div>
     </>
   );
 }
