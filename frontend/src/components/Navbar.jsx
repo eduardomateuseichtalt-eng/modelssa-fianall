@@ -85,9 +85,6 @@ export default function Navbar() {
               <NavLink to="/modelo/login">Area da modelo</NavLink>
             </>
           )}
-          <NavLink to="/seja-modelo" className="nav-cta">
-            Quero anunciar
-          </NavLink>
         </div>
 
         <button
@@ -164,13 +161,6 @@ export default function Navbar() {
               </NavLink>
             </>
           )}
-          <NavLink
-            to="/seja-modelo"
-            className="nav-cta"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Quero anunciar
-          </NavLink>
         </div>
       </div>
     </>
