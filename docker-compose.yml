@@ -30,12 +30,16 @@ services:
       - "${API_PORT:-4000}:4000"
     environment:
       NODE_ENV: ${NODE_ENV}
+      PORT: ${API_PORT:-4000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sauser}:${POSTGRES_PASSWORD:-sapassword}@db:5432/${POSTGRES_DB:-models_sa}?schema=public
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
@@ -48,7 +52,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      VITE_API_BASE_URL: "http://localhost:${API_PORT:-4000}/api"
+      VITE_API_URL: "http://localhost:${API_PORT:-4000}"
     depends_on:
       - api
 
