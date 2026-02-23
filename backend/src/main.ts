@@ -27,10 +27,13 @@ import messagesRoutes from "./routes/messages.routes";
 // ========================
 const app = express();
 
+const normalizeOrigin = (value: string) =>
+  value.trim().replace(/\/+$/, "");
+
 const parseCsv = (value: string) =>
   value
     .split(",")
-    .map((item) => item.trim())
+    .map((item) => normalizeOrigin(item))
     .filter(Boolean);
 
 const defaultAllowedOrigins = [
@@ -44,17 +47,21 @@ const defaultAllowedOrigins = [
 ];
 
 const envAllowedOrigins = parseCsv(process.env.CORS_ALLOWED_ORIGINS || "");
-const allowedOrigins = new Set([
+const allowedOrigins = new Set(
+  [
   ...defaultAllowedOrigins,
   ...envAllowedOrigins,
-]);
+  ].map(normalizeOrigin)
+);
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, cb) => {
     // permite requests sem origin (Postman/healthcheck)
     if (!origin) return cb(null, true);
 
-    if (allowedOrigins.has(origin)) return cb(null, true);
+    const normalizedOrigin = normalizeOrigin(origin);
+
+    if (allowedOrigins.has(normalizedOrigin)) return cb(null, true);
 
     return cb(new Error(`CORS bloqueado para a origem: ${origin}`));
   },
