@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import redis from "../redis";
+import { redis } from "../lib/redis";
 import { asyncHandler } from "../lib/async-handler";
 
 const router = Router();

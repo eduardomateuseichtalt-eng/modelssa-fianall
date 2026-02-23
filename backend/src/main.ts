@@ -27,11 +27,26 @@ import messagesRoutes from "./routes/messages.routes";
 // ========================
 const app = express();
 
-const allowedOrigins = new Set([
+const parseCsv = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const defaultAllowedOrigins = [
+  "https://models-club.com",
+  "https://www.models-club.com",
+  "https://api.models-club.com",
   "https://modelssa-fianall.vercel.app",
   "https://backend-model-s.onrender.com",
   "http://localhost:5173",
   "http://localhost:3000",
+];
+
+const envAllowedOrigins = parseCsv(process.env.CORS_ALLOWED_ORIGINS || "");
+const allowedOrigins = new Set([
+  ...defaultAllowedOrigins,
+  ...envAllowedOrigins,
 ]);
 
 const corsOptions: cors.CorsOptions = {
