@@ -12,6 +12,11 @@ export default function AdminApprovals() {
   const [metricsError, setMetricsError] = useState("");
   const [pendingMedia, setPendingMedia] = useState([]);
   const [mediaError, setMediaError] = useState("");
+  const [faqReports, setFaqReports] = useState([]);
+  const [faqReportsLoading, setFaqReportsLoading] = useState(false);
+  const [faqReportsError, setFaqReportsError] = useState("");
+  const [faqReplyDrafts, setFaqReplyDrafts] = useState({});
+  const [faqReplySavingId, setFaqReplySavingId] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -33,6 +38,25 @@ export default function AdminApprovals() {
     apiFetch("/api/media/pending")
       .then((data) => setPendingMedia(data))
       .catch((err) => setMediaError(err.message || "Erro ao carregar midias."));
+  }, []);
+
+  useEffect(() => {
+    setFaqReportsLoading(true);
+    apiFetch("/api/faq-reports/admin")
+      .then((data) => {
+        setFaqReports(Array.isArray(data) ? data : []);
+        setFaqReplyDrafts(() => {
+          const next = {};
+          (Array.isArray(data) ? data : []).forEach((report) => {
+            next[report.id] = report.adminResponse || "";
+          });
+          return next;
+        });
+      })
+      .catch((err) =>
+        setFaqReportsError(err.message || "Erro ao carregar relatos FAQ.")
+      )
+      .finally(() => setFaqReportsLoading(false));
   }, []);
 
   const handleApprove = async (modelId) => {
@@ -119,6 +143,38 @@ export default function AdminApprovals() {
     }
   };
 
+  const handleRespondFaqReport = async (reportId) => {
+    const adminResponse = String(faqReplyDrafts[reportId] || "").trim();
+    if (!adminResponse) {
+      setError("Digite uma resposta antes de salvar.");
+      return;
+    }
+
+    setMessage("");
+    setError("");
+    setFaqReplySavingId(reportId);
+    try {
+      const updated = await apiFetch(`/api/faq-reports/admin/${reportId}/respond`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminResponse }),
+      });
+
+      setFaqReports((current) =>
+        current.map((report) => (report.id === reportId ? updated : report))
+      );
+      setFaqReplyDrafts((current) => ({
+        ...current,
+        [reportId]: updated.adminResponse || adminResponse,
+      }));
+      setMessage("Resposta do relato salva com sucesso.");
+    } catch (err) {
+      setError(err.message || "Erro ao responder relato.");
+    } finally {
+      setFaqReplySavingId("");
+    }
+  };
+
   return (
     <div className="page">
       <h1 className="section-title">
@@ -202,6 +258,73 @@ export default function AdminApprovals() {
       {error && <div className="notice">{error}</div>}
 
       {mediaError && <div className="notice">{mediaError}</div>}
+      {faqReportsError && <div className="notice">{faqReportsError}</div>}
+
+      <section className="section" style={{ marginTop: 32 }}>
+        <h2 className="section-title">
+          Relatos do <span>FAQ</span>
+        </h2>
+        <p className="muted" style={{ marginTop: 10 }}>
+          Relatos enviados pela area publica de FAQ para analise e resposta.
+        </p>
+
+        {faqReportsLoading ? (
+          <p style={{ marginTop: 16 }}>Carregando relatos...</p>
+        ) : faqReports.length === 0 ? (
+          <p className="muted" style={{ marginTop: 16 }}>
+            Nenhum relato recebido ainda.
+          </p>
+        ) : (
+          <div className="cards" style={{ marginTop: 16 }}>
+            {faqReports.map((report) => (
+              <div className="card" key={report.id}>
+                <h4>{report.status === "ANSWERED" ? "Respondido" : "Pendente"}</h4>
+                <p className="muted" style={{ marginTop: 6 }}>
+                  {new Date(report.createdAt).toLocaleString("pt-BR")}
+                </p>
+                {report.contact ? (
+                  <p className="muted" style={{ marginTop: 6 }}>
+                    Contato: {report.contact}
+                  </p>
+                ) : null}
+                <p style={{ marginTop: 12, whiteSpace: "pre-wrap" }}>{report.message}</p>
+
+                <textarea
+                  className="textarea"
+                  rows={4}
+                  style={{ marginTop: 12 }}
+                  placeholder="Escreva sua resposta"
+                  value={faqReplyDrafts[report.id] || ""}
+                  onChange={(event) =>
+                    setFaqReplyDrafts((current) => ({
+                      ...current,
+                      [report.id]: event.target.value,
+                    }))
+                  }
+                />
+
+                <button
+                  className="btn"
+                  type="button"
+                  style={{ marginTop: 12 }}
+                  onClick={() => handleRespondFaqReport(report.id)}
+                  disabled={faqReplySavingId === report.id}
+                >
+                  {faqReplySavingId === report.id ? "Salvando..." : "Salvar resposta"}
+                </button>
+
+                {report.respondedAt ? (
+                  <p className="muted" style={{ marginTop: 10 }}>
+                    Respondido em {new Date(report.respondedAt).toLocaleString("pt-BR")}
+                    {report.respondedBy ? ` por ${report.respondedBy}` : ""}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {pendingMedia.length > 0 ? (
         <section className="section" style={{ marginTop: 32 }}>
           <h2 className="section-title">

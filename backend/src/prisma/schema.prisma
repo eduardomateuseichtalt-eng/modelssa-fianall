@@ -74,6 +74,21 @@ model SiteAccess {
   @@index([createdAt])
 }
 
+model FaqReport {
+  id             String   @id @default(uuid())
+  message        String
+  contact        String?
+  adminResponse  String?
+  status         String   @default("OPEN")
+  respondedAt    DateTime?
+  respondedBy    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([status])
+}
+
 enum MediaType {
   IMAGE
   VIDEO
