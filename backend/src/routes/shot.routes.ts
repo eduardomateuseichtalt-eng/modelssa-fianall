@@ -67,10 +67,13 @@ async function purgeExpiredShots() {
 router.get("/", asyncHandler(async (req: Request, res: Response) => {
   await purgeExpiredShots();
   const user = getUserFromRequest(req);
+  const modelId =
+    typeof req.query.modelId === "string" ? req.query.modelId.trim() : "";
 
   const shots = await prisma.shot.findMany({
     where: {
       isActive: true,
+      ...(modelId ? { modelId } : {}),
       model: {
         isVerified: true,
       },

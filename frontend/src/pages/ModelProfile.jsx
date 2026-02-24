@@ -14,6 +14,10 @@ export default function ModelProfile() {
   const [contactError, setContactError] = useState("");
   const [contactLoading, setContactLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("media");
+  const [modelShots, setModelShots] = useState([]);
+  const [shotsLoading, setShotsLoading] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [viewerMode, setViewerMode] = useState("");
   const contactSectionRef = useRef(null);
 
   useEffect(() => {
@@ -28,6 +32,51 @@ export default function ModelProfile() {
       .then((data) => setMedia(data))
       .catch(() => setMedia([]));
   }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    setShotsLoading(true);
+    apiFetch(`/api/shots?modelId=${encodeURIComponent(id)}`)
+      .then((data) => {
+        if (!active) return;
+        const ownShots = Array.isArray(data)
+          ? data.filter((shot) => String(shot?.model?.id || "") === String(id))
+          : [];
+        setModelShots(ownShots);
+      })
+      .catch(() => {
+        if (active) setModelShots([]);
+      })
+      .finally(() => {
+        if (active) setShotsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    if (!avatarMenuOpen && !viewerMode) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setAvatarMenuOpen(false);
+        setViewerMode("");
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [avatarMenuOpen, viewerMode]);
 
   if (loading) {
     return (
@@ -91,6 +140,8 @@ export default function ModelProfile() {
   const mediaPhotos = media.filter((item) => item.type !== "VIDEO");
   const mediaVideos = media.filter((item) => item.type === "VIDEO");
   const totalMediaCount = media.length;
+  const hasShots = modelShots.length > 0;
+  const profileImageUrl = model.avatarUrl || model.coverUrl || "/model-placeholder.svg";
 
   const profileDetails = [
     { label: "Altura", value: model.height ? `${model.height} cm` : "--" },
@@ -100,6 +151,29 @@ export default function ModelProfile() {
     { label: "Quadril", value: model.hips ? `${model.hips} cm` : "--" },
     { label: "Valor por hora", value: model.priceHour ? `R$ ${model.priceHour}` : "--" },
   ];
+
+  const openAvatarMenu = () => {
+    if (!hasShots) {
+      setViewerMode("avatar");
+      return;
+    }
+    setAvatarMenuOpen(true);
+  };
+
+  const openProfilePhotoViewer = () => {
+    setAvatarMenuOpen(false);
+    setViewerMode("avatar");
+  };
+
+  const openShotsViewer = () => {
+    setAvatarMenuOpen(false);
+    setViewerMode("shots");
+  };
+
+  const closeOverlays = () => {
+    setAvatarMenuOpen(false);
+    setViewerMode("");
+  };
 
   return (
     <div className="page">
@@ -115,11 +189,21 @@ export default function ModelProfile() {
 
           <div className="profile-public-panel">
             <div className="profile-public-header">
-              <img
-                className="profile-public-avatar"
-                src={model.avatarUrl || model.coverUrl || "/model-placeholder.svg"}
-                alt={model.name}
-              />
+              <button
+                type="button"
+                className={`profile-public-avatar-button ${hasShots ? "has-shots" : ""}`}
+                onClick={openAvatarMenu}
+                aria-label={hasShots ? "Abrir opcoes de foto e shots" : "Ver foto de perfil"}
+              >
+                <span className="profile-public-avatar-ring">
+                  <img
+                    className="profile-public-avatar"
+                    src={profileImageUrl}
+                    alt={model.name}
+                  />
+                </span>
+                {hasShots ? <span className="profile-public-avatar-status">shots</span> : null}
+              </button>
 
               <div className="profile-public-header-info">
                 <div className="profile-public-title-row">
@@ -385,6 +469,102 @@ export default function ModelProfile() {
           ) : null}
         </div>
       </section>
+
+      {avatarMenuOpen ? (
+        <div className="profile-public-overlay" role="presentation" onClick={closeOverlays}>
+          <div
+            className="profile-public-choice-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Opcoes de visualizacao"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3>O que deseja ver?</h3>
+            <div className="profile-public-choice-actions">
+              <button type="button" className="btn" onClick={openProfilePhotoViewer}>
+                Ver foto de perfil
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={openShotsViewer}
+                disabled={!hasShots || shotsLoading}
+              >
+                {shotsLoading ? "Carregando shots..." : "Ver shots"}
+              </button>
+            </div>
+            {!hasShots && !shotsLoading ? (
+              <p className="muted" style={{ marginTop: 12 }}>
+                Essa modelo ainda nao publicou shots.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {viewerMode === "avatar" ? (
+        <div className="profile-public-overlay" role="presentation" onClick={closeOverlays}>
+          <div
+            className="profile-public-viewer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Foto de perfil"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="profile-public-viewer-head">
+              <h3>Foto de perfil</h3>
+              <button type="button" className="btn btn-outline" onClick={closeOverlays}>
+                Fechar
+              </button>
+            </div>
+            <div className="profile-public-viewer-media">
+              <img src={profileImageUrl} alt={model.name} />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {viewerMode === "shots" ? (
+        <div className="profile-public-overlay" role="presentation" onClick={closeOverlays}>
+          <div
+            className="profile-public-viewer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Shots da modelo"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="profile-public-viewer-head">
+              <h3>Shots de {model.name}</h3>
+              <button type="button" className="btn btn-outline" onClick={closeOverlays}>
+                Fechar
+              </button>
+            </div>
+
+            {modelShots.length > 0 ? (
+              <div className="profile-public-shots-grid">
+                {modelShots.map((shot) => (
+                  <div key={shot.id} className="profile-public-shot-item">
+                    {shot.type === "VIDEO" && shot.videoUrl ? (
+                      <video
+                        src={shot.videoUrl}
+                        controls
+                        preload="metadata"
+                        poster={shot.posterUrl || undefined}
+                      />
+                    ) : shot.imageUrl ? (
+                      <img src={shot.imageUrl} alt={`Shot de ${model.name}`} loading="lazy" />
+                    ) : (
+                      <div className="shot-placeholder">Shot indisponivel</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">Essa modelo ainda nao publicou shots.</p>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
