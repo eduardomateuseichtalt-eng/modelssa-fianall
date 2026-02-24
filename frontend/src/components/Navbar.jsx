@@ -36,6 +36,25 @@ export default function Navbar() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileMenuOpen]);
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -100,7 +119,15 @@ export default function Navbar() {
         </button>
       </div>
 
-      <div className={`mobile-nav ${mobileMenuOpen ? "open" : ""}`}>
+      <button
+        type="button"
+        className={`mobile-nav-overlay ${mobileMenuOpen ? "open" : ""}`}
+        aria-hidden={!mobileMenuOpen}
+        tabIndex={mobileMenuOpen ? 0 : -1}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
+      <aside className={`mobile-nav ${mobileMenuOpen ? "open" : ""}`} aria-hidden={!mobileMenuOpen}>
         <nav className="mobile-nav-section">
           <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>
             Inicio
@@ -162,7 +189,7 @@ export default function Navbar() {
             </>
           )}
         </div>
-      </div>
+      </aside>
     </>
   );
 }
