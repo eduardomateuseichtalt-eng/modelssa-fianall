@@ -85,6 +85,7 @@ router.post(
         data: {
           modelId,
           type: mapMediaType(file.mimetype),
+          purpose: "COMPARISON",
           url: normalizedUrl,
         },
       });
@@ -140,8 +141,8 @@ router.post(
     }
 
     const [existingImages, existingVideos] = await Promise.all([
-      prisma.media.count({ where: { modelId, type: "IMAGE" } }),
-      prisma.media.count({ where: { modelId, type: "VIDEO" } }),
+      prisma.media.count({ where: { modelId, type: "IMAGE", purpose: "GALLERY" } }),
+      prisma.media.count({ where: { modelId, type: "VIDEO", purpose: "GALLERY" } }),
     ]);
 
     let newImages = 0;
@@ -188,6 +189,7 @@ router.post(
         data: {
           modelId,
           type: mapMediaType(file.mimetype),
+          purpose: "GALLERY",
           url: normalizedUrl,
         },
       });
@@ -236,11 +238,24 @@ router.get("/health", requireAdmin, asyncHandler(async (_req: Request, res: Resp
 }));
 
 router.get(
+  "/model/:id/comparison",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const media = await prisma.media.findMany({
+      where: { modelId: id, status: "APPROVED", purpose: "COMPARISON" },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return res.json(media);
+  })
+);
+
+router.get(
   "/model/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const media = await prisma.media.findMany({
-      where: { modelId: id, status: "APPROVED" },
+      where: { modelId: id, status: "APPROVED", purpose: "GALLERY" },
       orderBy: { createdAt: "desc" },
     });
 

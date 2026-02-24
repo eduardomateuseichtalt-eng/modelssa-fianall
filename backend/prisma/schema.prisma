@@ -90,11 +90,13 @@ model Media {
   modelId   String
   type      MediaType
   status    MediaStatus @default(PENDING)
+  purpose   MediaPurpose @default(GALLERY)
   url       String
   createdAt DateTime    @default(now())
   model     Model       @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
   @@index([modelId])
+  @@index([purpose])
 }
 
 model SiteAccess {
@@ -134,6 +136,11 @@ enum MediaStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum MediaPurpose {
+  GALLERY
+  COMPARISON
 }
 
 enum ShotType {

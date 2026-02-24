@@ -107,6 +107,11 @@ enum MediaStatus {
   REJECTED
 }
 
+enum MediaPurpose {
+  GALLERY
+  COMPARISON
+}
+
 enum ShotType {
   VIDEO
   IMAGE
@@ -118,10 +123,12 @@ model Media {
   model     Model       @relation(fields: [modelId], references: [id])
   type      MediaType
   status    MediaStatus @default(PENDING)
+  purpose   MediaPurpose @default(GALLERY)
   url       String
   createdAt DateTime    @default(now())
 
   @@index([modelId])
+  @@index([purpose])
 }
 
 model CityStat {

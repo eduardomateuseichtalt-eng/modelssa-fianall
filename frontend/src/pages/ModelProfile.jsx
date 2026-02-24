@@ -6,6 +6,7 @@ export default function ModelProfile() {
   const { id } = useParams();
   const [model, setModel] = useState(null);
   const [media, setMedia] = useState([]);
+  const [comparisonMedia, setComparisonMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -31,6 +32,25 @@ export default function ModelProfile() {
     apiFetch(`/api/media/model/${id}`)
       .then((data) => setMedia(data))
       .catch(() => setMedia([]));
+  }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    apiFetch(`/api/media/model/${id}/comparison`)
+      .then((data) => {
+        if (active) {
+          setComparisonMedia(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setComparisonMedia([]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -142,6 +162,15 @@ export default function ModelProfile() {
   const totalMediaCount = media.length;
   const hasShots = modelShots.length > 0;
   const profileImageUrl = model.avatarUrl || model.coverUrl || "/model-placeholder.svg";
+  const comparisonVideo = comparisonMedia.find((item) => item.type === "VIDEO") || null;
+  const comparisonMediaCandidate =
+    comparisonVideo ||
+    [...mediaVideos].sort((a, b) => {
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeA - timeB;
+    })[0] ||
+    null;
 
   const profileDetails = [
     { label: "Altura", value: model.height ? `${model.height} cm` : "--" },
@@ -302,19 +331,51 @@ export default function ModelProfile() {
               </div>
 
               {totalMediaCount > 0 ? (
-                <div className="profile-public-media-grid">
-                  {media.map((item) =>
-                    item.type === "VIDEO" ? (
-                      <div key={item.id} className="profile-public-media-card is-video">
-                        <video src={item.url} controls preload="metadata" />
+                <>
+                  <div className="profile-public-media-grid">
+                    {media.map((item) =>
+                      item.type === "VIDEO" ? (
+                        <div key={item.id} className="profile-public-media-card is-video">
+                          <video src={item.url} controls preload="metadata" />
+                        </div>
+                      ) : (
+                        <div key={item.id} className="profile-public-media-card">
+                          <img src={item.url} alt="Midia da modelo" loading="lazy" />
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  <div className="profile-public-comparison">
+                    <div className="profile-public-section-head">
+                      <h2>Midia de comparacao</h2>
+                      <span className="pill">Cadastro</span>
+                    </div>
+                    <p className="muted">
+                      Este video ajuda o cliente a comparar as fotos publicadas com a
+                      pessoa do cadastro.
+                    </p>
+
+                    {comparisonMediaCandidate ? (
+                      <div className="profile-public-comparison-video">
+                        <video
+                          src={comparisonMediaCandidate.url}
+                          controls
+                          preload="metadata"
+                          playsInline
+                        />
                       </div>
                     ) : (
-                      <div key={item.id} className="profile-public-media-card">
-                        <img src={item.url} alt="Midia da modelo" loading="lazy" />
+                      <div className="card">
+                        <h4>Sem video de comparacao visivel</h4>
+                        <p className="muted">
+                          O video de comparacao ainda nao foi aprovado ou nao esta
+                          disponivel no momento.
+                        </p>
                       </div>
-                    )
-                  )}
-                </div>
+                    )}
+                  </div>
+                </>
               ) : (
                 <div className="card">
                   <h4>Sem midias publicadas</h4>

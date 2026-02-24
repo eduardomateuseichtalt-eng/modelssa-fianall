@@ -971,6 +971,27 @@ select {
   background: #09090b;
 }
 
+.profile-public-comparison {
+  margin-top: 6px;
+  display: grid;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.profile-public-comparison-video {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #0b0b0e;
+}
+
+.profile-public-comparison-video video {
+  width: 100%;
+  max-height: 520px;
+  display: block;
+  background: #09090b;
+}
+
 .profile-public-split {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -2352,6 +2373,10 @@ select {
 
   .profile-public-media-card {
     min-height: 160px;
+  }
+
+  .profile-public-comparison-video video {
+    max-height: 360px;
   }
 
   .profile-public-viewer {
