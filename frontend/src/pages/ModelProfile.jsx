@@ -52,7 +52,7 @@ export default function ModelProfile() {
 
   const wa = String(model.whatsapp || "").replace(/\D/g, "");
   const waMsg = encodeURIComponent(
-    `Olá ${model.name}, vi seu perfil no Model's S.A e gostaria de falar com você.`
+    `olá ${model.name}! vi seu perfil no models-club e gostaria de marcar um atendimento. quando você tem disponibilidade?`
   );
   const waWebUrl = wa ? `https://wa.me/${wa}?text=${waMsg}` : "";
   const waAppUrl = wa ? `whatsapp://send?phone=${wa}&text=${waMsg}` : "";
