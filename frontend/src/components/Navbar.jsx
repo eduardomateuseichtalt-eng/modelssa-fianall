@@ -69,7 +69,9 @@ export default function Navbar() {
       <div className="nav-wrap">
         <Link to="/" className="brand">
           <span className="brand-mark">MS</span>
-          <span>models-club</span>
+          <span className="notranslate" translate="no">
+            models-club
+          </span>
         </Link>
 
         <nav className="nav-links">
