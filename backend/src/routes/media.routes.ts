@@ -24,6 +24,8 @@ const allowedTypes = new Set([
 const mapMediaType = (mime: string) =>
   mime.startsWith("video/") ? "VIDEO" : "IMAGE";
 
+const normalizeStoredUrl = (value: string) => value.trim();
+
 router.post(
   "/upload",
   upload.array("files", 15),
@@ -77,11 +79,13 @@ router.post(
         file.mimetype
       );
 
+      const normalizedUrl = normalizeStoredUrl(result.url);
+
       const created = await prisma.media.create({
         data: {
           modelId,
           type: mapMediaType(file.mimetype),
-          url: result.url,
+          url: normalizedUrl,
         },
       });
 
@@ -90,11 +94,11 @@ router.post(
       if (created.type === "IMAGE" && (needsCover || needsAvatar)) {
         const data: { coverUrl?: string; avatarUrl?: string } = {};
         if (needsCover) {
-          data.coverUrl = created.url;
+          data.coverUrl = normalizeStoredUrl(created.url);
           needsCover = false;
         }
         if (needsAvatar) {
-          data.avatarUrl = created.url;
+          data.avatarUrl = normalizeStoredUrl(created.url);
           needsAvatar = false;
         }
 
@@ -178,11 +182,13 @@ router.post(
         file.mimetype
       );
 
+      const normalizedUrl = normalizeStoredUrl(result.url);
+
       const created = await prisma.media.create({
         data: {
           modelId,
           type: mapMediaType(file.mimetype),
-          url: result.url,
+          url: normalizedUrl,
         },
       });
 
@@ -191,11 +197,11 @@ router.post(
       if (created.type === "IMAGE" && (needsCover || needsAvatar)) {
         const data: { coverUrl?: string; avatarUrl?: string } = {};
         if (needsCover) {
-          data.coverUrl = created.url;
+          data.coverUrl = normalizeStoredUrl(created.url);
           needsCover = false;
         }
         if (needsAvatar) {
-          data.avatarUrl = created.url;
+          data.avatarUrl = normalizeStoredUrl(created.url);
           needsAvatar = false;
         }
 
