@@ -1,11 +1,13 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomUUID } from "crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import { redis } from "../lib/redis";
 import { gen6, hashCode, normalizePhone } from "../lib/otp";
+import { sendModelRegisterOtpEmail } from "../lib/email";
 import { sendWhatsAppText } from "../lib/whatsapp";
 import { asyncHandler } from "../lib/async-handler";
 
@@ -17,6 +19,13 @@ const RESET_SEND_LIMIT_PER_IP = 10;
 const RESET_VERIFY_ATTEMPT_LIMIT = 8;
 const RESET_RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 const DEFAULT_COUNTRY_CODE = process.env.SMS_DEFAULT_COUNTRY_CODE || "55";
+const REGISTER_EMAIL_OTP_TTL_SECONDS = 10 * 60;
+const REGISTER_EMAIL_SEND_LIMIT_PER_EMAIL = 5;
+const REGISTER_EMAIL_SEND_LIMIT_PER_IP = 10;
+const REGISTER_EMAIL_VERIFY_ATTEMPT_LIMIT = 8;
+const REGISTER_EMAIL_VERIFY_TOKEN_TTL_SECONDS = 30 * 60;
+const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
+  String(process.env.MODEL_REGISTER_EMAIL_OTP_REQUIRED || "true").trim().toLowerCase() !== "false";
 
 function getClientIp(req: Request) {
   const forwarded = req.headers["x-forwarded-for"];
@@ -47,6 +56,111 @@ function formatWhatsAppDigits(phoneDigits: string) {
   return phoneDigits;
 }
 
+router.post("/email-otp/send", asyncHandler(async (req: Request, res: Response) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  if (!email) {
+    return res.status(400).json({ error: "Email obrigatorio." });
+  }
+
+  const validEmail = /\S+@\S+\.\S+/.test(email);
+  if (!validEmail) {
+    return res.status(400).json({ error: "Email invalido." });
+  }
+
+  const exists = await prisma.model.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+
+  if (exists) {
+    return res.status(409).json({ error: "Email ja cadastrado" });
+  }
+
+  const ip = getClientIp(req);
+  const emailKey = `model:register:email-otp:send:email:${email}`;
+  const ipKey = `model:register:email-otp:send:ip:${ip}`;
+
+  const [emailCount, ipCount] = await Promise.all([
+    incrementWithExpiry(emailKey, RESET_RATE_LIMIT_WINDOW_SECONDS),
+    incrementWithExpiry(ipKey, RESET_RATE_LIMIT_WINDOW_SECONDS),
+  ]);
+
+  if (
+    emailCount > REGISTER_EMAIL_SEND_LIMIT_PER_EMAIL ||
+    ipCount > REGISTER_EMAIL_SEND_LIMIT_PER_IP
+  ) {
+    return res.status(429).json({ error: "Limite de tentativas excedido. Tente mais tarde." });
+  }
+
+  const code = gen6();
+  const codeKey = `model:register:email-otp:code:${email}`;
+  const attemptKey = `model:register:email-otp:attempts:${email}`;
+
+  await Promise.all([
+    redis.set(codeKey, hashCode(email, code), { EX: REGISTER_EMAIL_OTP_TTL_SECONDS }),
+    redis.del(attemptKey),
+  ]);
+
+  try {
+    await sendModelRegisterOtpEmail({ to: email, code });
+  } catch (error) {
+    await Promise.all([redis.del(codeKey), redis.del(attemptKey)]);
+    throw error;
+  }
+
+  return res.json({
+    success: true,
+    expiresIn: REGISTER_EMAIL_OTP_TTL_SECONDS,
+    channel: "email",
+  });
+}));
+
+router.post("/email-otp/verify", asyncHandler(async (req: Request, res: Response) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const code = String(req.body?.code || "").trim();
+
+  if (!email || !code) {
+    return res.status(400).json({ error: "Email e codigo obrigatorios." });
+  }
+
+  const attemptKey = `model:register:email-otp:attempts:${email}`;
+  const attemptCount = await incrementWithExpiry(
+    attemptKey,
+    REGISTER_EMAIL_OTP_TTL_SECONDS
+  );
+
+  if (attemptCount > REGISTER_EMAIL_VERIFY_ATTEMPT_LIMIT) {
+    return res.status(429).json({ error: "Muitas tentativas. Solicite um novo codigo." });
+  }
+
+  const codeKey = `model:register:email-otp:code:${email}`;
+  const storedHash = await redis.get(codeKey);
+
+  if (!storedHash) {
+    return res.status(400).json({ error: "Codigo expirado ou inexistente." });
+  }
+
+  if (storedHash !== hashCode(email, code)) {
+    return res.status(400).json({ error: "Codigo invalido." });
+  }
+
+  const verificationToken = randomUUID();
+  const verifiedKey = `model:register:email-otp:verified:${verificationToken}`;
+
+  await Promise.all([
+    redis.set(verifiedKey, email, { EX: REGISTER_EMAIL_VERIFY_TOKEN_TTL_SECONDS }),
+    redis.del(codeKey),
+    redis.del(attemptKey),
+  ]);
+
+  return res.json({
+    success: true,
+    verificationToken,
+    email,
+    expiresIn: REGISTER_EMAIL_VERIFY_TOKEN_TTL_SECONDS,
+  });
+}));
+
 router.post("/register", asyncHandler(async (req: Request, res: Response) => {
   const {
     name,
@@ -65,6 +179,7 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
     waist,
     hips,
     priceHour,
+    emailVerificationToken,
   } = req.body;
 
   const trimToNull = (value?: string | null) => {
@@ -90,6 +205,7 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
 
   const cleanName = String(name).trim();
   const cleanEmail = String(email).trim();
+  const normalizedEmail = cleanEmail.toLowerCase();
 
   if (!cleanName || !cleanEmail) {
     return res.status(400).json({ error: "Dados obrigatorios ausentes" });
@@ -101,6 +217,22 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
     return res
       .status(403)
       .json({ error: "Cadastro permitido apenas para maiores de 18 anos" });
+  }
+
+  let registerEmailVerifiedKey: string | null = null;
+  if (MODEL_REGISTER_EMAIL_OTP_REQUIRED) {
+    const verificationToken = String(emailVerificationToken || "").trim();
+    if (!verificationToken) {
+      return res.status(400).json({ error: "Confirme seu e-mail antes de continuar." });
+    }
+
+    const verifiedKey = `model:register:email-otp:verified:${verificationToken}`;
+    const verifiedEmail = (await redis.get(verifiedKey)) || "";
+
+    if (!verifiedEmail || verifiedEmail.toLowerCase() !== normalizedEmail) {
+      return res.status(400).json({ error: "Confirmacao de e-mail invalida ou expirada." });
+    }
+    registerEmailVerifiedKey = verifiedKey;
   }
 
   const exists = await prisma.model.findUnique({
@@ -133,6 +265,10 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
       priceHour: toNumberOrNull(priceHour),
     },
   });
+
+  if (registerEmailVerifiedKey) {
+    await redis.del(registerEmailVerifiedKey);
+  }
 
   return res.status(201).json({
     message: "Cadastro realizado com sucesso. Aguarde aprovacao.",

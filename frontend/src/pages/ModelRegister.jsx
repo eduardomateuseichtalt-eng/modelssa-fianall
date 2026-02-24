@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { apiFetch, API_URL } from "../lib/api";
 
 const initialForm = {
@@ -114,6 +114,16 @@ export default function ModelRegister() {
   const [profilePreview, setProfilePreview] = useState("");
   const [profileError, setProfileError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showIntroStep, setShowIntroStep] = useState(true);
+  const [introStage, setIntroStage] = useState("email");
+  const [acceptMarketing, setAcceptMarketing] = useState(true);
+  const [acceptTerms, setAcceptTerms] = useState(true);
+  const [introError, setIntroError] = useState("");
+  const [introInfo, setIntroInfo] = useState("");
+  const [emailOtpCode, setEmailOtpCode] = useState("");
+  const [emailOtpLoading, setEmailOtpLoading] = useState(false);
+  const [emailOtpVerifiedToken, setEmailOtpVerifiedToken] = useState("");
+  const [verifiedEmail, setVerifiedEmail] = useState("");
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -268,6 +278,74 @@ export default function ModelRegister() {
     submitRef.current?.focus();
   };
 
+  const handleIntroContinue = () => {
+    setIntroError("");
+    setIntroInfo("");
+    const email = String(form.email || "").trim();
+    const validEmail = /\S+@\S+\.\S+/.test(email);
+
+    if (!validEmail) {
+      setIntroError("Digite um e-mail valido para continuar.");
+      return;
+    }
+
+    if (!acceptTerms) {
+      setIntroError("Voce precisa concordar com os Termos de Uso e Politica de Privacidade.");
+      return;
+    }
+
+    setEmailOtpVerifiedToken("");
+    setVerifiedEmail("");
+    setEmailOtpCode("");
+    setEmailOtpLoading(true);
+    apiFetch("/api/models/email-otp/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+      .then(() => {
+        setForm((prev) => ({ ...prev, email }));
+        setIntroStage("code");
+        setIntroInfo("Codigo enviado para o seu e-mail.");
+      })
+      .catch((error) => {
+        setIntroError(error.message || "Nao foi possivel enviar o codigo.");
+      })
+      .finally(() => {
+        setEmailOtpLoading(false);
+      });
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    setIntroError("");
+    setIntroInfo("");
+    const email = String(form.email || "").trim();
+    const code = String(emailOtpCode || "").trim();
+
+    if (!code || code.length < 4) {
+      setIntroError("Digite o codigo de confirmacao.");
+      return;
+    }
+
+    setEmailOtpLoading(true);
+    try {
+      const response = await apiFetch("/api/models/email-otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+
+      setEmailOtpVerifiedToken(String(response.verificationToken || ""));
+      setVerifiedEmail(String(response.email || email).trim());
+      setIntroInfo("E-mail confirmado com sucesso.");
+      setShowIntroStep(false);
+    } catch (error) {
+      setIntroError(error.message || "Nao foi possivel validar o codigo.");
+    } finally {
+      setEmailOtpLoading(false);
+    }
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
     setMessage("");
@@ -290,6 +368,22 @@ export default function ModelRegister() {
       return;
     }
 
+    if (!emailOtpVerifiedToken || !verifiedEmail) {
+      setMessage("Confirme seu e-mail antes de enviar o cadastro.");
+      setShowIntroStep(true);
+      setIntroStage("email");
+      return;
+    }
+
+    if (String(form.email || "").trim().toLowerCase() !== verifiedEmail.toLowerCase()) {
+      setMessage("O e-mail foi alterado. Confirme novamente para continuar.");
+      setEmailOtpVerifiedToken("");
+      setVerifiedEmail("");
+      setShowIntroStep(true);
+      setIntroStage("email");
+      return;
+    }
+
     setLoading(true);
     try {
       const data = await apiFetch("/api/models/register", {
@@ -304,6 +398,7 @@ export default function ModelRegister() {
           waist: form.waist ? Number(form.waist) : null,
           hips: form.hips ? Number(form.hips) : null,
           priceHour: form.priceHour ? Number(form.priceHour) : null,
+          emailVerificationToken: emailOtpVerifiedToken,
         }),
       });
 
@@ -348,6 +443,13 @@ export default function ModelRegister() {
         ...initialForm,
         whatsapp: storedPhone,
       });
+      setEmailOtpCode("");
+      setEmailOtpVerifiedToken("");
+      setVerifiedEmail("");
+      setIntroStage("email");
+      setShowIntroStep(true);
+      setIntroInfo("");
+      setIntroError("");
       setMediaFiles([]);
       setMediaPreviews([]);
       setProfileFile(null);
@@ -357,6 +459,137 @@ export default function ModelRegister() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (showIntroStep) {
+    return (
+      <div className="page-tight">
+        <div className="form-shell model-register-intro-shell">
+          <div className="model-register-intro">
+            <p className="muted model-register-intro-kicker">
+              Boas-vindas ao models-club
+            </p>
+            <h2 className="model-register-intro-title">
+              Cadastre-se como modelo
+            </h2>
+            <p className="muted">
+              Informe seu e-mail para receber o codigo de confirmacao e continuar seu cadastro.
+            </p>
+
+            {introError && <div className="notice">{introError}</div>}
+            {introInfo && <div className="notice">{introInfo}</div>}
+
+            <div className="form-grid" style={{ marginTop: 10 }}>
+              <input
+                className="input"
+                name="email"
+                type="email"
+                placeholder="digite seu e-mail."
+                value={form.email}
+                onChange={handleChange}
+                autoComplete="email"
+                required
+                disabled={introStage === "code" || emailOtpLoading}
+              />
+
+              {introStage === "email" ? (
+                <>
+                  <label className="model-register-check">
+                    <input
+                      type="checkbox"
+                      checked={acceptMarketing}
+                      onChange={(event) => setAcceptMarketing(event.target.checked)}
+                    />
+                    <span>Aceito receber informacoes sobre meu cadastro e promocoes.</span>
+                  </label>
+
+                  <label className="model-register-check">
+                    <input
+                      type="checkbox"
+                      checked={acceptTerms}
+                      onChange={(event) => setAcceptTerms(event.target.checked)}
+                    />
+                    <span>Concordo com os Termos de Uso e a Politica de Privacidade.</span>
+                  </label>
+
+                  <div className="model-register-note">
+                    <strong>Aviso</strong>
+                    <p>
+                      O codigo de confirmacao sera enviado para o e-mail informado para validar o inicio do cadastro.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn model-register-intro-cta"
+                    onClick={handleIntroContinue}
+                    disabled={
+                      emailOtpLoading || !String(form.email || "").trim() || !acceptTerms
+                    }
+                  >
+                    {emailOtpLoading ? "Enviando codigo..." : "Continuar"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <input
+                    className="input"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    placeholder="digite o codigo de confirmacao."
+                    value={emailOtpCode}
+                    onChange={(event) =>
+                      setEmailOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    autoFocus
+                  />
+
+                  <div className="model-register-note">
+                    <strong>Confirmacao por e-mail</strong>
+                    <p>
+                      Digite o codigo enviado para <strong>{String(form.email || "").trim()}</strong>.
+                    </p>
+                  </div>
+
+                  <div className="form-actions" style={{ marginTop: 4 }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={handleVerifyEmailOtp}
+                      disabled={emailOtpLoading || emailOtpCode.trim().length < 6}
+                    >
+                      {emailOtpLoading ? "Validando..." : "Validar codigo"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={handleIntroContinue}
+                      disabled={emailOtpLoading}
+                    >
+                      Reenviar codigo
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => {
+                        setIntroStage("email");
+                        setEmailOtpCode("");
+                        setIntroError("");
+                        setIntroInfo("");
+                      }}
+                      disabled={emailOtpLoading}
+                    >
+                      Alterar e-mail
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -395,6 +628,7 @@ export default function ModelRegister() {
             ref={(node) => {
               fieldRefs.current[1] = node;
             }}
+            readOnly={Boolean(verifiedEmail)}
             required
           />
           <div style={{ position: "relative" }}>
@@ -761,7 +995,17 @@ export default function ModelRegister() {
               className="btn btn-outline"
               type="button"
               onClick={() => {
-                setForm(initialForm);
+                setForm({
+                  ...initialForm,
+                  whatsapp: storedPhone,
+                });
+                setShowIntroStep(true);
+                setIntroStage("email");
+                setIntroError("");
+                setIntroInfo("");
+                setEmailOtpCode("");
+                setEmailOtpVerifiedToken("");
+                setVerifiedEmail("");
                 setMediaFiles([]);
                 setMediaPreviews([]);
                 setMediaError("");
@@ -787,3 +1031,4 @@ export default function ModelRegister() {
     </div>
   );
 }
+
