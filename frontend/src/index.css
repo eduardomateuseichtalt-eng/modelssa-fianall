@@ -1774,9 +1774,32 @@ select {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.age-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.age-actions .age-button {
+  margin-top: 0;
+}
+
+.age-button-secondary {
+  background: transparent;
+  border: 1px solid rgba(43, 43, 43, 0.18);
+  color: #2b2b2b;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: none;
+}
+
 .age-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 30px rgba(225, 86, 86, 0.35);
+}
+
+.age-button-secondary:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 @keyframes fadeUp {

@@ -45,9 +45,14 @@ export default function AgeConsentModal() {
           </Link>
         </p>
 
-        <button className="age-button" onClick={accept}>
-          Concordo
-        </button>
+        <div className="age-actions">
+          <Link to="/faq" className="age-button age-button-secondary" onClick={accept}>
+            RELATAR DENÚNCIA
+          </Link>
+          <button className="age-button" onClick={accept}>
+            Concordo
+          </button>
+        </div>
       </div>
     </div>
   );
