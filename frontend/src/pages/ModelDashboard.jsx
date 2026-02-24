@@ -103,6 +103,16 @@ export default function ModelDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageError, setMessageError] = useState("");
   const [messageLoading, setMessageLoading] = useState(false);
+  const [supportPanelOpen, setSupportPanelOpen] = useState(false);
+  const [supportCategory, setSupportCategory] = useState("DENUNCIA");
+  const [supportContact, setSupportContact] = useState("");
+  const [supportText, setSupportText] = useState("");
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportError, setSupportError] = useState("");
+  const [supportNotice, setSupportNotice] = useState("");
+  const [supportReports, setSupportReports] = useState([]);
+  const [supportReportsLoading, setSupportReportsLoading] = useState(false);
+  const [supportReportsError, setSupportReportsError] = useState("");
   const [passwordCurrent, setPasswordCurrent] = useState("");
   const [passwordNext, setPasswordNext] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -160,6 +170,19 @@ export default function ModelDashboard() {
     }
   };
 
+  const loadSupportReports = async () => {
+    setSupportReportsError("");
+    setSupportReportsLoading(true);
+    try {
+      const data = await apiFetch("/api/faq-reports/self");
+      setSupportReports(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setSupportReportsError(err.message || "Erro ao carregar relatos.");
+    } finally {
+      setSupportReportsLoading(false);
+    }
+  };
+
   const loadAccountProfile = async () => {
     setProfileLoading(true);
     setProfileError("");
@@ -186,6 +209,7 @@ export default function ModelDashboard() {
   useEffect(() => {
     loadMedia();
     loadMessages();
+    loadSupportReports();
     loadAccountProfile();
   }, []);
 
@@ -860,6 +884,138 @@ export default function ModelDashboard() {
             Esta calculadora e uma simulacao. Os valores estimados nao representam garantia de faturamento.
           </p>
         </div>
+      </div>
+
+      <div className="media-uploader" style={{ marginTop: 20 }}>
+        <div className="media-uploader-head">
+          <div>
+            <h4>Denuncia / sugestao / reclamacao</h4>
+            <p className="muted">
+              Envie um relato direto para a area admin e acompanhe a resposta.
+            </p>
+          </div>
+          <span className="media-count">{supportReports.length}</span>
+        </div>
+
+        <div className="media-actions">
+          <button
+            className="btn"
+            type="button"
+            onClick={() => setSupportPanelOpen((prev) => !prev)}
+          >
+            {supportPanelOpen ? "Fechar formulario" : "Abrir formulario"}
+          </button>
+          <button
+            className="btn btn-outline"
+            type="button"
+            onClick={loadSupportReports}
+            disabled={supportReportsLoading}
+          >
+            {supportReportsLoading ? "Atualizando..." : "Atualizar"}
+          </button>
+        </div>
+
+        {supportNotice ? <div className="notice">{supportNotice}</div> : null}
+        {supportError ? <div className="notice">{supportError}</div> : null}
+        {supportReportsError ? <div className="notice">{supportReportsError}</div> : null}
+
+        {supportPanelOpen ? (
+          <form
+            className="form-grid"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setSupportError("");
+              setSupportNotice("");
+              const message = supportText.trim();
+              if (!message) {
+                setSupportError("Descreva o problema antes de enviar.");
+                return;
+              }
+
+              setSupportLoading(true);
+              try {
+                await apiFetch("/api/faq-reports/self", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    category: supportCategory,
+                    contact: supportContact.trim(),
+                    message,
+                  }),
+                });
+                setSupportNotice("Relato enviado para a administracao.");
+                setSupportText("");
+                setSupportContact("");
+                await loadSupportReports();
+              } catch (err) {
+                setSupportError(err.message || "Erro ao enviar relato.");
+              } finally {
+                setSupportLoading(false);
+              }
+            }}
+          >
+            <select
+              className="select"
+              value={supportCategory}
+              onChange={(event) => setSupportCategory(event.target.value)}
+            >
+              <option value="DENUNCIA">Denuncia</option>
+              <option value="SUGESTAO">Sugestao</option>
+              <option value="RECLAMACAO">Reclamacao</option>
+            </select>
+            <input
+              className="input"
+              type="text"
+              placeholder="Contato (opcional)"
+              value={supportContact}
+              onChange={(event) => setSupportContact(event.target.value)}
+              maxLength={255}
+            />
+            <textarea
+              className="textarea"
+              rows={5}
+              placeholder="Escreva sua denuncia, sugestao ou reclamacao"
+              value={supportText}
+              onChange={(event) => setSupportText(event.target.value)}
+              maxLength={2000}
+            />
+            <div className="form-actions" style={{ marginTop: 0 }}>
+              <button className="btn" type="submit" disabled={supportLoading}>
+                {supportLoading ? "Enviando..." : "Enviar relato"}
+              </button>
+            </div>
+          </form>
+        ) : null}
+
+        {supportReports.length > 0 ? (
+          <div className="cards" style={{ marginTop: 16 }}>
+            {supportReports.map((report) => (
+              <div className="card" key={report.id}>
+                <h4>{(report.category || "RELATO").replace(/_/g, " ")}</h4>
+                <p className="muted" style={{ marginTop: 6 }}>
+                  {new Date(report.createdAt).toLocaleString("pt-BR")}
+                </p>
+                <p style={{ marginTop: 10, whiteSpace: "pre-wrap" }}>{report.message}</p>
+                <p className="muted" style={{ marginTop: 10 }}>
+                  Status: {report.status === "ANSWERED" ? "Respondido" : "Pendente"}
+                </p>
+                {report.adminResponse ? (
+                  <>
+                    <div className="divider" style={{ margin: "14px 0" }} />
+                    <p className="muted">Resposta da administracao</p>
+                    <p style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>
+                      {report.adminResponse}
+                    </p>
+                  </>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            Nenhum relato enviado ainda.
+          </p>
+        )}
       </div>
 
       <div className="media-uploader" style={{ marginTop: 20 }}>

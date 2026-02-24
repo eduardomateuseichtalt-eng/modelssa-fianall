@@ -30,6 +30,7 @@ model Model {
   shots      Shot[]
   cityStats  CityStat[]
   media      Media[]
+  faqReports FaqReport[]
 }
 
 model User {
@@ -107,15 +108,21 @@ model FaqReport {
   id             String   @id @default(uuid())
   message        String
   contact        String?
+  origin         String   @default("FAQ_PUBLIC")
+  category       String?
+  modelId        String?
   adminResponse  String?
   status         String   @default("OPEN")
   respondedAt    DateTime?
   respondedBy    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  model          Model?   @relation(fields: [modelId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([status])
+  @@index([modelId])
+  @@index([origin])
 }
 
 enum MediaType {

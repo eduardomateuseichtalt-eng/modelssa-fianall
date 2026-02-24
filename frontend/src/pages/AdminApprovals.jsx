@@ -161,7 +161,9 @@ export default function AdminApprovals() {
       });
 
       setFaqReports((current) =>
-        current.map((report) => (report.id === reportId ? updated : report))
+        current.map((report) =>
+          report.id === reportId ? { ...report, ...updated } : report
+        )
       );
       setFaqReplyDrafts((current) => ({
         ...current,
@@ -282,6 +284,20 @@ export default function AdminApprovals() {
                 <p className="muted" style={{ marginTop: 6 }}>
                   {new Date(report.createdAt).toLocaleString("pt-BR")}
                 </p>
+                <p className="muted" style={{ marginTop: 6 }}>
+                  Origem: {report.origin === "MODEL" ? "Area da modelo" : "FAQ publico"}
+                </p>
+                {report.category ? (
+                  <p className="muted" style={{ marginTop: 6 }}>
+                    Categoria: {String(report.category).replace(/_/g, " ")}
+                  </p>
+                ) : null}
+                {report.modelName ? (
+                  <p className="muted" style={{ marginTop: 6 }}>
+                    Modelo: {report.modelName}
+                    {report.modelEmail ? ` (${report.modelEmail})` : ""}
+                  </p>
+                ) : null}
                 {report.contact ? (
                   <p className="muted" style={{ marginTop: 6 }}>
                     Contato: {report.contact}
