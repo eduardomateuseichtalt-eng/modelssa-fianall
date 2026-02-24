@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../lib/api";
+import { useNoIndex } from "../lib/useNoIndex";
 
 export default function AdminApprovals() {
+  useNoIndex();
   const [pendingModels, setPendingModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");

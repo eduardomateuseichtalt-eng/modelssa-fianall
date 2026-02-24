@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { useNoIndex } from "../lib/useNoIndex";
 
 export default function AdminLogin() {
+  useNoIndex();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
