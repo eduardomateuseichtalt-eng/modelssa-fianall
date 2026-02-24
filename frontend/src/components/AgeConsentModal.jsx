@@ -18,7 +18,7 @@ export default function AgeConsentModal() {
           <div>
             <h2>CONTEUDO ADULTO</h2>
             <p className="age-lead">
-              Entendo que o site models S.A apresenta conteudo explicito
+              Entendo que o site models-club apresenta conteudo explicito
               destinado a adultos.{" "}
               <Link to="/termos" className="age-link">
                 Termos de uso
@@ -57,3 +57,4 @@ export default function AgeConsentModal() {
     </div>
   );
 }
+

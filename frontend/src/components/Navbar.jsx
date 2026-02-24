@@ -50,7 +50,7 @@ export default function Navbar() {
       <div className="nav-wrap">
         <Link to="/" className="brand">
           <span className="brand-mark">MS</span>
-          <span>models S.A</span>
+          <span>models-club</span>
         </Link>
 
         <nav className="nav-links">
@@ -166,3 +166,4 @@ export default function Navbar() {
     </>
   );
 }
+

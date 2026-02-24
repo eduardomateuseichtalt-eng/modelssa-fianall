@@ -7,7 +7,7 @@ export default function Footer() {
         <div>
           <div className="brand">
             <span className="brand-mark">MS</span>
-            <span>models S.A</span>
+            <span>models-club</span>
           </div>
           <p className="muted" style={{ marginTop: 12 }}>
             Plataforma Premium para Anunciantes de Alto Padrão
@@ -43,3 +43,4 @@ export default function Footer() {
     </footer>
   );
 }
+

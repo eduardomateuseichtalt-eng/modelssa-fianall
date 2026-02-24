@@ -308,7 +308,7 @@ export default function Home() {
             <div className="trust-section">
               <h3>Contrate com mais seguranca e praticidade</h3>
               <p className="muted">
-                na Models S.A, voce encontra anúncios verificados e contrata sem complicações
+                na models-club, voce encontra anúncios verificados e contrata sem complicações
               </p>
               <div className="trust-grid">
                 <div className="trust-card">
@@ -329,7 +329,7 @@ export default function Home() {
             />
           </div>
           <div className="hero-panel">
-            <h3>Por que models S.A</h3>
+            <h3>Por que models-club</h3>
             <ul>
               <li>Selecao curada e perfis completos.</li>
               <li>Contato direto e seguro.</li>
@@ -408,6 +408,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
