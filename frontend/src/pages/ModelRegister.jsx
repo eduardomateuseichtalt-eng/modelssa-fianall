@@ -116,6 +116,7 @@ export default function ModelRegister() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showIntroStep, setShowIntroStep] = useState(true);
   const [showPricingStep, setShowPricingStep] = useState(false);
+  const [showGenderStep, setShowGenderStep] = useState(false);
   const [introStage, setIntroStage] = useState("email");
   const [acceptMarketing, setAcceptMarketing] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(true);
@@ -130,6 +131,8 @@ export default function ModelRegister() {
     price15Min: "",
   });
   const [pricingError, setPricingError] = useState("");
+  const [genderIdentity, setGenderIdentity] = useState("");
+  const [genderStepError, setGenderStepError] = useState("");
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -304,6 +307,16 @@ export default function ModelRegister() {
       return;
     }
     setShowPricingStep(false);
+    setShowGenderStep(true);
+  };
+
+  const handleGenderContinue = () => {
+    setGenderStepError("");
+    if (!genderIdentity) {
+      setGenderStepError("Selecione uma opcao para continuar.");
+      return;
+    }
+    setShowGenderStep(false);
   };
 
   const handleIntroContinue = () => {
@@ -401,6 +414,7 @@ export default function ModelRegister() {
       setMessage("Confirme seu e-mail antes de enviar o cadastro.");
       setShowIntroStep(true);
       setShowPricingStep(false);
+      setShowGenderStep(false);
       setIntroStage("email");
       return;
     }
@@ -411,6 +425,7 @@ export default function ModelRegister() {
       setVerifiedEmail("");
       setShowIntroStep(true);
       setShowPricingStep(false);
+      setShowGenderStep(false);
       setIntroStage("email");
       return;
     }
@@ -481,9 +496,12 @@ export default function ModelRegister() {
       setVerifiedEmail("");
       setPricingValues({ price30Min: "", price15Min: "" });
       setPricingError("");
+      setGenderIdentity("");
+      setGenderStepError("");
       setIntroStage("email");
       setShowIntroStep(true);
       setShowPricingStep(false);
+      setShowGenderStep(false);
       setIntroInfo("");
       setIntroError("");
       setMediaFiles([]);
@@ -700,6 +718,7 @@ export default function ModelRegister() {
                 className="btn btn-outline"
                 onClick={() => {
                   setShowPricingStep(false);
+                  setShowGenderStep(false);
                   setShowIntroStep(true);
                   setIntroStage("code");
                   setPricingError("");
@@ -712,6 +731,99 @@ export default function ModelRegister() {
                 className="btn model-register-intro-cta"
                 onClick={handlePricingContinue}
                 disabled={!String(form.priceHour || "").trim()}
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showGenderStep) {
+    const genderOptions = [
+      {
+        id: "mulher_cis",
+        title: "Sou mulher cis",
+        description:
+          "Me identifico com o genero feminino, que me foi atribuido ao nascer.",
+      },
+      {
+        id: "homem_cis",
+        title: "Sou homem cis",
+        description:
+          "Me identifico com o genero masculino, que me foi atribuido ao nascer.",
+      },
+      {
+        id: "mulher_trans",
+        title: "Sou mulher trans",
+        description:
+          "Foi-me atribuido o genero masculino ao nascer, mas hoje me identifico com o genero feminino.",
+      },
+    ];
+
+    return (
+      <div className="page-tight">
+        <div className="form-shell model-register-pricing-shell">
+          <div className="model-register-pricing model-register-gender">
+            <div className="model-register-progress" aria-hidden="true">
+              <span className="active" />
+              <span className="active" />
+              <span className="active" />
+              <span />
+            </div>
+
+            <p className="muted model-register-pricing-kicker">Seu genero</p>
+            <h2 className="model-register-pricing-title">
+              Como voce se identifica?
+            </h2>
+
+            {genderStepError ? <div className="notice">{genderStepError}</div> : null}
+
+            <div className="model-register-gender-list">
+              {genderOptions.map((option) => {
+                const checked = genderIdentity === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`model-register-gender-card ${checked ? "active" : ""}`}
+                    onClick={() => {
+                      setGenderIdentity(option.id);
+                      setGenderStepError("");
+                    }}
+                  >
+                    <span className="model-register-gender-card-head">
+                      <span className="model-register-gender-title">{option.title}</span>
+                      <span
+                        className={`model-register-gender-radio ${checked ? "checked" : ""}`}
+                        aria-hidden="true"
+                      />
+                    </span>
+                    <span className="model-register-gender-text">{option.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="model-register-pricing-actions">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setShowGenderStep(false);
+                  setShowPricingStep(true);
+                  setGenderStepError("");
+                }}
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                className="btn model-register-intro-cta"
+                onClick={handleGenderContinue}
+                disabled={!genderIdentity}
               >
                 Continuar
               </button>

@@ -1341,6 +1341,73 @@ select {
   justify-content: center;
 }
 
+.model-register-gender-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.model-register-gender-card {
+  width: 100%;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  padding: 14px;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+
+.model-register-gender-card:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.model-register-gender-card.active {
+  border-color: rgba(222, 74, 74, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.model-register-gender-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.model-register-gender-title {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.model-register-gender-radio {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.model-register-gender-radio.checked {
+  border-color: rgba(226, 80, 80, 0.95);
+}
+
+.model-register-gender-radio.checked::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: rgba(226, 80, 80, 0.95);
+}
+
+.model-register-gender-text {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .form-grid {
   display: grid;
   gap: 16px;
@@ -2573,6 +2640,10 @@ select {
 
   .model-register-pricing-actions {
     flex-direction: column;
+  }
+
+  .model-register-gender-card {
+    padding: 12px;
   }
 
   .hero-actions {
