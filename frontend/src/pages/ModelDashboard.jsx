@@ -132,6 +132,8 @@ export default function ModelDashboard() {
   const [profileWaist, setProfileWaist] = useState("");
   const [profileHips, setProfileHips] = useState("");
   const [profilePriceHour, setProfilePriceHour] = useState("");
+  const [profilePrice30Min, setProfilePrice30Min] = useState("");
+  const [profilePrice15Min, setProfilePrice15Min] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -199,6 +201,8 @@ export default function ModelDashboard() {
       setProfileWaist(data.waist ?? "");
       setProfileHips(data.hips ?? "");
       setProfilePriceHour(data.priceHour ?? "");
+      setProfilePrice30Min(data.price30Min ?? "");
+      setProfilePrice15Min(data.price15Min ?? "");
     } catch (err) {
       setProfileError(err.message || "Erro ao carregar cadastro.");
     } finally {
@@ -553,6 +557,8 @@ export default function ModelDashboard() {
           waist: profileWaist,
           hips: profileHips,
           priceHour: profilePriceHour,
+          price30Min: profilePrice30Min,
+          price15Min: profilePrice15Min,
         }),
       });
 
@@ -567,6 +573,8 @@ export default function ModelDashboard() {
       setProfileWaist(data.waist ?? "");
       setProfileHips(data.hips ?? "");
       setProfilePriceHour(data.priceHour ?? "");
+      setProfilePrice30Min(data.price30Min ?? "");
+      setProfilePrice15Min(data.price15Min ?? "");
       setProfileMessage("Cadastro atualizado com sucesso.");
 
       const storedUser = localStorage.getItem("user");
@@ -748,6 +756,20 @@ export default function ModelDashboard() {
                     placeholder="Valor por hora"
                     value={profilePriceHour}
                     onChange={(event) => setProfilePriceHour(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Valor 30 minutos"
+                    value={profilePrice30Min}
+                    onChange={(event) => setProfilePrice30Min(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Valor 15 minutos"
+                    value={profilePrice15Min}
+                    onChange={(event) => setProfilePrice15Min(event.target.value)}
                   />
                 </div>
                 <div className="form-actions" style={{ marginTop: 4 }}>

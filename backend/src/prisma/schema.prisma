@@ -25,6 +25,8 @@ model Model {
   waist      Int?
   hips       Int?
   priceHour  Int?
+  price30Min Int?
+  price15Min Int?
   isVerified Boolean  @default(false)
   createdAt DateTime @default(now())
   shots      Shot[]

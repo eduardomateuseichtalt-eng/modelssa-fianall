@@ -115,6 +115,7 @@ export default function ModelRegister() {
   const [profileError, setProfileError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showIntroStep, setShowIntroStep] = useState(true);
+  const [showPricingStep, setShowPricingStep] = useState(false);
   const [introStage, setIntroStage] = useState("email");
   const [acceptMarketing, setAcceptMarketing] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(true);
@@ -124,6 +125,11 @@ export default function ModelRegister() {
   const [emailOtpLoading, setEmailOtpLoading] = useState(false);
   const [emailOtpVerifiedToken, setEmailOtpVerifiedToken] = useState("");
   const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [pricingValues, setPricingValues] = useState({
+    price30Min: "",
+    price15Min: "",
+  });
+  const [pricingError, setPricingError] = useState("");
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -278,6 +284,28 @@ export default function ModelRegister() {
     submitRef.current?.focus();
   };
 
+  const handlePricingFieldChange = (event) => {
+    const { name, value } = event.target;
+    const sanitized = String(value || "").replace(/[^\d]/g, "");
+
+    if (name === "priceHour") {
+      setForm((prev) => ({ ...prev, priceHour: sanitized }));
+      return;
+    }
+
+    setPricingValues((prev) => ({ ...prev, [name]: sanitized }));
+  };
+
+  const handlePricingContinue = () => {
+    setPricingError("");
+    const hourly = String(form.priceHour || "").trim();
+    if (!hourly) {
+      setPricingError("Informe o valor de 1 hora para continuar.");
+      return;
+    }
+    setShowPricingStep(false);
+  };
+
   const handleIntroContinue = () => {
     setIntroError("");
     setIntroInfo("");
@@ -339,6 +367,7 @@ export default function ModelRegister() {
       setVerifiedEmail(String(response.email || email).trim());
       setIntroInfo("E-mail confirmado com sucesso.");
       setShowIntroStep(false);
+      setShowPricingStep(true);
     } catch (error) {
       setIntroError(error.message || "Nao foi possivel validar o codigo.");
     } finally {
@@ -371,6 +400,7 @@ export default function ModelRegister() {
     if (!emailOtpVerifiedToken || !verifiedEmail) {
       setMessage("Confirme seu e-mail antes de enviar o cadastro.");
       setShowIntroStep(true);
+      setShowPricingStep(false);
       setIntroStage("email");
       return;
     }
@@ -380,6 +410,7 @@ export default function ModelRegister() {
       setEmailOtpVerifiedToken("");
       setVerifiedEmail("");
       setShowIntroStep(true);
+      setShowPricingStep(false);
       setIntroStage("email");
       return;
     }
@@ -398,6 +429,8 @@ export default function ModelRegister() {
           waist: form.waist ? Number(form.waist) : null,
           hips: form.hips ? Number(form.hips) : null,
           priceHour: form.priceHour ? Number(form.priceHour) : null,
+          price30Min: pricingValues.price30Min ? Number(pricingValues.price30Min) : null,
+          price15Min: pricingValues.price15Min ? Number(pricingValues.price15Min) : null,
           emailVerificationToken: emailOtpVerifiedToken,
         }),
       });
@@ -446,8 +479,11 @@ export default function ModelRegister() {
       setEmailOtpCode("");
       setEmailOtpVerifiedToken("");
       setVerifiedEmail("");
+      setPricingValues({ price30Min: "", price15Min: "" });
+      setPricingError("");
       setIntroStage("email");
       setShowIntroStep(true);
+      setShowPricingStep(false);
       setIntroInfo("");
       setIntroError("");
       setMediaFiles([]);
@@ -585,6 +621,100 @@ export default function ModelRegister() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showPricingStep) {
+    return (
+      <div className="page-tight">
+        <div className="form-shell model-register-pricing-shell">
+          <div className="model-register-pricing">
+            <div className="model-register-progress" aria-hidden="true">
+              <span className="active" />
+              <span className="active" />
+              <span />
+              <span />
+            </div>
+
+            <p className="muted model-register-pricing-kicker">Crie seu anuncio</p>
+            <h2 className="model-register-pricing-title">
+              Adicione os valores do seu atendimento por duracao
+            </h2>
+
+            {pricingError && <div className="notice">{pricingError}</div>}
+
+            <div className="model-register-pricing-grid">
+              <label className="model-register-pricing-row">
+                <span className="model-register-pricing-label">1 hora</span>
+                <span className="model-register-pricing-currency">R$</span>
+                <input
+                  className="input"
+                  name="priceHour"
+                  inputMode="numeric"
+                  placeholder="Obrigatorio"
+                  value={form.priceHour}
+                  onChange={handlePricingFieldChange}
+                />
+              </label>
+
+              <label className="model-register-pricing-row">
+                <span className="model-register-pricing-label">30 minutos</span>
+                <span className="model-register-pricing-currency">R$</span>
+                <input
+                  className="input"
+                  name="price30Min"
+                  inputMode="numeric"
+                  placeholder="Opcional"
+                  value={pricingValues.price30Min}
+                  onChange={handlePricingFieldChange}
+                />
+              </label>
+
+              <label className="model-register-pricing-row">
+                <span className="model-register-pricing-label">15 minutos</span>
+                <span className="model-register-pricing-currency">R$</span>
+                <input
+                  className="input"
+                  name="price15Min"
+                  inputMode="numeric"
+                  placeholder="Opcional"
+                  value={pricingValues.price15Min}
+                  onChange={handlePricingFieldChange}
+                />
+              </label>
+            </div>
+
+            <p className="muted model-register-pricing-note">
+              {form.city
+                ? `Modelos na cidade de ${form.city} costumam cobrar a partir de um valor por hora informado no anuncio.`
+                : "Defina um valor de referencia por hora para iniciar seu anuncio."}
+            </p>
+
+            <div className="model-register-pricing-actions">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setShowPricingStep(false);
+                  setShowIntroStep(true);
+                  setIntroStage("code");
+                  setPricingError("");
+                }}
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                className="btn model-register-intro-cta"
+                onClick={handlePricingContinue}
+                disabled={!String(form.priceHour || "").trim()}
+              >
+                Continuar
+              </button>
             </div>
           </div>
         </div>

@@ -179,6 +179,8 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
     waist,
     hips,
     priceHour,
+    price30Min,
+    price15Min,
     emailVerificationToken,
   } = req.body;
 
@@ -263,6 +265,8 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
       waist: toNumberOrNull(waist),
       hips: toNumberOrNull(hips),
       priceHour: toNumberOrNull(priceHour),
+      price30Min: toNumberOrNull(price30Min),
+      price15Min: toNumberOrNull(price15Min),
     },
   });
 
@@ -500,6 +504,8 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       waist: true,
       hips: true,
       priceHour: true,
+      price30Min: true,
+      price15Min: true,
     },
   });
 
@@ -527,6 +533,8 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   const waistRaw = req.body?.waist;
   const hipsRaw = req.body?.hips;
   const priceHourRaw = req.body?.priceHour;
+  const price30MinRaw = req.body?.price30Min;
+  const price15MinRaw = req.body?.price15Min;
 
   const toNumberOrNull = (value?: number | string | null) => {
     if (value === null || value === undefined || value === "") {
@@ -560,6 +568,8 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       waist: toNumberOrNull(waistRaw),
       hips: toNumberOrNull(hipsRaw),
       priceHour: toNumberOrNull(priceHourRaw),
+      price30Min: toNumberOrNull(price30MinRaw),
+      price15Min: toNumberOrNull(price15MinRaw),
     },
     select: {
       id: true,
@@ -575,6 +585,8 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       waist: true,
       hips: true,
       priceHour: true,
+      price30Min: true,
+      price15Min: true,
     },
   });
 
@@ -594,6 +606,8 @@ router.get("/", asyncHandler(async (_req: Request, res: Response) => {
       avatarUrl: true,
       coverUrl: true,
       priceHour: true,
+      price30Min: true,
+      price15Min: true,
     },
   });
 
@@ -729,6 +743,8 @@ router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
       waist: true,
       hips: true,
       priceHour: true,
+      price30Min: true,
+      price15Min: true,
     },
   });
 

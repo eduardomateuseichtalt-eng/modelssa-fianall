@@ -1255,6 +1255,92 @@ select {
   justify-content: center;
 }
 
+.model-register-pricing-shell {
+  max-width: 620px;
+}
+
+.model-register-pricing {
+  display: grid;
+  gap: 12px;
+}
+
+.model-register-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.model-register-progress span {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.model-register-progress span.active {
+  background: var(--gold);
+}
+
+.model-register-pricing-kicker {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.model-register-pricing-title {
+  margin: 0 0 2px;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  font-size: clamp(28px, 4vw, 44px);
+}
+
+.model-register-pricing-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.model-register-pricing-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(170px, 210px);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.model-register-pricing-label {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.model-register-pricing-currency {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.model-register-pricing-row .input {
+  min-width: 0;
+}
+
+.model-register-pricing-note {
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.model-register-pricing-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.model-register-pricing-actions .btn {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
 .form-grid {
   display: grid;
   gap: 16px;
@@ -2457,6 +2543,36 @@ select {
 
   .profile-public-shots-grid {
     grid-template-columns: 1fr;
+  }
+
+  .model-register-pricing-title {
+    font-size: 30px;
+  }
+
+  .model-register-pricing-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "label currency"
+      "input input";
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .model-register-pricing-label {
+    grid-area: label;
+  }
+
+  .model-register-pricing-currency {
+    grid-area: currency;
+    justify-self: end;
+  }
+
+  .model-register-pricing-row .input {
+    grid-area: input;
+  }
+
+  .model-register-pricing-actions {
+    flex-direction: column;
   }
 
   .hero-actions {

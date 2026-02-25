@@ -173,6 +173,8 @@ export default function ModelProfile() {
     null;
 
   const profileDetails = [
+    { label: "15 minutos", value: model.price15Min ? `R$ ${model.price15Min}` : "--" },
+    { label: "30 minutos", value: model.price30Min ? `R$ ${model.price30Min}` : "--" },
     { label: "Altura", value: model.height ? `${model.height} cm` : "--" },
     { label: "Peso", value: model.weight ? `${model.weight} kg` : "--" },
     { label: "Busto", value: model.bust ? `${model.bust} cm` : "--" },
