@@ -117,6 +117,7 @@ export default function ModelRegister() {
   const [showIntroStep, setShowIntroStep] = useState(true);
   const [showPricingStep, setShowPricingStep] = useState(false);
   const [showGenderStep, setShowGenderStep] = useState(false);
+  const [showProfilePhotoStep, setShowProfilePhotoStep] = useState(false);
   const [introStage, setIntroStage] = useState("email");
   const [acceptMarketing, setAcceptMarketing] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(true);
@@ -133,6 +134,7 @@ export default function ModelRegister() {
   const [pricingError, setPricingError] = useState("");
   const [genderIdentity, setGenderIdentity] = useState("");
   const [genderStepError, setGenderStepError] = useState("");
+  const [photoStepError, setPhotoStepError] = useState("");
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -317,6 +319,16 @@ export default function ModelRegister() {
       return;
     }
     setShowGenderStep(false);
+    setShowProfilePhotoStep(true);
+  };
+
+  const handleProfilePhotoStepContinue = () => {
+    setPhotoStepError("");
+    if (!profileFile) {
+      setPhotoStepError("Adicione uma foto de perfil para continuar.");
+      return;
+    }
+    setShowProfilePhotoStep(false);
   };
 
   const handleIntroContinue = () => {
@@ -415,6 +427,7 @@ export default function ModelRegister() {
       setShowIntroStep(true);
       setShowPricingStep(false);
       setShowGenderStep(false);
+      setShowProfilePhotoStep(false);
       setIntroStage("email");
       return;
     }
@@ -426,6 +439,7 @@ export default function ModelRegister() {
       setShowIntroStep(true);
       setShowPricingStep(false);
       setShowGenderStep(false);
+      setShowProfilePhotoStep(false);
       setIntroStage("email");
       return;
     }
@@ -498,10 +512,12 @@ export default function ModelRegister() {
       setPricingError("");
       setGenderIdentity("");
       setGenderStepError("");
+      setPhotoStepError("");
       setIntroStage("email");
       setShowIntroStep(true);
       setShowPricingStep(false);
       setShowGenderStep(false);
+      setShowProfilePhotoStep(false);
       setIntroInfo("");
       setIntroError("");
       setMediaFiles([]);
@@ -824,6 +840,181 @@ export default function ModelRegister() {
                 className="btn model-register-intro-cta"
                 onClick={handleGenderContinue}
                 disabled={!genderIdentity}
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showProfilePhotoStep) {
+    return (
+      <div className="page-tight">
+        <div className="form-shell model-register-pricing-shell">
+          <div className="model-register-pricing model-register-photo-step">
+            <div className="model-register-progress" aria-hidden="true">
+              <span className="active" />
+              <span className="active" />
+              <span className="active" />
+              <span className="active" />
+            </div>
+
+            <h2 className="model-register-pricing-title">
+              Adicione uma foto e veja como ficara seu anuncio
+            </h2>
+
+            {photoStepError ? <div className="notice">{photoStepError}</div> : null}
+
+            <div className="model-register-photo-preview-card">
+              <div className="model-register-photo-preview-thumb">
+                {profilePreview ? (
+                  <img src={profilePreview} alt="Previa da foto de perfil" />
+                ) : (
+                  <span>
+                    {String(form.name || "").trim()
+                      ? String(form.name || "").trim().charAt(0).toUpperCase()
+                      : "Foto"}
+                  </span>
+                )}
+              </div>
+              <div className="model-register-photo-preview-info">
+                <strong>{String(form.name || "").trim() || "Seu nome"}</strong>
+                <span className="model-register-photo-online">Online</span>
+                <em>{String(form.bio || "").trim() || "Sua frase de status"}</em>
+                <span>
+                  {String(form.priceHour || "").trim()
+                    ? `R$ ${form.priceHour}/h`
+                    : "R$ --/h"}
+                </span>
+                <span className="model-register-photo-meta">
+                  <span aria-hidden="true">📍</span>{" "}
+                  {String(form.city || "").trim() || "Sua cidade"}
+                </span>
+              </div>
+            </div>
+
+            <div className="model-register-photo-step-actions">
+              <button
+                type="button"
+                className="btn btn-outline model-register-photo-add"
+                onClick={() => {
+                  setPhotoStepError("");
+                  if (!confirmMediaAccess()) {
+                    return;
+                  }
+                  profileGalleryRef.current?.click();
+                }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 16V8M12 8l-3 3m3-3 3 3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M4 16.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span>Adicionar foto</span>
+              </button>
+
+              <div className="model-register-photo-source-row">
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => {
+                    setPhotoStepError("");
+                    if (!confirmMediaAccess()) {
+                      return;
+                    }
+                    profileGalleryRef.current?.click();
+                  }}
+                >
+                  Abrir galeria
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => {
+                    setPhotoStepError("");
+                    if (!confirmMediaAccess()) {
+                      return;
+                    }
+                    profileCameraRef.current?.click();
+                  }}
+                >
+                  Usar camera
+                </button>
+                {profilePreview ? (
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => {
+                      if (profilePreview) {
+                        URL.revokeObjectURL(profilePreview);
+                      }
+                      setProfilePreview("");
+                      setProfileFile(null);
+                    }}
+                  >
+                    Remover
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            <input
+              ref={profileGalleryRef}
+              className="media-input"
+              type="file"
+              accept="image/*"
+              onChange={handleProfileInput}
+            />
+            <input
+              ref={profileCameraRef}
+              className="media-input"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleProfileInput}
+            />
+
+            <p className="muted model-register-pricing-note">
+              Evite nudez explicita na sua foto de perfil. Ao tocar em galeria ou camera, sera exibida a confirmacao de permissao de acesso.
+            </p>
+
+            <div className="model-register-pricing-actions">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setShowProfilePhotoStep(false);
+                  setShowGenderStep(true);
+                  setPhotoStepError("");
+                }}
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                className="btn model-register-intro-cta"
+                onClick={handleProfilePhotoStepContinue}
+                disabled={!profileFile}
               >
                 Continuar
               </button>
