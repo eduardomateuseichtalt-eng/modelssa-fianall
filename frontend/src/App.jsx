@@ -10,6 +10,7 @@ import ModelFaceAuth from "./pages/ModelFaceAuth";
 import ModelLogin from "./pages/ModelLogin";
 import ModelDashboard from "./pages/ModelDashboard";
 import ModelCityStats from "./pages/ModelCityStats";
+import ModelPayment from "./pages/ModelPayment";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
@@ -51,6 +52,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <ModelCityStats />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/modelo/pagamento"
+          element={
+            <PrivateRoute>
+              <ModelPayment />
             </PrivateRoute>
           }
         />

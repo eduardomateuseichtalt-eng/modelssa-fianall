@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
 const MAX_PHOTOS = 12;
@@ -84,6 +85,7 @@ const getVideoDuration = (file) =>
   });
 
 export default function ModelDashboard() {
+  const navigate = useNavigate();
   const confirmMediaAccess = () =>
     window.confirm(
       "Voce autoriza o site a acessar a galeria ou a camera do seu dispositivo?"
@@ -668,6 +670,19 @@ export default function ModelDashboard() {
                 onClick={() => setMenuTab("security")}
               >
                 Seguranca
+              </button>
+            </div>
+
+            <div className="form-actions" style={{ marginTop: 10, marginBottom: 8 }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate("/modelo/pagamento");
+                }}
+              >
+                Ativar plano / Pagamento
               </button>
             </div>
 
