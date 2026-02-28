@@ -347,11 +347,11 @@ export default function Home() {
         <p className="muted" style={{ marginTop: 10 }}>
           Uma vitrine com os perfis mais acessados da semana.
         </p>
-        <div className="models-grid">
+        <div className="models-grid home-models-grid">
           {featuredModels.length === 0 ? (
-            <Link to="/seja-modelo" className="model-card">
+            <Link to="/seja-modelo" className="model-card home-model-card">
               <img
-                className="model-photo"
+                className="model-photo home-model-photo"
                 src="/foto/ChatGPT Image 9 de jan. de 2026, 15_38_16.png"
                 alt="Modelo em destaque"
                 loading="lazy"
@@ -366,10 +366,10 @@ export default function Home() {
               <Link
                 to={`/modelos/${model.id}`}
                 key={model.id}
-                className="model-card"
+                className="model-card home-model-card"
               >
                 <img
-                  className="model-photo"
+                  className="model-photo home-model-photo"
                   src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
                   alt={model.name}
                   loading="lazy"

@@ -701,6 +701,20 @@ select {
   font-size: 14px;
 }
 
+.home-models-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
+  justify-content: center;
+  gap: 18px;
+}
+
+.home-model-card {
+  max-width: 220px;
+}
+
+.home-model-photo {
+  height: 250px;
+}
+
 .profile {
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
