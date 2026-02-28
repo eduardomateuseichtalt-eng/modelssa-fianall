@@ -19,6 +19,7 @@ export default function ModelProfile() {
   const [shotsLoading, setShotsLoading] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [viewerMode, setViewerMode] = useState("");
+  const [showHalfHourPrice, setShowHalfHourPrice] = useState(false);
   const contactSectionRef = useRef(null);
 
   useEffect(() => {
@@ -161,6 +162,15 @@ export default function ModelProfile() {
   const mediaVideos = media.filter((item) => item.type === "VIDEO");
   const totalMediaCount = media.length;
   const hasShots = modelShots.length > 0;
+  const hasHalfHourPrice = Number(model.price30Min || 0) > 0;
+  const topPriceLabel =
+    showHalfHourPrice && hasHalfHourPrice ? "Valor 30 min" : "Valor por hora";
+  const topPriceValue =
+    showHalfHourPrice && hasHalfHourPrice
+      ? `R$ ${model.price30Min}`
+      : model.priceHour
+      ? `R$ ${model.priceHour}`
+      : "Consultar";
   const profileImageUrl = model.avatarUrl || model.coverUrl || "/model-placeholder.svg";
   const comparisonVideo = comparisonMedia.find((item) => item.type === "VIDEO") || null;
   const comparisonMediaCandidate =
@@ -261,10 +271,29 @@ export default function ModelProfile() {
             </div>
 
             <div className="profile-public-top-cards">
-              <div className="profile-public-mini-card">
-                <span>Valor por hora</span>
-                <strong>{model.priceHour ? `R$ ${model.priceHour}` : "Consultar"}</strong>
-              </div>
+              <button
+                type="button"
+                className={`profile-public-mini-card profile-public-price-toggle ${
+                  hasHalfHourPrice ? "is-clickable" : ""
+                }`}
+                onClick={() => {
+                  if (!hasHalfHourPrice) return;
+                  setShowHalfHourPrice((current) => !current);
+                }}
+                aria-label={
+                  hasHalfHourPrice
+                    ? "Alternar entre valor por hora e valor de 30 minutos"
+                    : "Valor por hora"
+                }
+                title={
+                  hasHalfHourPrice
+                    ? "Clique para alternar entre 1 hora e 30 minutos"
+                    : "Valor por hora"
+                }
+              >
+                <span>{topPriceLabel}</span>
+                <strong>{topPriceValue}</strong>
+              </button>
               <div className="profile-public-mini-card">
                 <span>Localizacao</span>
                 <strong>{model.city || "Nao informado"}</strong>

@@ -910,6 +910,23 @@ select {
   font-size: 16px;
 }
 
+.profile-public-price-toggle {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-2);
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.profile-public-price-toggle.is-clickable {
+  cursor: pointer;
+}
+
 .profile-public-cta {
   display: flex;
   flex-wrap: wrap;
