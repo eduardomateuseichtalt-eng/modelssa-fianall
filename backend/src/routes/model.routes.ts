@@ -24,6 +24,7 @@ const REGISTER_EMAIL_SEND_LIMIT_PER_EMAIL = 5;
 const REGISTER_EMAIL_SEND_LIMIT_PER_IP = 10;
 const REGISTER_EMAIL_VERIFY_ATTEMPT_LIMIT = 8;
 const REGISTER_EMAIL_VERIFY_TOKEN_TTL_SECONDS = 30 * 60;
+const MODEL_PRESENCE_TTL_SECONDS = 120;
 const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
   String(process.env.MODEL_REGISTER_EMAIL_OTP_REQUIRED || "true").trim().toLowerCase() !== "false";
 
@@ -54,6 +55,14 @@ function formatWhatsAppDigits(phoneDigits: string) {
     return `${DEFAULT_COUNTRY_CODE}${phoneDigits}`;
   }
   return phoneDigits;
+}
+
+function modelPresenceKey(modelId: string) {
+  return `model:presence:${modelId}`;
+}
+
+async function markModelOnline(modelId: string) {
+  await redis.set(modelPresenceKey(modelId), "1", { EX: MODEL_PRESENCE_TTL_SECONDS });
 }
 
 router.post("/email-otp/send", asyncHandler(async (req: Request, res: Response) => {
@@ -307,6 +316,12 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
     { expiresIn: "1d" }
   );
 
+  try {
+    await markModelOnline(model.id);
+  } catch (error) {
+    console.error("Model presence login heartbeat error:", error);
+  }
+
   return res.json({
     accessToken,
     user: {
@@ -315,6 +330,21 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
       displayName: model.name,
       role: "MODEL",
     },
+  });
+}));
+
+router.post("/presence/heartbeat", requireAuth, asyncHandler(async (_req: Request, res: Response) => {
+  const user = res.locals.user as { id: string; role: string } | undefined;
+  if (!user || user.role !== "MODEL") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  await markModelOnline(user.id);
+
+  return res.json({
+    success: true,
+    online: true,
+    ttl: MODEL_PRESENCE_TTL_SECONDS,
   });
 }));
 
@@ -752,7 +782,17 @@ router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
     return res.status(404).json({ error: "Modelo nao encontrada" });
   }
 
-  return res.json(model);
+  let isOnline = false;
+  try {
+    isOnline = (await redis.exists(modelPresenceKey(model.id))) === 1;
+  } catch (error) {
+    console.error("Model presence read error:", error);
+  }
+
+  return res.json({
+    ...model,
+    isOnline,
+  });
 }));
 
 export default router;

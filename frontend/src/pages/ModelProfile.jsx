@@ -240,6 +240,13 @@ export default function ModelProfile() {
                 <div className="profile-public-title-row">
                   <h1>{model.name}</h1>
                   <span className="pill">Perfil verificado</span>
+                  <span
+                    className={`pill profile-public-online-pill ${
+                      model.isOnline ? "online" : "offline"
+                    }`}
+                  >
+                    {model.isOnline ? "Online" : "Offline"}
+                  </span>
                 </div>
                 <p className="muted">{model.city || "Brasil"}</p>
                 <p className="profile-public-bio">

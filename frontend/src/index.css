@@ -858,6 +858,22 @@ select {
   font-size: clamp(22px, 3vw, 30px);
 }
 
+.profile-public-online-pill {
+  border-width: 1px;
+}
+
+.profile-public-online-pill.online {
+  background: rgba(27, 165, 82, 0.16);
+  border-color: rgba(46, 201, 106, 0.55);
+  color: #79e3a6;
+}
+
+.profile-public-online-pill.offline {
+  background: rgba(130, 130, 130, 0.16);
+  border-color: rgba(190, 190, 190, 0.4);
+  color: #d5d5d5;
+}
+
 .profile-public-bio {
   margin-top: 10px;
   color: var(--muted);

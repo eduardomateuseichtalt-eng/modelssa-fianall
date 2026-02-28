@@ -220,6 +220,24 @@ export default function ModelDashboard() {
   }, []);
 
   useEffect(() => {
+    let intervalId = 0;
+    const sendPresenceHeartbeat = () => {
+      apiFetch("/api/models/presence/heartbeat", {
+        method: "POST",
+      }).catch(() => {
+        // Sem impacto na tela; status online expira sozinho por TTL.
+      });
+    };
+
+    sendPresenceHeartbeat();
+    intervalId = window.setInterval(sendPresenceHeartbeat, 45 * 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!menuOpen) {
       return;
     }
