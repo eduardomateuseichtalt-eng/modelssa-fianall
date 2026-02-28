@@ -16,7 +16,11 @@ export function normalizeCity(value?: string | null) {
   if (!value) {
     return null;
   }
-  const normalized = value.trim().toLowerCase();
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
   return normalized || null;
 }
-

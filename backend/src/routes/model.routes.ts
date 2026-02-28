@@ -744,13 +744,6 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
     media: { some: { status: "APPROVED" } },
   };
 
-  if (city) {
-    where.city = {
-      equals: city,
-      mode: "insensitive",
-    };
-  }
-
   const models = await prisma.model.findMany({
     where,
     select: {
@@ -765,11 +758,15 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
+  const cityFilteredModels = city
+    ? models.filter((model) => normalizeCity(model.city) === city)
+    : models;
+
   const rotationWindowHours = 6;
   const seed = rotationSeed(rotationWindowHours);
   const seedKey = city ? `${seed}|${city}` : seed;
 
-  const ranked = models
+  const ranked = cityFilteredModels
     .map((model) => ({
       ...model,
       _score: stableHash01(`${model.id}|${seedKey}`),
