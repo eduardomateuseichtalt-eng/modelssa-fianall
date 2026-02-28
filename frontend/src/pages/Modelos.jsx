@@ -60,10 +60,10 @@ export default function Modelos() {
       {loading ? (
         <p style={{ marginTop: 24 }}>Carregando modelos...</p>
       ) : models.length === 0 ? (
-        <div className="models-grid">
-          <Link to="/seja-modelo" className="model-card">
+        <div className="models-grid public-models-grid">
+          <Link to="/seja-modelo" className="model-card public-model-card">
             <img
-              className="model-photo"
+              className="model-photo public-model-photo"
               src="/foto/ChatGPT Image 9 de jan. de 2026, 15_38_16.png"
               alt="Modelo em destaque"
               loading="lazy"
@@ -84,11 +84,15 @@ export default function Modelos() {
           </Link>
         </div>
       ) : (
-        <div className="models-grid">
+        <div className="models-grid public-models-grid">
           {filteredModels.map((model) => (
-            <Link to={`/modelos/${model.id}`} key={model.id} className="model-card">
+            <Link
+              to={`/modelos/${model.id}`}
+              key={model.id}
+              className="model-card public-model-card"
+            >
               <img
-                className="model-photo"
+                className="model-photo public-model-photo"
                 src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
                 alt={model.name}
                 loading="lazy"

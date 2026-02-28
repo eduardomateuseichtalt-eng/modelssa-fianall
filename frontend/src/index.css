@@ -715,6 +715,20 @@ select {
   height: 250px;
 }
 
+.public-models-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 210px));
+  justify-content: start;
+  gap: 18px;
+}
+
+.public-model-card {
+  max-width: 210px;
+}
+
+.public-model-photo {
+  height: 240px;
+}
+
 .profile {
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
