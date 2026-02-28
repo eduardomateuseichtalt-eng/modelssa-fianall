@@ -1006,7 +1006,17 @@ select {
   padding-top: 6px;
 }
 
+.profile-public-comparison .profile-public-section-head,
+.profile-public-comparison > .muted {
+  width: min(760px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .profile-public-comparison-video {
+  width: min(760px, 100%);
+  margin-left: auto;
+  margin-right: auto;
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -1015,9 +1025,15 @@ select {
 
 .profile-public-comparison-video video {
   width: 100%;
-  max-height: 520px;
+  max-height: 430px;
   display: block;
   background: #09090b;
+}
+
+.profile-public-comparison > .card {
+  width: min(760px, 100%);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .profile-public-split {
