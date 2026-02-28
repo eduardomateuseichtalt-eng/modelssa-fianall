@@ -7,6 +7,7 @@ const MAX_VIDEOS = 3;
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_SHOT_VIDEO_SECONDS = 10;
 const MAX_SHOT_PHOTOS = 2;
+const ONLINE_DURATION_OPTIONS = [15, 30, 60, 120, 240, 480];
 
 const formatSize = (value) => {
   if (!value && value !== 0) {
@@ -26,6 +27,17 @@ const formatCurrency = (value) =>
     currency: "BRL",
     maximumFractionDigits: 0,
   }).format(value);
+
+const formatRemainingTime = (seconds) => {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const secs = safeSeconds % 60;
+  if (hours > 0) {
+    return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+  }
+  return `${minutes}m ${String(secs).padStart(2, "0")}s`;
+};
 
 const stripImageMetadata = (file) =>
   new Promise((resolve, reject) => {
@@ -144,12 +156,23 @@ export default function ModelDashboard() {
   const [calcDailyCount, setCalcDailyCount] = useState(4);
   const [calcWeeklyDays, setCalcWeeklyDays] = useState(5);
   const [calcCity, setCalcCity] = useState("");
+  const [presencePanelOpen, setPresencePanelOpen] = useState(false);
+  const [presenceLoading, setPresenceLoading] = useState(false);
+  const [presenceSaving, setPresenceSaving] = useState(false);
+  const [presenceError, setPresenceError] = useState("");
+  const [presenceNotice, setPresenceNotice] = useState("");
+  const [presenceOnline, setPresenceOnline] = useState(false);
+  const [presenceMode, setPresenceMode] = useState("offline");
+  const [presenceRemainingSeconds, setPresenceRemainingSeconds] = useState(0);
+  const [presenceUntil, setPresenceUntil] = useState("");
+  const [selectedPresenceMinutes, setSelectedPresenceMinutes] = useState(60);
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const shotGalleryRef = useRef(null);
   const shotCameraRef = useRef(null);
   const shotVideoRef = useRef(null);
+  const presenceControlRef = useRef(null);
 
   const loadMedia = async () => {
     try {
@@ -212,30 +235,122 @@ export default function ModelDashboard() {
     }
   };
 
+  const loadPresenceStatus = async () => {
+    setPresenceLoading(true);
+    setPresenceError("");
+    try {
+      const data = await apiFetch("/api/models/presence/self");
+      setPresenceOnline(Boolean(data?.online));
+      setPresenceMode(String(data?.mode || "offline"));
+      setPresenceRemainingSeconds(Number(data?.remainingSeconds || 0));
+      setPresenceUntil(String(data?.until || ""));
+    } catch (err) {
+      setPresenceError(err.message || "Nao foi possivel carregar status online.");
+    } finally {
+      setPresenceLoading(false);
+    }
+  };
+
+  const applyPresenceState = (data) => {
+    setPresenceOnline(Boolean(data?.online));
+    setPresenceMode(String(data?.mode || "offline"));
+    setPresenceRemainingSeconds(Number(data?.remainingSeconds || 0));
+    setPresenceUntil(String(data?.until || ""));
+  };
+
+  const handleSetManualOnline = async (durationMinutes) => {
+    setPresenceSaving(true);
+    setPresenceError("");
+    setPresenceNotice("");
+    try {
+      const data = await apiFetch("/api/models/presence/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationMinutes }),
+      });
+      applyPresenceState(data);
+      setPresenceNotice(`Online por ${durationMinutes} minutos.`);
+    } catch (err) {
+      setPresenceError(err.message || "Nao foi possivel ativar o online.");
+    } finally {
+      setPresenceSaving(false);
+    }
+  };
+
+  const handleSetOffline = async () => {
+    setPresenceSaving(true);
+    setPresenceError("");
+    setPresenceNotice("");
+    try {
+      const data = await apiFetch("/api/models/presence/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationMinutes: 0 }),
+      });
+      applyPresenceState(data);
+      setPresenceNotice("Status alterado para offline.");
+    } catch (err) {
+      setPresenceError(err.message || "Nao foi possivel alterar para offline.");
+    } finally {
+      setPresenceSaving(false);
+    }
+  };
+
   useEffect(() => {
     loadMedia();
     loadMessages();
     loadSupportReports();
     loadAccountProfile();
+    loadPresenceStatus();
   }, []);
 
   useEffect(() => {
-    let intervalId = 0;
-    const sendPresenceHeartbeat = () => {
-      apiFetch("/api/models/presence/heartbeat", {
-        method: "POST",
-      }).catch(() => {
-        // Sem impacto na tela; status online expira sozinho por TTL.
+    if (!presenceOnline || presenceMode !== "manual") {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      setPresenceRemainingSeconds((current) => {
+        if (current <= 0) {
+          return 0;
+        }
+        const next = Math.max(0, current - 1);
+        if (next === 0) {
+          setPresenceOnline(false);
+          setPresenceMode("offline");
+          setPresenceUntil("");
+        }
+        return next;
       });
-    };
-
-    sendPresenceHeartbeat();
-    intervalId = window.setInterval(sendPresenceHeartbeat, 45 * 1000);
-
+    }, 1000);
     return () => {
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [presenceOnline, presenceMode]);
+
+  useEffect(() => {
+    if (!presencePanelOpen) {
+      return;
+    }
+    loadPresenceStatus();
+  }, [presencePanelOpen]);
+
+  useEffect(() => {
+    if (!presencePanelOpen) {
+      return;
+    }
+    const handleOutsideClick = (event) => {
+      if (
+        presenceControlRef.current &&
+        !presenceControlRef.current.contains(event.target)
+      ) {
+        setPresencePanelOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [presencePanelOpen]);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -622,6 +737,29 @@ export default function ModelDashboard() {
     () => calcRate * calcDailyCount * calcWeeklyDays * 4,
     [calcRate, calcDailyCount, calcWeeklyDays]
   );
+  const presenceStatusLabel = useMemo(() => {
+    if (!presenceOnline) {
+      return "Offline";
+    }
+    if (presenceMode === "manual" && presenceRemainingSeconds > 0) {
+      return `Online ${formatRemainingTime(presenceRemainingSeconds)}`;
+    }
+    return "Online";
+  }, [presenceOnline, presenceMode, presenceRemainingSeconds]);
+
+  const presenceUntilLabel = useMemo(() => {
+    if (!presenceUntil) {
+      return "";
+    }
+    const parsed = new Date(presenceUntil);
+    if (Number.isNaN(parsed.getTime())) {
+      return "";
+    }
+    return parsed.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, [presenceUntil]);
 
   return (
     <div className="page">
@@ -634,17 +772,102 @@ export default function ModelDashboard() {
             Envie ate {MAX_PHOTOS} fotos e {MAX_VIDEOS} videos. Itens enviados ficam pendentes de aprovacao.
           </p>
         </div>
-        <button
-          type="button"
-          className="model-hamburger"
-          aria-label="Abrir menu da conta"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(true)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+        <div className="model-area-actions">
+          <div className="model-presence-control" ref={presenceControlRef}>
+            <button
+              type="button"
+              className={`model-presence-toggle ${presenceOnline ? "online" : "offline"}`}
+              onClick={() => {
+                setPresencePanelOpen((current) => !current);
+                setPresenceError("");
+                setPresenceNotice("");
+              }}
+              aria-expanded={presencePanelOpen}
+              aria-label="Abrir controle de status online"
+            >
+              <span className="model-presence-dot" />
+              <span>{presenceStatusLabel}</span>
+            </button>
+
+            {presencePanelOpen ? (
+              <div className="model-presence-panel">
+                <h4>Status da conta</h4>
+                <p className="muted" style={{ marginTop: 6 }}>
+                  Defina por quanto tempo seu perfil deve ficar online.
+                </p>
+                {presenceMode === "manual" && presenceOnline && presenceUntilLabel ? (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Ativa ate {presenceUntilLabel}.
+                  </p>
+                ) : null}
+                {presenceLoading ? (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Carregando status...
+                  </p>
+                ) : null}
+                {presenceError ? (
+                  <div className="notice" style={{ marginTop: 10 }}>
+                    {presenceError}
+                  </div>
+                ) : null}
+                {presenceNotice ? (
+                  <div className="notice" style={{ marginTop: 10 }}>
+                    {presenceNotice}
+                  </div>
+                ) : null}
+                <label className="muted" style={{ marginTop: 12 }}>
+                  Tempo online
+                </label>
+                <select
+                  className="select"
+                  value={selectedPresenceMinutes}
+                  onChange={(event) =>
+                    setSelectedPresenceMinutes(Number(event.target.value))
+                  }
+                  disabled={presenceSaving}
+                >
+                  {ONLINE_DURATION_OPTIONS.map((minutes) => (
+                    <option key={minutes} value={minutes}>
+                      {minutes >= 60
+                        ? `${minutes / 60}h (${minutes} min)`
+                        : `${minutes} minutos`}
+                    </option>
+                  ))}
+                </select>
+                <div className="form-actions model-presence-actions">
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={presenceSaving}
+                    onClick={() => handleSetManualOnline(selectedPresenceMinutes)}
+                  >
+                    {presenceSaving ? "Salvando..." : "Ficar online"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    disabled={presenceSaving || !presenceOnline}
+                    onClick={handleSetOffline}
+                  >
+                    Ficar offline
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            className="model-hamburger"
+            aria-label="Abrir menu da conta"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(true)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
       </div>
 
       {messageError && <div className="notice">{messageError}</div>}

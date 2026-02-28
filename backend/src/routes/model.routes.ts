@@ -24,7 +24,8 @@ const REGISTER_EMAIL_SEND_LIMIT_PER_EMAIL = 5;
 const REGISTER_EMAIL_SEND_LIMIT_PER_IP = 10;
 const REGISTER_EMAIL_VERIFY_ATTEMPT_LIMIT = 8;
 const REGISTER_EMAIL_VERIFY_TOKEN_TTL_SECONDS = 30 * 60;
-const MODEL_PRESENCE_TTL_SECONDS = 120;
+const MODEL_PRESENCE_PULSE_TTL_SECONDS = 120;
+const MODEL_MANUAL_ONLINE_MAX_MINUTES = 24 * 60;
 const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
   String(process.env.MODEL_REGISTER_EMAIL_OTP_REQUIRED || "true").trim().toLowerCase() !== "false";
 
@@ -58,11 +59,65 @@ function formatWhatsAppDigits(phoneDigits: string) {
 }
 
 function modelPresenceKey(modelId: string) {
-  return `model:presence:${modelId}`;
+  return `model:presence:pulse:${modelId}`;
 }
 
-async function markModelOnline(modelId: string) {
-  await redis.set(modelPresenceKey(modelId), "1", { EX: MODEL_PRESENCE_TTL_SECONDS });
+function modelManualPresenceKey(modelId: string) {
+  return `model:presence:manual:${modelId}`;
+}
+
+async function markModelOnlinePulse(modelId: string) {
+  await redis.set(modelPresenceKey(modelId), "1", { EX: MODEL_PRESENCE_PULSE_TTL_SECONDS });
+}
+
+async function setModelManualOnline(modelId: string, durationMinutes: number) {
+  const durationSeconds = Math.max(60, Math.floor(durationMinutes * 60));
+  const until = new Date(Date.now() + durationSeconds * 1000).toISOString();
+  await redis.set(modelManualPresenceKey(modelId), until, { EX: durationSeconds });
+  return { until, durationSeconds };
+}
+
+async function clearModelPresence(modelId: string) {
+  await Promise.all([
+    redis.del(modelManualPresenceKey(modelId)),
+    redis.del(modelPresenceKey(modelId)),
+  ]);
+}
+
+async function getModelPresenceState(modelId: string) {
+  const manualKey = modelManualPresenceKey(modelId);
+  const pulseKey = modelPresenceKey(modelId);
+
+  const [manualUntil, manualTtl, pulseExists] = await Promise.all([
+    redis.get(manualKey),
+    redis.ttl(manualKey),
+    redis.exists(pulseKey),
+  ]);
+
+  if (manualTtl > 0) {
+    return {
+      online: true,
+      mode: "manual" as const,
+      until: manualUntil || null,
+      remainingSeconds: manualTtl,
+    };
+  }
+
+  if (pulseExists === 1) {
+    return {
+      online: true,
+      mode: "pulse" as const,
+      until: null,
+      remainingSeconds: MODEL_PRESENCE_PULSE_TTL_SECONDS,
+    };
+  }
+
+  return {
+    online: false,
+    mode: "offline" as const,
+    until: null,
+    remainingSeconds: 0,
+  };
 }
 
 router.post("/email-otp/send", asyncHandler(async (req: Request, res: Response) => {
@@ -317,7 +372,7 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
   );
 
   try {
-    await markModelOnline(model.id);
+    await markModelOnlinePulse(model.id);
   } catch (error) {
     console.error("Model presence login heartbeat error:", error);
   }
@@ -339,12 +394,61 @@ router.post("/presence/heartbeat", requireAuth, asyncHandler(async (_req: Reques
     return res.status(403).json({ error: "Acesso restrito" });
   }
 
-  await markModelOnline(user.id);
+  await markModelOnlinePulse(user.id);
 
   return res.json({
     success: true,
     online: true,
-    ttl: MODEL_PRESENCE_TTL_SECONDS,
+    ttl: MODEL_PRESENCE_PULSE_TTL_SECONDS,
+  });
+}));
+
+router.get("/presence/self", requireAuth, asyncHandler(async (_req: Request, res: Response) => {
+  const user = res.locals.user as { id: string; role: string } | undefined;
+  if (!user || user.role !== "MODEL") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const state = await getModelPresenceState(user.id);
+  return res.json(state);
+}));
+
+router.post("/presence/manual", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const user = res.locals.user as { id: string; role: string } | undefined;
+  if (!user || user.role !== "MODEL") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const rawMinutes = req.body?.durationMinutes;
+  const durationMinutes = Number(rawMinutes);
+
+  if (!Number.isFinite(durationMinutes)) {
+    return res.status(400).json({ error: "Duracao invalida." });
+  }
+
+  if (durationMinutes <= 0) {
+    await clearModelPresence(user.id);
+    return res.json({
+      success: true,
+      online: false,
+      mode: "offline",
+      remainingSeconds: 0,
+      until: null,
+    });
+  }
+
+  if (durationMinutes > MODEL_MANUAL_ONLINE_MAX_MINUTES) {
+    return res.status(400).json({ error: "Duracao acima do limite permitido." });
+  }
+
+  const result = await setModelManualOnline(user.id, durationMinutes);
+
+  return res.json({
+    success: true,
+    online: true,
+    mode: "manual",
+    remainingSeconds: result.durationSeconds,
+    until: result.until,
   });
 }));
 
@@ -784,7 +888,8 @@ router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
 
   let isOnline = false;
   try {
-    isOnline = (await redis.exists(modelPresenceKey(model.id))) === 1;
+    const state = await getModelPresenceState(model.id);
+    isOnline = state.online;
   } catch (error) {
     console.error("Model presence read error:", error);
   }

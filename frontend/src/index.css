@@ -1600,6 +1600,81 @@ select {
   gap: 16px;
 }
 
+.model-area-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.model-presence-control {
+  position: relative;
+}
+
+.model-presence-toggle {
+  min-height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(15, 14, 18, 0.9);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.model-presence-toggle.online {
+  border-color: rgba(61, 191, 103, 0.5);
+}
+
+.model-presence-toggle.offline {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.model-presence-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.model-presence-toggle.online .model-presence-dot {
+  background: #40d37c;
+}
+
+.model-presence-toggle.offline .model-presence-dot {
+  background: #8e95a3;
+}
+
+.model-presence-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(86vw, 320px);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  padding: 14px;
+  z-index: 90;
+  display: grid;
+  gap: 8px;
+}
+
+.model-presence-panel h4 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.model-presence-actions {
+  margin-top: 8px;
+}
+
 .model-hamburger {
   width: 46px;
   height: 46px;
@@ -1618,6 +1693,18 @@ select {
   width: 20px;
   height: 2px;
   background: var(--gold);
+}
+
+@media (max-width: 640px) {
+  .model-area-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .model-presence-toggle {
+    padding: 0 10px;
+    font-size: 12px;
+  }
 }
 
 .model-menu-overlay {
