@@ -15,8 +15,15 @@ export default function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    apiFetch("/api/models")
-      .then((data) => setModels(data))
+    apiFetch("/api/models?page=1&limit=60")
+      .then((data) => {
+        const items = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+          ? data.items
+          : [];
+        setModels(items);
+      })
       .catch(() => setModels([]));
   }, []);
 

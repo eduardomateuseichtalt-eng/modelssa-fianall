@@ -10,6 +10,7 @@ import { gen6, hashCode, normalizePhone } from "../lib/otp";
 import { sendModelRegisterOtpEmail } from "../lib/email";
 import { sendWhatsAppText } from "../lib/whatsapp";
 import { asyncHandler } from "../lib/async-handler";
+import { normalizeCity, rotationSeed, stableHash01 } from "../utils/rotation";
 
 const router = Router();
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret_dev";
@@ -727,12 +728,31 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   return res.json(updated);
 }));
 
-router.get("/", asyncHandler(async (_req: Request, res: Response) => {
+router.get("/", asyncHandler(async (req: Request, res: Response) => {
+  const rawCity = String(req.query.city || req.query.cidade || "");
+  const city = normalizeCity(rawCity);
+
+  const rawPage = Number.parseInt(String(req.query.page || "1"), 10);
+  const rawLimit = Number.parseInt(String(req.query.limit || "24"), 10);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const limit = Number.isFinite(rawLimit)
+    ? Math.min(Math.max(rawLimit, 1), 60)
+    : 24;
+
+  const where: Prisma.ModelWhereInput = {
+    isVerified: true,
+    media: { some: { status: "APPROVED" } },
+  };
+
+  if (city) {
+    where.city = {
+      equals: city,
+      mode: "insensitive",
+    };
+  }
+
   const models = await prisma.model.findMany({
-    where: {
-      isVerified: true,
-      media: { some: { status: "APPROVED" } },
-    },
+    where,
     select: {
       id: true,
       name: true,
@@ -745,7 +765,27 @@ router.get("/", asyncHandler(async (_req: Request, res: Response) => {
     },
   });
 
-  return res.json(models);
+  const rotationWindowHours = 6;
+  const seed = rotationSeed(rotationWindowHours);
+  const seedKey = city ? `${seed}|${city}` : seed;
+
+  const ranked = models
+    .map((model) => ({
+      ...model,
+      _score: stableHash01(`${model.id}|${seedKey}`),
+    }))
+    .sort((a, b) => b._score - a._score);
+
+  const start = (page - 1) * limit;
+  const items = ranked.slice(start, start + limit).map(({ _score, ...rest }) => rest);
+
+  return res.json({
+    page,
+    limit,
+    total: ranked.length,
+    rotationWindowHours,
+    items,
+  });
 }));
 
 router.get("/pending", requireAdmin, asyncHandler(async (_req: Request, res: Response) => {

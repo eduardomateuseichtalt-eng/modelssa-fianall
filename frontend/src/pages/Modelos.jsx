@@ -9,16 +9,29 @@ export default function Modelos() {
   const location = useLocation();
 
   useEffect(() => {
-    apiFetch("/api/models")
-      .then((data) => setModels(data))
+    const params = new URLSearchParams(location.search);
+    const cityParam = (params.get("cidade") || params.get("city") || "").trim();
+    setCityFilter(cityParam);
+
+    const query = new URLSearchParams();
+    query.set("page", "1");
+    query.set("limit", "24");
+    if (cityParam) {
+      query.set("city", cityParam);
+    }
+
+    setLoading(true);
+    apiFetch(`/api/models?${query.toString()}`)
+      .then((data) => {
+        const items = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+          ? data.items
+          : [];
+        setModels(items);
+      })
       .catch(() => setModels([]))
       .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const cityParam = params.get("cidade") || "";
-    setCityFilter(cityParam.trim());
   }, [location.search]);
 
   useEffect(() => {
@@ -34,20 +47,6 @@ export default function Modelos() {
     }
   }, [location.hash]);
 
-  const normalizeText = (value) =>
-    value
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  const normalizedCity = normalizeText(cityFilter);
-  const filteredModels = cityFilter
-    ? models.filter((model) =>
-        normalizeText(model.city || "").includes(normalizedCity)
-      )
-    : models;
-
   return (
     <div className="page">
       <h1 className="section-title">
@@ -59,7 +58,7 @@ export default function Modelos() {
 
       {loading ? (
         <p style={{ marginTop: 24 }}>Carregando modelos...</p>
-      ) : models.length === 0 ? (
+      ) : models.length === 0 && !cityFilter ? (
         <div className="models-grid public-models-grid">
           <Link to="/seja-modelo" className="model-card public-model-card">
             <img
@@ -74,7 +73,7 @@ export default function Modelos() {
             </div>
           </Link>
         </div>
-      ) : filteredModels.length === 0 ? (
+      ) : models.length === 0 && cityFilter ? (
         <div style={{ marginTop: 24 }}>
           <p className="muted">
             Nao encontramos acompanhantes em {cityFilter}. Tente outra cidade.
@@ -85,7 +84,7 @@ export default function Modelos() {
         </div>
       ) : (
         <div className="models-grid public-models-grid">
-          {filteredModels.map((model) => (
+          {models.map((model) => (
             <Link
               to={`/modelos/${model.id}`}
               key={model.id}
