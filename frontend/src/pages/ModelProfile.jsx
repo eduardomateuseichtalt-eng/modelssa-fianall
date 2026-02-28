@@ -19,8 +19,10 @@ export default function ModelProfile() {
   const [shotsLoading, setShotsLoading] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [viewerMode, setViewerMode] = useState("");
-  const [showHalfHourPrice, setShowHalfHourPrice] = useState(false);
+  const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
+  const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
   const contactSectionRef = useRef(null);
+  const priceCardRef = useRef(null);
 
   useEffect(() => {
     apiFetch(`/api/models/${id}`)
@@ -99,6 +101,32 @@ export default function ModelProfile() {
     };
   }, [avatarMenuOpen, viewerMode]);
 
+  useEffect(() => {
+    if (!priceOptionsOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (priceCardRef.current && !priceCardRef.current.contains(event.target)) {
+        setPriceOptionsOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setPriceOptionsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [priceOptionsOpen]);
+
   if (loading) {
     return (
       <div className="page">
@@ -163,14 +191,28 @@ export default function ModelProfile() {
   const totalMediaCount = media.length;
   const hasShots = modelShots.length > 0;
   const hasHalfHourPrice = Number(model.price30Min || 0) > 0;
-  const topPriceLabel =
-    showHalfHourPrice && hasHalfHourPrice ? "Valor 30 min" : "Valor por hora";
-  const topPriceValue =
-    showHalfHourPrice && hasHalfHourPrice
-      ? `R$ ${model.price30Min}`
-      : model.priceHour
-      ? `R$ ${model.priceHour}`
-      : "Consultar";
+  const priceOptions = [
+    {
+      id: "hour",
+      optionLabel: "1 hora",
+      cardLabel: "Valor por hora",
+      value: model.priceHour ? `R$ ${model.priceHour}` : "Consultar",
+    },
+    ...(hasHalfHourPrice
+      ? [
+          {
+            id: "half",
+            optionLabel: "30 minutos",
+            cardLabel: "Valor 30 min",
+            value: `R$ ${model.price30Min}`,
+          },
+        ]
+      : []),
+  ];
+  const activePriceOption =
+    priceOptions.find((item) => item.id === selectedPriceOption) || priceOptions[0];
+  const topPriceLabel = activePriceOption?.cardLabel || "Valor por hora";
+  const topPriceValue = activePriceOption?.value || "Consultar";
   const profileImageUrl = model.avatarUrl || model.coverUrl || "/model-placeholder.svg";
   const comparisonVideo = comparisonMedia.find((item) => item.type === "VIDEO") || null;
   const comparisonMediaCandidate =
@@ -271,29 +313,53 @@ export default function ModelProfile() {
             </div>
 
             <div className="profile-public-top-cards">
-              <button
-                type="button"
-                className={`profile-public-mini-card profile-public-price-toggle ${
-                  hasHalfHourPrice ? "is-clickable" : ""
-                }`}
-                onClick={() => {
-                  if (!hasHalfHourPrice) return;
-                  setShowHalfHourPrice((current) => !current);
-                }}
-                aria-label={
-                  hasHalfHourPrice
-                    ? "Alternar entre valor por hora e valor de 30 minutos"
-                    : "Valor por hora"
-                }
-                title={
-                  hasHalfHourPrice
-                    ? "Clique para alternar entre 1 hora e 30 minutos"
-                    : "Valor por hora"
-                }
-              >
-                <span>{topPriceLabel}</span>
-                <strong>{topPriceValue}</strong>
-              </button>
+              <div className="profile-public-price-card-wrap" ref={priceCardRef}>
+                {priceOptionsOpen && hasHalfHourPrice ? (
+                  <div className="profile-public-price-options">
+                    {priceOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={`profile-public-price-option ${
+                          selectedPriceOption === option.id ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          setSelectedPriceOption(option.id);
+                          setPriceOptionsOpen(false);
+                        }}
+                      >
+                        <span>{option.optionLabel}</span>
+                        <strong>{option.value}</strong>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  className={`profile-public-mini-card profile-public-price-toggle ${
+                    hasHalfHourPrice ? "is-clickable" : ""
+                  }`}
+                  onClick={() => {
+                    if (!hasHalfHourPrice) return;
+                    setPriceOptionsOpen((current) => !current);
+                  }}
+                  aria-expanded={priceOptionsOpen}
+                  aria-label={
+                    hasHalfHourPrice
+                      ? "Abrir opcoes de preco por 30 minutos e 1 hora"
+                      : "Valor por hora"
+                  }
+                  title={
+                    hasHalfHourPrice
+                      ? "Clique para ver opcoes de 30 minutos e 1 hora"
+                      : "Valor por hora"
+                  }
+                >
+                  <span>{topPriceLabel}</span>
+                  <strong>{topPriceValue}</strong>
+                </button>
+              </div>
               <div className="profile-public-mini-card">
                 <span>Localizacao</span>
                 <strong>{model.city || "Nao informado"}</strong>
