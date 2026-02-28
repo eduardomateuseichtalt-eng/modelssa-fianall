@@ -12,7 +12,9 @@ const PLANS = [
     priceCents: 2990,
     benefits: [
       "Perfil publico",
-      "Upload de fotos e videos (limite do plano)",
+      "Ate 7 fotos na galeria",
+      "Ate 3 videos na galeria",
+      "Midia de comparacao separada",
       "Suporte basico",
     ],
   },
@@ -23,7 +25,9 @@ const PLANS = [
     priceCents: 5990,
     benefits: [
       "Tudo do Basico",
-      "Mais midia e destaque leve",
+      "Ate 15 fotos na galeria",
+      "Ate 7 videos na galeria",
+      "Midia de comparacao separada",
       "Prioridade na aprovacao",
       "Insights simples",
     ],
@@ -239,6 +243,9 @@ export default function ModelPayment() {
         <h2>Ativar plano</h2>
         <p className="muted" style={{ marginBottom: 18 }}>
           Faca o Pix e envie o comprovante no WhatsApp para ativarmos seu plano.
+        </p>
+        <p className="muted" style={{ marginBottom: 18 }}>
+          Novas modelos recebem 30 dias gratis de experiencia com limites do plano PRO.
         </p>
 
         {profileError ? <div className="notice">{profileError}</div> : null}

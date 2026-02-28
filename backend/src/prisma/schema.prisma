@@ -27,6 +27,9 @@ model Model {
   priceHour  Int?
   price30Min Int?
   price15Min Int?
+  planTier   PlanTier @default(BASIC)
+  planExpiresAt DateTime?
+  trialEndsAt DateTime?
   isVerified Boolean  @default(false)
   createdAt DateTime @default(now())
   shots      Shot[]
@@ -131,6 +134,11 @@ enum MediaPurpose {
 enum ShotType {
   VIDEO
   IMAGE
+}
+
+enum PlanTier {
+  BASIC
+  PRO
 }
 
 model Media {

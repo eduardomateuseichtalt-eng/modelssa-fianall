@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
-const MAX_PHOTOS = 12;
-const MAX_VIDEOS = 3;
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_SHOT_VIDEO_SECONDS = 10;
 const MAX_SHOT_PHOTOS = 2;
+const DEFAULT_MAX_PHOTOS = 7;
+const DEFAULT_MAX_VIDEOS = 3;
 const ONLINE_DURATION_OPTIONS = [15, 30, 60, 120, 240, 480];
 
 const formatSize = (value) => {
@@ -163,6 +163,13 @@ export default function ModelDashboard() {
   const [profilePriceHour, setProfilePriceHour] = useState("");
   const [profilePrice30Min, setProfilePrice30Min] = useState("");
   const [profilePrice15Min, setProfilePrice15Min] = useState("");
+  const [planEffective, setPlanEffective] = useState("BASIC");
+  const [planTier, setPlanTier] = useState("BASIC");
+  const [planTrialActive, setPlanTrialActive] = useState(false);
+  const [planTrialEndsAt, setPlanTrialEndsAt] = useState("");
+  const [planExpiresAt, setPlanExpiresAt] = useState("");
+  const [maxPhotos, setMaxPhotos] = useState(DEFAULT_MAX_PHOTOS);
+  const [maxVideos, setMaxVideos] = useState(DEFAULT_MAX_VIDEOS);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -188,6 +195,26 @@ export default function ModelDashboard() {
   const shotCameraRef = useRef(null);
   const shotVideoRef = useRef(null);
   const presenceControlRef = useRef(null);
+
+  const applyProfilePlanData = (data) => {
+    const limits = data?.mediaLimits || {};
+    const nextMaxPhotos = Math.max(
+      1,
+      Number(limits?.maxPhotos || DEFAULT_MAX_PHOTOS)
+    );
+    const nextMaxVideos = Math.max(
+      1,
+      Number(limits?.maxVideos || DEFAULT_MAX_VIDEOS)
+    );
+
+    setPlanTier(String(limits?.planTier || data?.planTier || "BASIC"));
+    setPlanEffective(String(limits?.effectivePlan || data?.planTier || "BASIC"));
+    setPlanTrialActive(Boolean(limits?.isTrialActive));
+    setPlanTrialEndsAt(String(limits?.trialEndsAt || data?.trialEndsAt || ""));
+    setPlanExpiresAt(String(limits?.planExpiresAt || data?.planExpiresAt || ""));
+    setMaxPhotos(nextMaxPhotos);
+    setMaxVideos(nextMaxVideos);
+  };
 
   const loadMedia = async () => {
     try {
@@ -243,6 +270,7 @@ export default function ModelDashboard() {
       setProfilePriceHour(data.priceHour ?? "");
       setProfilePrice30Min(data.price30Min ?? "");
       setProfilePrice15Min(data.price15Min ?? "");
+      applyProfilePlanData(data);
     } catch (err) {
       setProfileError(err.message || "Erro ao carregar cadastro.");
     } finally {
@@ -496,12 +524,12 @@ export default function ModelDashboard() {
       mediaPreviews.filter((item) => item.type.startsWith("video/")).length +
       nextPreviews.filter((item) => item.type.startsWith("video/")).length;
 
-    if (existingPhotos + selectedPhotos > MAX_PHOTOS) {
-      errors.push(`Limite de ${MAX_PHOTOS} fotos atingido.`);
+    if (existingPhotos + selectedPhotos > maxPhotos) {
+      errors.push(`Limite de ${maxPhotos} fotos atingido.`);
     }
 
-    if (existingVideos + selectedVideos > MAX_VIDEOS) {
-      errors.push(`Limite de ${MAX_VIDEOS} videos atingido.`);
+    if (existingVideos + selectedVideos > maxVideos) {
+      errors.push(`Limite de ${maxVideos} videos atingido.`);
     }
 
     if (errors.length > 0) {
@@ -774,6 +802,7 @@ export default function ModelDashboard() {
       setProfilePriceHour(data.priceHour ?? "");
       setProfilePrice30Min(data.price30Min ?? "");
       setProfilePrice15Min(data.price15Min ?? "");
+      applyProfilePlanData(data);
       setProfileMessage("Cadastro atualizado com sucesso.");
 
       const storedUser = localStorage.getItem("user");
@@ -833,7 +862,14 @@ export default function ModelDashboard() {
             Minha <span>midia</span>
           </h1>
           <p className="muted" style={{ marginTop: 10 }}>
-            Envie ate {MAX_PHOTOS} fotos e {MAX_VIDEOS} videos. Itens enviados ficam pendentes de aprovacao.
+            Plano contratado: {planTier}. Plano efetivo: {planEffective}. Limites da galeria: ate {maxPhotos} fotos e {maxVideos} videos.
+            {planTrialActive && planTrialEndsAt
+              ? ` Trial gratis ativo ate ${new Date(planTrialEndsAt).toLocaleDateString("pt-BR")}.`
+              : ""}
+            {!planTrialActive && planExpiresAt
+              ? ` Plano pago ativo ate ${new Date(planExpiresAt).toLocaleDateString("pt-BR")}.`
+              : ""}
+            {" "}A midia de comparacao continua separada desses limites.
           </p>
         </div>
         <div className="model-area-actions">
@@ -1537,7 +1573,7 @@ export default function ModelDashboard() {
           <div>
             <h4>Adicionar midias</h4>
             <p className="muted">
-              Fotos: {existingPhotos}/{MAX_PHOTOS} | Videos: {existingVideos}/{MAX_VIDEOS}
+              Fotos: {existingPhotos}/{maxPhotos} | Videos: {existingVideos}/{maxVideos}
             </p>
           </div>
           <span className="media-count">{mediaPreviews.length}</span>

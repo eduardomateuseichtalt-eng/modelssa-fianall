@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { randomUUID } from "crypto";
-import { Prisma } from "@prisma/client";
+import { PlanTier, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import { redis } from "../lib/redis";
@@ -11,6 +11,7 @@ import { sendModelRegisterOtpEmail } from "../lib/email";
 import { sendWhatsAppText } from "../lib/whatsapp";
 import { asyncHandler } from "../lib/async-handler";
 import { normalizeCity, rotationSeed, stableHash01 } from "../utils/rotation";
+import { getModelMediaLimits, getModelTrialEndDate } from "../lib/model-plan";
 
 const router = Router();
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret_dev";
@@ -332,6 +333,8 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
       priceHour: toNumberOrNull(priceHour),
       price30Min: toNumberOrNull(price30Min),
       price15Min: toNumberOrNull(price15Min),
+      planTier: "BASIC",
+      trialEndsAt: getModelTrialEndDate(30),
     },
   });
 
@@ -641,6 +644,9 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       priceHour: true,
       price30Min: true,
       price15Min: true,
+      planTier: true,
+      planExpiresAt: true,
+      trialEndsAt: true,
     },
   });
 
@@ -648,7 +654,12 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
     return res.status(404).json({ error: "Modelo nao encontrada" });
   }
 
-  return res.json(model);
+  const mediaLimits = getModelMediaLimits(model);
+
+  return res.json({
+    ...model,
+    mediaLimits,
+  });
 }));
 
 router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res: Response) => {
@@ -722,10 +733,62 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       priceHour: true,
       price30Min: true,
       price15Min: true,
+      planTier: true,
+      planExpiresAt: true,
+      trialEndsAt: true,
     },
   });
 
-  return res.json(updated);
+  const mediaLimits = getModelMediaLimits(updated);
+
+  return res.json({
+    ...updated,
+    mediaLimits,
+  });
+}));
+
+router.patch("/:id/plan", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const rawPlanTier = String(req.body?.planTier || "").trim().toUpperCase();
+  if (rawPlanTier !== "BASIC" && rawPlanTier !== "PRO") {
+    return res.status(400).json({ error: "Plano invalido. Use BASIC ou PRO." });
+  }
+
+  const planTier = rawPlanTier as PlanTier;
+  const rawDurationDays = req.body?.durationDays;
+  const durationDays = Number(rawDurationDays);
+
+  let planExpiresAt: Date | null = null;
+  if (planTier === "PRO") {
+    if (Number.isFinite(durationDays) && durationDays > 0) {
+      const safeDays = Math.min(Math.floor(durationDays), 365);
+      planExpiresAt = new Date(Date.now() + safeDays * 24 * 60 * 60 * 1000);
+    } else {
+      planExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    }
+  }
+
+  const updated = await prisma.model.update({
+    where: { id },
+    data: {
+      planTier,
+      planExpiresAt,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      planTier: true,
+      planExpiresAt: true,
+      trialEndsAt: true,
+    },
+  });
+
+  return res.json({
+    ...updated,
+    mediaLimits: getModelMediaLimits(updated),
+  });
 }));
 
 router.get("/", asyncHandler(async (req: Request, res: Response) => {

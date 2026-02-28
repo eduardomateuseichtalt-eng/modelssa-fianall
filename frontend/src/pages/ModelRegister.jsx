@@ -545,6 +545,9 @@ export default function ModelRegister() {
             <p className="muted">
               Informe seu e-mail para receber o codigo de confirmacao e continuar seu cadastro.
             </p>
+            <p className="muted">
+              Novo cadastro de modelo recebe 30 dias gratis de experiencia com limites do plano PRO.
+            </p>
 
             {introError && <div className="notice">{introError}</div>}
             {introInfo && <div className="notice">{introInfo}</div>}
@@ -586,6 +589,9 @@ export default function ModelRegister() {
                     <strong>Aviso</strong>
                     <p>
                       O codigo de confirmacao sera enviado para o e-mail informado para validar o inicio do cadastro.
+                    </p>
+                    <p>
+                      A midia de comparacao nao entra na contagem de fotos e videos do plano.
                     </p>
                   </div>
 

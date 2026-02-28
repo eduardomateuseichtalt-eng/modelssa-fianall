@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import { deleteFromBunny, uploadToBunny, validateBunnyConnection } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
+import { getModelMediaLimits } from "../lib/model-plan";
 
 const router = Router();
 
@@ -131,7 +132,18 @@ router.post(
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
     }
 
-    const model = await prisma.model.findUnique({ where: { id: modelId } });
+    const model = await prisma.model.findUnique({
+      where: { id: modelId },
+      select: {
+        id: true,
+        isVerified: true,
+        coverUrl: true,
+        avatarUrl: true,
+        planTier: true,
+        planExpiresAt: true,
+        trialEndsAt: true,
+      },
+    });
 
     if (!model) {
       return res.status(404).json({ error: "Modelo nao encontrada" });
@@ -139,6 +151,8 @@ router.post(
     if (!model.isVerified) {
       return res.status(403).json({ error: "Modelo nao aprovada" });
     }
+
+    const limits = getModelMediaLimits(model);
 
     const [existingImages, existingVideos] = await Promise.all([
       prisma.media.count({ where: { modelId, type: "IMAGE", purpose: "GALLERY" } }),
@@ -159,16 +173,16 @@ router.post(
       }
     }
 
-    if (existingVideos + newVideos > 3) {
+    if (existingVideos + newVideos > limits.maxVideos) {
       return res
         .status(400)
-        .json({ error: "Limite de 3 videos atingido." });
+        .json({ error: `Limite de ${limits.maxVideos} videos atingido para seu plano.` });
     }
 
-    if (existingImages + newImages > 12) {
+    if (existingImages + newImages > limits.maxPhotos) {
       return res
         .status(400)
-        .json({ error: "Limite de 12 fotos atingido." });
+        .json({ error: `Limite de ${limits.maxPhotos} fotos atingido para seu plano.` });
     }
 
     const uploads = [];
@@ -214,7 +228,7 @@ router.post(
       }
     }
 
-    return res.status(201).json({ uploads });
+    return res.status(201).json({ uploads, mediaLimits: limits });
   })
 );
 
