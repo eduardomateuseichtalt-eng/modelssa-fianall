@@ -17,6 +17,17 @@ export default function ModelProfile() {
   const [activeTab, setActiveTab] = useState("media");
   const [modelShots, setModelShots] = useState([]);
   const [shotsLoading, setShotsLoading] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState("");
+  const [reviewFormOpen, setReviewFormOpen] = useState(false);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewLocal, setReviewLocal] = useState(0);
+  const [reviewService, setReviewService] = useState(0);
+  const [reviewBody, setReviewBody] = useState(0);
+  const [reviewSending, setReviewSending] = useState(false);
+  const [reviewNotice, setReviewNotice] = useState("");
+  const [reviewSubmitError, setReviewSubmitError] = useState("");
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [viewerMode, setViewerMode] = useState("");
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
@@ -72,6 +83,36 @@ export default function ModelProfile() {
       })
       .finally(() => {
         if (active) setShotsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    setReviewsLoading(true);
+    setReviewsError("");
+
+    apiFetch(`/api/model-reviews/${id}`)
+      .then((data) => {
+        if (!active) {
+          return;
+        }
+        setReviews(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (!active) {
+          return;
+        }
+        setReviews([]);
+        setReviewsError(err.message || "Nao foi possivel carregar as avaliacoes.");
+      })
+      .finally(() => {
+        if (active) {
+          setReviewsLoading(false);
+        }
       });
 
     return () => {
@@ -257,6 +298,42 @@ export default function ModelProfile() {
     setAvatarMenuOpen(false);
     setViewerMode("");
   };
+
+  const ratingToStars = (value) => {
+    const score = Math.max(0, Math.min(5, Number(value) || 0));
+    return `${"★".repeat(score)}${"☆".repeat(5 - score)}`;
+  };
+
+  const averageScore = reviews.length
+    ? (
+        reviews.reduce((sum, item) => {
+          const localScore = Number(item.ratingLocal || 0);
+          const serviceScore = Number(item.ratingService || 0);
+          const bodyScore = Number(item.ratingBody || 0);
+          return sum + (localScore + serviceScore + bodyScore) / 3;
+        }, 0) / reviews.length
+      ).toFixed(1)
+    : null;
+
+  const RatingInput = ({ label, value, onChange }) => (
+    <div className="profile-review-rating-row">
+      <span>{label}</span>
+      <div className="profile-review-stars-input" role="radiogroup" aria-label={label}>
+        {[0, 1, 2, 3, 4, 5].map((score) => (
+          <button
+            key={`${label}-${score}`}
+            type="button"
+            className={`profile-review-star-btn ${value === score ? "active" : ""}`}
+            onClick={() => onChange(score)}
+            aria-label={`${score} estrelas`}
+            aria-pressed={value === score}
+          >
+            {score === 0 ? "0" : "★".repeat(score)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="page">
@@ -602,34 +679,136 @@ export default function ModelProfile() {
             <section className="profile-public-section">
               <div className="profile-public-section-head">
                 <h2>Avaliacoes de clientes</h2>
-                <span className="pill">Em breve</span>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => {
+                    setReviewFormOpen((current) => !current);
+                    setReviewNotice("");
+                    setReviewSubmitError("");
+                  }}
+                >
+                  {reviewFormOpen ? "Fechar avaliacao" : "Avaliar atendimento"}
+                </button>
               </div>
 
               <p className="muted" style={{ marginTop: 10 }}>
-                Depoimentos reais ajudam a escolher com mais seguranca. Assim que os
-                clientes publicarem avaliacoes, elas vao aparecer aqui.
+                Relate em poucas palavras como foi o atendimento e avalie de 0 a 5
+                estrelas para local, atendimento e avaliacao corporal.
               </p>
 
-              <div className="cards profile-public-reviews">
-                <div className="card">
-                  <h4>Atendimento impecavel</h4>
+              {averageScore ? (
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Media geral: <strong>{averageScore}/5</strong> em {reviews.length} avaliacao(oes).
+                </p>
+              ) : null}
+
+              {reviewNotice ? <div className="notice">{reviewNotice}</div> : null}
+              {reviewSubmitError ? <div className="notice">{reviewSubmitError}</div> : null}
+
+              {reviewFormOpen ? (
+                <div className="card profile-review-form-card">
+                  <textarea
+                    className="textarea"
+                    rows={4}
+                    maxLength={280}
+                    placeholder="Relate em poucas palavras como foi seu atendimento."
+                    value={reviewText}
+                    onChange={(event) => setReviewText(event.target.value)}
+                  />
+                  <p className="muted profile-review-char-count">
+                    {reviewText.trim().length}/280 caracteres
+                  </p>
+
+                  <RatingInput label="Local" value={reviewLocal} onChange={setReviewLocal} />
+                  <RatingInput
+                    label="Atendimento"
+                    value={reviewService}
+                    onChange={setReviewService}
+                  />
+                  <RatingInput
+                    label="Avaliacao corporal"
+                    value={reviewBody}
+                    onChange={setReviewBody}
+                  />
+
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={
+                        reviewSending ||
+                        reviewText.trim().length < 8
+                      }
+                      onClick={async () => {
+                        setReviewNotice("");
+                        setReviewSubmitError("");
+                        const payload = {
+                          comment: reviewText.trim(),
+                          ratingLocal: reviewLocal,
+                          ratingService: reviewService,
+                          ratingBody: reviewBody,
+                        };
+                        if (payload.comment.length < 8) {
+                          setReviewSubmitError("Escreva pelo menos 8 caracteres no relato.");
+                          return;
+                        }
+                        setReviewSending(true);
+                        try {
+                          const created = await apiFetch(`/api/model-reviews/${id}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload),
+                          });
+                          setReviews((prev) => [created, ...prev]);
+                          setReviewText("");
+                          setReviewLocal(0);
+                          setReviewService(0);
+                          setReviewBody(0);
+                          setReviewFormOpen(false);
+                          setReviewNotice("Avaliacao enviada com sucesso.");
+                        } catch (err) {
+                          setReviewSubmitError(err.message || "Nao foi possivel enviar avaliacao.");
+                        } finally {
+                          setReviewSending(false);
+                        }
+                      }}
+                    >
+                      {reviewSending ? "Enviando..." : "Enviar avaliacao"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {reviewsError ? <div className="notice">{reviewsError}</div> : null}
+
+              {reviewsLoading ? (
+                <p className="muted" style={{ marginTop: 14 }}>
+                  Carregando avaliacoes...
+                </p>
+              ) : reviews.length === 0 ? (
+                <div className="card" style={{ marginTop: 14 }}>
                   <p className="muted">
-                    Experiencia segura, comunicacao clara e perfil fiel ao anunciado.
+                    Ainda nao existem avaliacoes para este perfil.
                   </p>
                 </div>
-                <div className="card">
-                  <h4>Perfil verificado</h4>
-                  <p className="muted">
-                    Confirmacao de identidade e fotos atuais antes de liberar o anuncio.
-                  </p>
+              ) : (
+                <div className="cards profile-public-reviews">
+                  {reviews.map((item) => (
+                    <div className="card profile-review-card" key={item.id}>
+                      <p className="profile-review-comment">{item.comment}</p>
+                      <div className="profile-review-metrics">
+                        <span>Local: {ratingToStars(item.ratingLocal)}</span>
+                        <span>Atendimento: {ratingToStars(item.ratingService)}</span>
+                        <span>Avaliacao corporal: {ratingToStars(item.ratingBody)}</span>
+                      </div>
+                      <p className="muted profile-review-date">
+                        {new Date(item.createdAt).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <div className="card">
-                  <h4>Ambiente discreto</h4>
-                  <p className="muted">
-                    Privacidade garantida para clientes e modelos durante o contato.
-                  </p>
-                </div>
-              </div>
+              )}
             </section>
           ) : null}
         </div>

@@ -33,6 +33,7 @@ model Model {
   cityStats  CityStat[]
   media      Media[]
   faqReports FaqReport[]
+  reviews    ModelReview[]
 }
 
 model User {
@@ -127,6 +128,19 @@ model FaqReport {
   @@index([status])
   @@index([modelId])
   @@index([origin])
+}
+
+model ModelReview {
+  id            String   @id @default(uuid())
+  modelId       String
+  comment       String
+  ratingLocal   Int
+  ratingService Int
+  ratingBody    Int
+  createdAt     DateTime @default(now())
+  model         Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId, createdAt])
 }
 
 enum MediaType {
