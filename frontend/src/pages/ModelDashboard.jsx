@@ -39,6 +39,21 @@ const formatRemainingTime = (seconds) => {
   return `${minutes}m ${String(secs).padStart(2, "0")}s`;
 };
 
+const getRemainingFromUntil = (untilValue) => {
+  if (!untilValue) {
+    return 0;
+  }
+  const untilMs = new Date(untilValue).getTime();
+  if (!Number.isFinite(untilMs)) {
+    return 0;
+  }
+  const diffMs = untilMs - Date.now();
+  if (diffMs <= 0) {
+    return 0;
+  }
+  return Math.ceil(diffMs / 1000);
+};
+
 const stripImageMetadata = (file) =>
   new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -235,27 +250,47 @@ export default function ModelDashboard() {
     }
   };
 
-  const loadPresenceStatus = async () => {
-    setPresenceLoading(true);
-    setPresenceError("");
+  const loadPresenceStatus = async (silent = false) => {
+    if (!silent) {
+      setPresenceLoading(true);
+      setPresenceError("");
+    }
     try {
       const data = await apiFetch("/api/models/presence/self");
-      setPresenceOnline(Boolean(data?.online));
-      setPresenceMode(String(data?.mode || "offline"));
-      setPresenceRemainingSeconds(Number(data?.remainingSeconds || 0));
-      setPresenceUntil(String(data?.until || ""));
+      applyPresenceState(data);
     } catch (err) {
-      setPresenceError(err.message || "Nao foi possivel carregar status online.");
+      if (!silent) {
+        setPresenceError(err.message || "Nao foi possivel carregar status online.");
+      }
     } finally {
-      setPresenceLoading(false);
+      if (!silent) {
+        setPresenceLoading(false);
+      }
     }
   };
 
   const applyPresenceState = (data) => {
-    setPresenceOnline(Boolean(data?.online));
-    setPresenceMode(String(data?.mode || "offline"));
-    setPresenceRemainingSeconds(Number(data?.remainingSeconds || 0));
-    setPresenceUntil(String(data?.until || ""));
+    const nextMode = String(data?.mode || "offline");
+    const nextUntil = String(data?.until || "");
+    const apiRemaining = Math.max(0, Number(data?.remainingSeconds || 0));
+    const untilRemaining =
+      nextMode === "manual" ? getRemainingFromUntil(nextUntil) : apiRemaining;
+    const nextRemaining = Math.max(0, untilRemaining);
+    const nextOnline =
+      Boolean(data?.online) && (nextMode !== "manual" || nextRemaining > 0);
+
+    if (!nextOnline || (nextMode === "manual" && nextRemaining <= 0)) {
+      setPresenceOnline(false);
+      setPresenceMode("offline");
+      setPresenceRemainingSeconds(0);
+      setPresenceUntil("");
+      return;
+    }
+
+    setPresenceOnline(true);
+    setPresenceMode(nextMode);
+    setPresenceRemainingSeconds(nextRemaining);
+    setPresenceUntil(nextUntil);
   };
 
   const handleSetManualOnline = async (durationMinutes) => {
@@ -308,22 +343,51 @@ export default function ModelDashboard() {
     if (!presenceOnline || presenceMode !== "manual") {
       return;
     }
+
+    const syncManualCountdown = () => {
+      const remaining = getRemainingFromUntil(presenceUntil);
+      if (remaining <= 0) {
+        setPresenceOnline(false);
+        setPresenceMode("offline");
+        setPresenceRemainingSeconds(0);
+        setPresenceUntil("");
+        return false;
+      }
+      setPresenceRemainingSeconds(remaining);
+      return true;
+    };
+
+    syncManualCountdown();
+
     const intervalId = window.setInterval(() => {
-      setPresenceRemainingSeconds((current) => {
-        if (current <= 0) {
-          return 0;
-        }
-        const next = Math.max(0, current - 1);
-        if (next === 0) {
-          setPresenceOnline(false);
-          setPresenceMode("offline");
-          setPresenceUntil("");
-        }
-        return next;
-      });
+      syncManualCountdown();
     }, 1000);
+
     return () => {
       window.clearInterval(intervalId);
+    };
+  }, [presenceOnline, presenceMode, presenceUntil]);
+
+  useEffect(() => {
+    if (!presenceOnline || presenceMode !== "manual") {
+      return;
+    }
+
+    const syncFromServer = () => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+      loadPresenceStatus(true);
+    };
+
+    const refreshIntervalId = window.setInterval(syncFromServer, 60000);
+    document.addEventListener("visibilitychange", syncFromServer);
+    window.addEventListener("focus", syncFromServer);
+
+    return () => {
+      window.clearInterval(refreshIntervalId);
+      document.removeEventListener("visibilitychange", syncFromServer);
+      window.removeEventListener("focus", syncFromServer);
     };
   }, [presenceOnline, presenceMode]);
 
