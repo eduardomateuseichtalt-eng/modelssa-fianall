@@ -9,6 +9,7 @@ const PLANS = [
     id: "basic",
     name: "BASICO",
     priceText: "R$ 29,90/mes",
+    priceCents: 2990,
     benefits: [
       "Perfil publico",
       "Upload de fotos e videos (limite do plano)",
@@ -19,6 +20,7 @@ const PLANS = [
     id: "pro",
     name: "PRO",
     priceText: "R$ 59,90/mes",
+    priceCents: 5990,
     benefits: [
       "Tudo do Basico",
       "Mais midia e destaque leve",
@@ -27,6 +29,78 @@ const PLANS = [
     ],
   },
 ];
+
+function pixField(id, value) {
+  const str = String(value ?? "");
+  const len = str.length.toString().padStart(2, "0");
+  return `${id}${len}${str}`;
+}
+
+function sanitizePixText(value, maxLen, fallback) {
+  const raw = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (raw || fallback).slice(0, maxLen);
+}
+
+function crc16Ccitt(payload) {
+  let crc = 0xffff;
+  for (let i = 0; i < payload.length; i += 1) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let bit = 0; bit < 8; bit += 1) {
+      if (crc & 0x8000) {
+        crc = (crc << 1) ^ 0x1021;
+      } else {
+        crc <<= 1;
+      }
+      crc &= 0xffff;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+
+function buildPixCopyPaste({
+  key,
+  amountCents,
+  merchantName = "MODELS CLUB",
+  merchantCity = "BLUMENAU",
+  txid = "MODELSCLUB",
+  description = "",
+}) {
+  const amount = (Math.max(0, Number(amountCents) || 0) / 100).toFixed(2);
+  const cleanName = sanitizePixText(merchantName, 25, "MODELS CLUB");
+  const cleanCity = sanitizePixText(merchantCity, 15, "BLUMENAU");
+  const cleanTxid =
+    String(txid || "")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 25) || "MODELSCLUB";
+  const cleanDescription = sanitizePixText(description, 50, "");
+
+  const merchantAccountInfo =
+    pixField("00", "BR.GOV.BCB.PIX") +
+    pixField("01", key) +
+    (cleanDescription ? pixField("02", cleanDescription) : "");
+
+  const additionalData = pixField("05", cleanTxid);
+
+  const payloadWithoutCrc =
+    pixField("00", "01") +
+    pixField("26", merchantAccountInfo) +
+    pixField("52", "0000") +
+    pixField("53", "986") +
+    pixField("54", amount) +
+    pixField("58", "BR") +
+    pixField("59", cleanName) +
+    pixField("60", cleanCity) +
+    pixField("62", additionalData) +
+    "6304";
+
+  const crc = crc16Ccitt(payloadWithoutCrc);
+  return `${payloadWithoutCrc}${crc}`;
+}
 
 function buildWhatsAppLink({ planName, planPriceText, modelId, name, email }) {
   const identifier = `MODELO-${modelId}`;
@@ -138,6 +212,18 @@ export default function ModelPayment() {
     });
   }, [plan, modelId, modelName, modelEmail]);
 
+  const pixCopyPasteWithAmount = useMemo(() => {
+    const description = `PLANO ${plan.name} ${identifier}`;
+    return buildPixCopyPaste({
+      key: PIX_KEY,
+      amountCents: plan.priceCents,
+      merchantName: "MODELS CLUB",
+      merchantCity: "BLUMENAU",
+      txid: identifier,
+      description,
+    });
+  }, [plan, identifier]);
+
   async function handleCopy(label, value) {
     const ok = await copyToClipboard(value);
     setToast(ok ? `${label} copiado!` : `Nao consegui copiar ${label}. Copie manualmente.`);
@@ -229,30 +315,33 @@ export default function ModelPayment() {
 
           <div style={{ display: "grid", gap: 12 }}>
             <div style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontWeight: 700 }}>Chave Pix (copia e cola)</div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <code style={{ padding: "8px 10px", borderRadius: 10, background: "#f3f4f6" }}>
-                  {PIX_KEY}
-                </code>
+              <div style={{ fontWeight: 700 }}>Pix copia e cola com valor do plano</div>
+              <div style={{ opacity: 0.8, fontSize: 13 }}>
+                Este codigo ja inclui o valor do plano selecionado ({plan.priceText}).
+              </div>
+              <textarea
+                readOnly
+                value={pixCopyPasteWithAmount}
+                rows={4}
+                className="textarea"
+                style={{ minHeight: 98, resize: "none", background: "#f3f4f6", color: "#111" }}
+              />
+              <div>
                 <button
                   type="button"
-                  onClick={() => handleCopy("Chave Pix", PIX_KEY)}
+                  onClick={() =>
+                    handleCopy("Pix copia e cola com valor", pixCopyPasteWithAmount)
+                  }
                   style={{
                     padding: "10px 12px",
                     borderRadius: 10,
                     border: "1px solid #ddd",
                     background: "#fff",
                     cursor: "pointer",
+                    fontWeight: 700,
                   }}
                 >
-                  Copiar chave
+                  Copiar Pix com valor
                 </button>
               </div>
             </div>
