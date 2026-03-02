@@ -26,11 +26,6 @@ export function getModelEffectivePlan(
   snapshot: ModelPlanSnapshot,
   now: Date = new Date()
 ): PlanTier {
-  const trialEndsAt = toDate(snapshot.trialEndsAt);
-  if (trialEndsAt && trialEndsAt.getTime() > now.getTime()) {
-    return "PRO";
-  }
-
   const planTier: PlanTier = snapshot.planTier || "BASIC";
   if (planTier !== "PRO") {
     return "BASIC";
@@ -66,4 +61,3 @@ export function getModelTrialEndDate(days = 30) {
   const now = new Date();
   return new Date(now.getTime() + safeDays * 24 * 60 * 60 * 1000);
 }
-

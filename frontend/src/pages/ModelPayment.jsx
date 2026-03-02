@@ -245,7 +245,7 @@ export default function ModelPayment() {
           Faca o Pix e envie o comprovante no WhatsApp para ativarmos seu plano.
         </p>
         <p className="muted" style={{ marginBottom: 18 }}>
-          Novas modelos recebem 30 dias gratis de experiencia com limites do plano PRO.
+          Apos a aprovacao do perfil, a modelo recebe 30 dias gratis no plano escolhido.
         </p>
 
         {profileError ? <div className="notice">{profileError}</div> : null}

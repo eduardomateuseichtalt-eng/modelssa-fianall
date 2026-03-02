@@ -334,7 +334,6 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
       price30Min: toNumberOrNull(price30Min),
       price15Min: toNumberOrNull(price15Min),
       planTier: "BASIC",
-      trialEndsAt: getModelTrialEndDate(30),
     },
   });
 
@@ -875,17 +874,26 @@ router.patch("/:id/approve", requireAdmin, asyncHandler(async (req: Request, res
 
   const updated = await prisma.model.update({
     where: { id },
-    data: { isVerified: true },
+    data: {
+      isVerified: true,
+      trialEndsAt: model.isVerified ? model.trialEndsAt : getModelTrialEndDate(30),
+    },
     select: {
       id: true,
       name: true,
       email: true,
       city: true,
       isVerified: true,
+      trialEndsAt: true,
+      planTier: true,
+      planExpiresAt: true,
     },
   });
 
-  return res.json(updated);
+  return res.json({
+    ...updated,
+    mediaLimits: getModelMediaLimits(updated),
+  });
 }));
 
 router.delete("/by-email", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
