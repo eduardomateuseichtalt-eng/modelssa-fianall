@@ -299,16 +299,6 @@ export default function Home() {
                   <span>Ver acompanhantes</span>
                   <span className="popular-chevron" aria-hidden="true" />
                 </Link>
-                <Link to="/contato" className="popular-item">
-                  <span className="popular-icon" aria-hidden="true" />
-                  <span>Atendimento virtual</span>
-                  <span className="popular-chevron" aria-hidden="true" />
-                </Link>
-                <Link to="/seja-modelo" className="popular-item">
-                  <span className="popular-icon" aria-hidden="true" />
-                  <span>Cadastrar como acompanhante</span>
-                  <span className="popular-chevron" aria-hidden="true" />
-                </Link>
               </div>
             </div>
 
