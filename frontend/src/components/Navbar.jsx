@@ -58,8 +58,6 @@ export default function Navbar() {
         <nav className="nav-links">
           <NavLink to="/">Inicio</NavLink>
           <NavLink to="/modelos">Modelos</NavLink>
-          <NavLink to="/seja-modelo">Seja modelo</NavLink>
-          <NavLink to="/anuncie">Anuncie</NavLink>
           <NavLink to="/contato">Contato</NavLink>
         </nav>
 
@@ -109,12 +107,6 @@ export default function Navbar() {
           </NavLink>
           <NavLink to="/modelos" onClick={() => setMobileMenuOpen(false)}>
             Modelos
-          </NavLink>
-          <NavLink to="/seja-modelo" onClick={() => setMobileMenuOpen(false)}>
-            Seja modelo
-          </NavLink>
-          <NavLink to="/anuncie" onClick={() => setMobileMenuOpen(false)}>
-            Anuncie
           </NavLink>
           <NavLink to="/contato" onClick={() => setMobileMenuOpen(false)}>
             Contato
