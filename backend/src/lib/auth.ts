@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret_dev";
+const isProduction = process.env.NODE_ENV === "production";
+const ACCESS_SECRET =
+  process.env.JWT_ACCESS_SECRET || (isProduction ? "" : "access_secret_dev");
+
+if (isProduction && !ACCESS_SECRET) {
+  throw new Error("JWT_ACCESS_SECRET nao configurado em producao.");
+}
 
 type JwtPayload = {
   id: string;

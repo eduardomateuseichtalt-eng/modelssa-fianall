@@ -29,9 +29,18 @@ const normalizeStoredUrl = (value: string) => value.trim();
 
 router.post(
   "/upload",
+  requireAuth,
   upload.array("files", 15),
   asyncHandler(async (req: Request, res: Response) => {
-    const { modelId } = req.body;
+    const user = res.locals.user as { id: string; role: string } | undefined;
+    if (!user || (user.role !== "MODEL" && user.role !== "ADMIN")) {
+      return res.status(403).json({ error: "Acesso restrito" });
+    }
+
+    const modelId =
+      user.role === "ADMIN"
+        ? String(req.body?.modelId || "").trim()
+        : user.id;
     const files = req.files as Express.Multer.File[];
 
     if (!modelId) {

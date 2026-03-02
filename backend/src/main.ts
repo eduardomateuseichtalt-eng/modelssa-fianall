@@ -1,7 +1,9 @@
 import dotenv from "dotenv";
 import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, "..", ".env"), override: true });
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
+}
 
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
@@ -28,6 +30,7 @@ import modelReviewsRoutes from "./routes/model-reviews.routes";
 // APP
 // ========================
 const app = express();
+const isProduction = process.env.NODE_ENV === "production";
 
 const normalizeOrigin = (value: string) =>
   value.trim().replace(/\/+$/, "");
@@ -96,8 +99,131 @@ const PORT = Number(process.env.PORT) || 4000;
 // ========================
 // JWT CONFIG
 // ========================
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret_dev";
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh_secret_dev";
+const ACCESS_SECRET =
+  process.env.JWT_ACCESS_SECRET ||
+  (isProduction ? "" : "access_secret_dev");
+const REFRESH_SECRET =
+  process.env.JWT_REFRESH_SECRET ||
+  (isProduction ? "" : "refresh_secret_dev");
+
+const ADMIN_ROUTE_ENABLED_NON_PROD = !isProduction;
+const ENABLE_ADMIN_RESET =
+  ADMIN_ROUTE_ENABLED_NON_PROD ||
+  String(process.env.ENABLE_ADMIN_RESET || "false")
+    .trim()
+    .toLowerCase() === "true";
+const ENABLE_ADMIN_BOOTSTRAP =
+  ADMIN_ROUTE_ENABLED_NON_PROD ||
+  String(process.env.ENABLE_ADMIN_BOOTSTRAP || "false")
+    .trim()
+    .toLowerCase() === "true";
+
+const parseAllowedIps = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const allowedAdminIps = new Set(
+  parseAllowedIps(process.env.ADMIN_ROUTE_ALLOWED_IPS || "")
+);
+
+function normalizeIp(value: string) {
+  const trimmed = String(value || "").trim();
+  return trimmed.startsWith("::ffff:") ? trimmed.slice(7) : trimmed;
+}
+
+function getClientIp(req: Request) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return normalizeIp(forwarded.split(",")[0].trim());
+  }
+  if (Array.isArray(forwarded) && forwarded.length > 0) {
+    return normalizeIp(forwarded[0]);
+  }
+  return normalizeIp(req.ip || "unknown");
+}
+
+function isAllowedAdminIp(req: Request) {
+  if (!isProduction || allowedAdminIps.size === 0) {
+    return true;
+  }
+  return allowedAdminIps.has(getClientIp(req));
+}
+
+function assertRequiredSecrets() {
+  if (!isProduction) {
+    return;
+  }
+
+  const missing: string[] = [];
+  if (!ACCESS_SECRET) missing.push("JWT_ACCESS_SECRET");
+  if (!REFRESH_SECRET) missing.push("JWT_REFRESH_SECRET");
+  if (!String(process.env.OTP_HASH_SECRET || "").trim()) {
+    missing.push("OTP_HASH_SECRET");
+  }
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required env in production: ${missing.join(", ")}`);
+  }
+}
+
+type LocalRateBucket = { count: number; expiresAt: number };
+const localRateStore = new Map<string, LocalRateBucket>();
+
+function incrementLocalRate(key: string, ttlSeconds: number) {
+  const now = Date.now();
+  const current = localRateStore.get(key);
+
+  if (!current || current.expiresAt <= now) {
+    localRateStore.set(key, {
+      count: 1,
+      expiresAt: now + ttlSeconds * 1000,
+    });
+    return 1;
+  }
+
+  current.count += 1;
+  return current.count;
+}
+
+async function incrementWithExpiry(key: string, ttlSeconds: number) {
+  try {
+    if ((redis as any).isOpen) {
+      const count = await redis.incr(key);
+      if (count === 1) {
+        await redis.expire(key, ttlSeconds);
+      }
+      return count;
+    }
+  } catch (error) {
+    console.error("Rate-limit Redis fallback:", error);
+  }
+
+  return incrementLocalRate(key, ttlSeconds);
+}
+
+type RateLimitOptions = {
+  prefix: string;
+  limit: number;
+  ttlSeconds: number;
+};
+
+function createIpRateLimiter({ prefix, limit, ttlSeconds }: RateLimitOptions) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const ip = getClientIp(req);
+    const key = `rl:${prefix}:ip:${ip}`;
+    const count = await incrementWithExpiry(key, ttlSeconds);
+
+    if (count > limit) {
+      return res.status(429).json({ error: "Muitas tentativas. Tente mais tarde." });
+    }
+
+    return next();
+  };
+}
+
+assertRequiredSecrets();
 
 // ========================
 // AUTH HELPERS
@@ -113,8 +239,11 @@ function generateRefreshToken(payload: object) {
 // ========================
 // AUTH ROUTES
 // ========================
-app.post("/api/auth/register", async (req, res) => {
-  try {
+app.post(
+  "/api/auth/register",
+  createIpRateLimiter({ prefix: "auth-register", limit: 20, ttlSeconds: 60 * 60 }),
+  async (req, res) => {
+    try {
     const { email, password, displayName } = req.body;
 
     if (!email || !password || !displayName) {
@@ -140,19 +269,23 @@ app.post("/api/auth/register", async (req, res) => {
       },
     });
 
-    return res.status(201).json({
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-    });
-  } catch (error) {
-    console.error("Register error:", error);
-    return res.status(500).json({ error: "Erro interno do servidor" });
+      return res.status(201).json({
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+      });
+    } catch (error) {
+      console.error("Register error:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
+    }
   }
-});
+);
 
-app.post("/api/auth/login", async (req, res) => {
-  try {
+app.post(
+  "/api/auth/login",
+  createIpRateLimiter({ prefix: "auth-login", limit: 30, ttlSeconds: 60 * 60 }),
+  async (req, res) => {
+    try {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -181,24 +314,33 @@ app.post("/api/auth/login", async (req, res) => {
 
     const refreshToken = generateRefreshToken({ id: user.id });
 
-    return res.json({
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({ error: "Erro interno do servidor" });
+      return res.json({
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+        },
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
+    }
   }
-});
+);
 
 app.post("/api/auth/admin-reset", async (req, res) => {
   try {
+    if (!ENABLE_ADMIN_RESET) {
+      return res.status(403).json({ error: "Rota desabilitada em producao" });
+    }
+
+    if (!isAllowedAdminIp(req)) {
+      return res.status(403).json({ error: "IP nao autorizado" });
+    }
+
     const resetKey = process.env.ADMIN_RESET_KEY || "";
     const providedKey = String(req.headers["x-admin-reset-key"] || "");
 
@@ -233,6 +375,14 @@ app.post("/api/auth/admin-reset", async (req, res) => {
 });
 
 app.post("/api/admin/bootstrap", async (req, res) => {
+  if (!ENABLE_ADMIN_BOOTSTRAP) {
+    return res.status(403).json({ error: "Rota desabilitada em producao" });
+  }
+
+  if (!isAllowedAdminIp(req)) {
+    return res.status(403).json({ error: "IP nao autorizado" });
+  }
+
   const { key, email, password } = req.body;
 
   if (!process.env.ADMIN_KEY_RESET || key !== process.env.ADMIN_KEY_RESET) {
@@ -324,12 +474,12 @@ async function connectToDatabase(retries = 5, delayMs = 3000) {
 async function startServer() {
   await connectToDatabase();
 
-  app.listen(PORT, () => {
-    console.log(`API running on port ${PORT}`);
+  await initRedis().catch((error) => {
+    console.error("Failed to connect to Redis:", error);
   });
 
-  initRedis().catch((error) => {
-    console.error("Failed to connect to Redis:", error);
+  app.listen(PORT, () => {
+    console.log(`API running on port ${PORT}`);
   });
 }
 

@@ -14,7 +14,13 @@ import { normalizeCity, rotationSeed, stableHash01 } from "../utils/rotation";
 import { getModelMediaLimits, getModelTrialEndDate } from "../lib/model-plan";
 
 const router = Router();
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret_dev";
+const isProduction = process.env.NODE_ENV === "production";
+const ACCESS_SECRET =
+  process.env.JWT_ACCESS_SECRET || (isProduction ? "" : "access_secret_dev");
+
+if (isProduction && !ACCESS_SECRET) {
+  throw new Error("JWT_ACCESS_SECRET nao configurado em producao.");
+}
 const RESET_CODE_TTL_SECONDS = 10 * 60;
 const RESET_SEND_LIMIT_PER_EMAIL = 5;
 const RESET_SEND_LIMIT_PER_IP = 10;
@@ -26,6 +32,9 @@ const REGISTER_EMAIL_SEND_LIMIT_PER_EMAIL = 5;
 const REGISTER_EMAIL_SEND_LIMIT_PER_IP = 10;
 const REGISTER_EMAIL_VERIFY_ATTEMPT_LIMIT = 8;
 const REGISTER_EMAIL_VERIFY_TOKEN_TTL_SECONDS = 30 * 60;
+const MODEL_LOGIN_LIMIT_PER_EMAIL = 20;
+const MODEL_LOGIN_LIMIT_PER_IP = 60;
+const MODEL_LOGIN_RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 const MODEL_PRESENCE_PULSE_TTL_SECONDS = 120;
 const MODEL_MANUAL_ONLINE_MAX_MINUTES = 24 * 60;
 const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
@@ -42,12 +51,36 @@ function getClientIp(req: Request) {
   return req.ip || "unknown";
 }
 
-async function incrementWithExpiry(key: string, ttlSeconds: number) {
-  const count = await redis.incr(key);
-  if (count === 1) {
-    await redis.expire(key, ttlSeconds);
+type LocalRateBucket = { count: number; expiresAt: number };
+const localRateStore = new Map<string, LocalRateBucket>();
+
+function incrementLocalRate(key: string, ttlSeconds: number) {
+  const now = Date.now();
+  const current = localRateStore.get(key);
+
+  if (!current || current.expiresAt <= now) {
+    localRateStore.set(key, {
+      count: 1,
+      expiresAt: now + ttlSeconds * 1000,
+    });
+    return 1;
   }
-  return count;
+
+  current.count += 1;
+  return current.count;
+}
+
+async function incrementWithExpiry(key: string, ttlSeconds: number) {
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, ttlSeconds);
+    }
+    return count;
+  } catch (error) {
+    console.error("Model rate-limit Redis fallback:", error);
+    return incrementLocalRate(key, ttlSeconds);
+  }
 }
 
 function formatWhatsAppDigits(phoneDigits: string) {
@@ -348,10 +381,24 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 router.post("/login", asyncHandler(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const password = String(req.body?.password || "");
 
   if (!email || !password) {
     return res.status(400).json({ error: "Dados obrigatorios ausentes" });
+  }
+
+  const ip = getClientIp(req);
+  const emailRateKey = `model:login:email:${email}`;
+  const ipRateKey = `model:login:ip:${ip}`;
+
+  const [emailCount, ipCount] = await Promise.all([
+    incrementWithExpiry(emailRateKey, MODEL_LOGIN_RATE_LIMIT_WINDOW_SECONDS),
+    incrementWithExpiry(ipRateKey, MODEL_LOGIN_RATE_LIMIT_WINDOW_SECONDS),
+  ]);
+
+  if (emailCount > MODEL_LOGIN_LIMIT_PER_EMAIL || ipCount > MODEL_LOGIN_LIMIT_PER_IP) {
+    return res.status(429).json({ error: "Muitas tentativas. Tente mais tarde." });
   }
 
   const model = await prisma.model.findUnique({
@@ -379,6 +426,11 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Model presence login heartbeat error:", error);
   }
+
+  await Promise.allSettled([
+    redis.del(emailRateKey),
+    redis.del(ipRateKey),
+  ]);
 
   return res.json({
     accessToken,
