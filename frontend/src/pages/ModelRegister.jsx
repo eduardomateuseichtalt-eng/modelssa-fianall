@@ -546,7 +546,7 @@ export default function ModelRegister() {
               Informe seu e-mail para receber o codigo de confirmacao e continuar seu cadastro.
             </p>
             <p className="muted">
-              Novo cadastro de modelo recebe 30 dias gratis de experiencia com limites do plano PRO.
+              Apos a aprovacao do perfil pelo admin, a modelo recebe 30 dias gratis no plano escolhido.
             </p>
 
             {introError && <div className="notice">{introError}</div>}
