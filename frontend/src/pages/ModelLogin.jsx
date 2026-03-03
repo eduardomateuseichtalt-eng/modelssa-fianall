@@ -2,6 +2,40 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } catch {
+      ok = false;
+    }
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+
+function formatDateBr(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toLocaleDateString("pt-BR");
+}
+
 export default function ModelLogin() {
   const navigate = useNavigate();
   const [mode, setMode] = useState("login");
@@ -19,10 +53,14 @@ export default function ModelLogin() {
   const [recoverError, setRecoverError] = useState("");
   const [recoverMessage, setRecoverMessage] = useState("");
   const [recoverLoading, setRecoverLoading] = useState(false);
+  const [paymentBlock, setPaymentBlock] = useState(null);
+  const [paymentNotice, setPaymentNotice] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setPaymentNotice("");
+    setPaymentBlock(null);
     setLoading(true);
 
     try {
@@ -37,6 +75,22 @@ export default function ModelLogin() {
 
       navigate("/modelo/area");
     } catch (err) {
+      const statusCode = Number(err?.status || 0);
+      const paymentData = err?.data?.payment;
+
+      if (
+        statusCode === 402 &&
+        err?.data?.code === "MODEL_TRIAL_EXPIRED" &&
+        paymentData
+      ) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+        setPaymentBlock(paymentData);
+        setError("");
+        return;
+      }
+
       setError(err.message || "Erro ao fazer login");
     } finally {
       setLoading(false);
@@ -114,6 +168,66 @@ export default function ModelLogin() {
             <p className="muted">Acesse para atualizar suas midias.</p>
             {error && <div className="notice">{error}</div>}
             {recoverMessage && <div className="notice">{recoverMessage}</div>}
+            {paymentBlock ? (
+              <div
+                className="card"
+                style={{
+                  marginTop: 14,
+                  marginBottom: 14,
+                  border: "1px solid rgba(225, 86, 86, 0.5)",
+                }}
+              >
+                <h4 style={{ marginBottom: 10 }}>Gratuidade vencida</h4>
+                <p className="muted" style={{ marginBottom: 8 }}>
+                  Seu periodo de gratuidade venceu. Para acessar a area da modelo,
+                  realize o pagamento do plano escolhido.
+                </p>
+                <p className="muted" style={{ marginBottom: 6 }}>
+                  Plano selecionado:{" "}
+                  <strong>{paymentBlock.planLabel || paymentBlock.planTier || "BASICO"}</strong>{" "}
+                  {paymentBlock.priceText ? `(${paymentBlock.priceText})` : ""}
+                </p>
+                {paymentBlock.trialEndsAt ? (
+                  <p className="muted" style={{ marginBottom: 10 }}>
+                    Gratuidade encerrada em: {formatDateBr(paymentBlock.trialEndsAt)}
+                  </p>
+                ) : null}
+                <p style={{ fontWeight: 700, marginBottom: 6 }}>
+                  Chave Pix copia e cola
+                </p>
+                <div
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    marginBottom: 10,
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {paymentBlock.pixKey || "-"}
+                </div>
+                <button
+                  className="btn btn-outline"
+                  type="button"
+                  onClick={async () => {
+                    const pixKey = String(paymentBlock.pixKey || "").trim();
+                    if (!pixKey) {
+                      setPaymentNotice("Chave Pix indisponivel no momento.");
+                      return;
+                    }
+                    const ok = await copyToClipboard(pixKey);
+                    setPaymentNotice(ok ? "Chave Pix copiada." : "Nao foi possivel copiar.");
+                  }}
+                >
+                  Copiar chave Pix
+                </button>
+                {paymentNotice ? (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    {paymentNotice}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <form onSubmit={handleSubmit} className="form-grid">
               <input
@@ -160,6 +274,8 @@ export default function ModelLogin() {
                 className="auth-link"
                 onClick={() => {
                   setMode("recover");
+                  setPaymentBlock(null);
+                  setPaymentNotice("");
                   setRecoverMessage("");
                   setRecoverError("");
                   setRecoverEmail(email);

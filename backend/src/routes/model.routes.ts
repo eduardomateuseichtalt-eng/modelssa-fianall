@@ -39,6 +39,25 @@ const MODEL_PRESENCE_PULSE_TTL_SECONDS = 120;
 const MODEL_MANUAL_ONLINE_MAX_MINUTES = 24 * 60;
 const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
   String(process.env.MODEL_REGISTER_EMAIL_OTP_REQUIRED || "true").trim().toLowerCase() !== "false";
+const MODEL_PAYMENT_PIX_KEY =
+  String(
+    process.env.MODEL_PAYMENT_PIX_KEY ||
+      process.env.MODEL_REGISTER_PIX_KEY ||
+      "faa9aca1-3e24-4437-abcb-ae58ae550979"
+  ).trim();
+
+const MODEL_PLAN_PRICING: Record<PlanTier, { label: string; priceCents: number; priceText: string }> = {
+  BASIC: {
+    label: "BASICO",
+    priceCents: 4990,
+    priceText: "R$ 49,90/mes",
+  },
+  PRO: {
+    label: "PRO",
+    priceCents: 8990,
+    priceText: "R$ 89,90/mes",
+  },
+};
 
 function getClientIp(req: Request) {
   const forwarded = req.headers["x-forwarded-for"];
@@ -91,6 +110,48 @@ function formatWhatsAppDigits(phoneDigits: string) {
     return `${DEFAULT_COUNTRY_CODE}${phoneDigits}`;
   }
   return phoneDigits;
+}
+
+function toDate(value?: Date | string | null) {
+  if (!value) {
+    return null;
+  }
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function modelHasPaidAreaAccess(snapshot: {
+  trialEndsAt?: Date | string | null;
+  planExpiresAt?: Date | string | null;
+  planTier?: PlanTier | null;
+}) {
+  const now = Date.now();
+  const trialEndsAt = toDate(snapshot.trialEndsAt);
+  const planExpiresAt = toDate(snapshot.planExpiresAt);
+  const planTier = snapshot.planTier || "BASIC";
+
+  // Compatibilidade com cadastros antigos sem trial configurado.
+  if (!trialEndsAt) {
+    if (!planExpiresAt) {
+      return true;
+    }
+    return planExpiresAt.getTime() > now;
+  }
+
+  if (trialEndsAt.getTime() > now) {
+    return true;
+  }
+
+  if (planExpiresAt && planExpiresAt.getTime() > now) {
+    return true;
+  }
+
+  // Compatibilidade com perfis antigos PRO sem vencimento.
+  if (planTier === "PRO" && !planExpiresAt) {
+    return true;
+  }
+
+  return false;
 }
 
 function modelPresenceKey(modelId: string) {
@@ -421,6 +482,34 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
 
   if (!valid) {
     return res.status(401).json({ error: "Credenciais invalidas" });
+  }
+
+  const hasAreaAccess = modelHasPaidAreaAccess({
+    trialEndsAt: model.trialEndsAt,
+    planExpiresAt: model.planExpiresAt,
+    planTier: model.planTier,
+  });
+
+  if (!hasAreaAccess) {
+    const normalizedTier: PlanTier = model.planTier === "PRO" ? "PRO" : "BASIC";
+    const pricing = MODEL_PLAN_PRICING[normalizedTier];
+
+    return res.status(402).json({
+      error:
+        "Sua gratuidade venceu. Para acessar a area da modelo, realize o pagamento do plano escolhido.",
+      code: "MODEL_TRIAL_EXPIRED",
+      paymentRequired: true,
+      payment: {
+        modelId: model.id,
+        planTier: normalizedTier,
+        planLabel: pricing.label,
+        priceCents: pricing.priceCents,
+        priceText: pricing.priceText,
+        pixKey: MODEL_PAYMENT_PIX_KEY,
+        trialEndsAt: model.trialEndsAt ? new Date(model.trialEndsAt).toISOString() : null,
+        planExpiresAt: model.planExpiresAt ? new Date(model.planExpiresAt).toISOString() : null,
+      },
+    });
   }
 
   const accessToken = jwt.sign(
@@ -819,13 +908,11 @@ router.patch("/:id/plan", requireAdmin, asyncHandler(async (req: Request, res: R
   const durationDays = Number(rawDurationDays);
 
   let planExpiresAt: Date | null = null;
-  if (planTier === "PRO") {
-    if (Number.isFinite(durationDays) && durationDays > 0) {
-      const safeDays = Math.min(Math.floor(durationDays), 365);
-      planExpiresAt = new Date(Date.now() + safeDays * 24 * 60 * 60 * 1000);
-    } else {
-      planExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    }
+  if (Number.isFinite(durationDays) && durationDays > 0) {
+    const safeDays = Math.min(Math.floor(durationDays), 365);
+    planExpiresAt = new Date(Date.now() + safeDays * 24 * 60 * 60 * 1000);
+  } else {
+    planExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   }
 
   const updated = await prisma.model.update({

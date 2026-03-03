@@ -38,8 +38,10 @@ export async function apiFetch(path, options = {}) {
       (data && data.error) ||
       (data && data.message) ||
       `Erro HTTP ${response.status}`;
-
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
 
   return data;
