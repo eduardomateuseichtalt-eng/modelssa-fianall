@@ -11,7 +11,7 @@ import { sendModelRegisterOtpEmail } from "../lib/email";
 import { sendWhatsAppText } from "../lib/whatsapp";
 import { asyncHandler } from "../lib/async-handler";
 import { normalizeCity, rotationSeed, stableHash01 } from "../utils/rotation";
-import { getModelMediaLimits } from "../lib/model-plan";
+import { getModelMediaLimits, getModelTrialEndDate } from "../lib/model-plan";
 
 const router = Router();
 const isProduction = process.env.NODE_ENV === "production";
@@ -1046,9 +1046,7 @@ router.patch("/:id/approve", requireAdmin, asyncHandler(async (req: Request, res
     where: { id },
     data: {
       isVerified: true,
-      trialEndsAt: model.isVerified
-        ? model.trialEndsAt
-        : new Date(Date.now() + 1 * 60 * 1000),
+      trialEndsAt: model.isVerified ? model.trialEndsAt : getModelTrialEndDate(30),
     },
     select: {
       id: true,
