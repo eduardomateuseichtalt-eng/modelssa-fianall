@@ -923,6 +923,36 @@ router.get("/pending", requireAdmin, asyncHandler(async (_req: Request, res: Res
   return res.json(models);
 }));
 
+router.get("/admin/search", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
+  const rawName = String(req.query.name || "").trim();
+  const name = rawName.replace(/\s+/g, " ");
+
+  if (!name || name.length < 2) {
+    return res.json([]);
+  }
+
+  const models = await prisma.model.findMany({
+    where: {
+      name: {
+        contains: name,
+        mode: "insensitive",
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      city: true,
+      isVerified: true,
+      createdAt: true,
+    },
+  });
+
+  return res.json(models);
+}));
+
 router.patch("/:id/approve", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
@@ -1017,6 +1047,7 @@ router.delete("/:id", requireAdmin, asyncHandler(async (req: Request, res: Respo
   operations.push(
     prisma.shot.deleteMany({ where: { modelId: id } }),
     prisma.media.deleteMany({ where: { modelId: id } }),
+    prisma.cityStat.deleteMany({ where: { modelId: id } }),
     prisma.model.delete({ where: { id } })
   );
 

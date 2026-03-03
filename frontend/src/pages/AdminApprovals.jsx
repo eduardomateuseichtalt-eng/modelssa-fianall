@@ -17,8 +17,10 @@ export default function AdminApprovals() {
   const [faqReportsError, setFaqReportsError] = useState("");
   const [faqReplyDrafts, setFaqReplyDrafts] = useState({});
   const [faqReplySavingId, setFaqReplySavingId] = useState("");
-  const [deleteEmail, setDeleteEmail] = useState("");
-  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [searchName, setSearchName] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -98,47 +100,95 @@ export default function AdminApprovals() {
       setPendingModels((current) =>
         current.filter((model) => model.id !== modelId)
       );
+      setSearchResults((current) =>
+        current.filter((model) => model.id !== modelId)
+      );
       setMessage("Cadastro excluido com sucesso.");
     } catch (err) {
       setError(err.message || "Erro ao excluir cadastro.");
     }
   };
 
-  const handleDeleteByEmail = async () => {
-    const email = String(deleteEmail || "").trim().toLowerCase();
+  const handleSearchModelsByName = async () => {
+    const name = String(searchName || "").trim();
 
-    if (!email) {
-      setError("Informe o e-mail da modelo para excluir.");
+    if (name.length < 2) {
+      setError("Digite pelo menos 2 letras do nome para buscar.");
       return;
     }
 
+    setSearchLoading(true);
+    setMessage("");
+    setError("");
+
+    try {
+      const data = await apiFetch(
+        `/api/models/admin/search?name=${encodeURIComponent(name)}`
+      );
+      setSearchResults(Array.isArray(data) ? data : []);
+      if (!Array.isArray(data) || data.length === 0) {
+        setMessage("Nenhuma modelo encontrada para esse nome.");
+      }
+    } catch (err) {
+      setError(err.message || "Erro ao buscar modelos por nome.");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleDeleteFoundModel = async (model) => {
+    const email = String(model?.email || "").trim().toLowerCase();
+    const id = String(model?.id || "").trim();
+
+    if (!email && !id) {
+      setError("Modelo invalida para exclusao.");
+      return;
+    }
+
+    const label = model?.name || email || id;
     const confirmed = window.confirm(
-      `Confirmar exclusao completa da modelo ${email}? Essa acao remove cadastro, midias e dados relacionados.`
+      `Confirmar exclusao completa de ${label}? Essa acao remove cadastro, midias e dados relacionados.`
     );
     if (!confirmed) {
       return;
     }
 
-    setDeleteLoading(true);
+    setDeleteLoadingId(id || email);
     setMessage("");
     setError("");
 
     try {
-      await apiFetch(`/api/models/by-email?email=${encodeURIComponent(email)}`, {
-        method: "DELETE",
-      });
+      if (email) {
+        await apiFetch(`/api/models/by-email?email=${encodeURIComponent(email)}`, {
+          method: "DELETE",
+        });
+      } else {
+        await apiFetch(`/api/models/${id}`, { method: "DELETE" });
+      }
 
       setPendingModels((current) =>
-        current.filter(
-          (model) => String(model.email || "").trim().toLowerCase() !== email
-        )
+        current.filter((item) => {
+          const sameId = id && item.id === id;
+          const sameEmail =
+            email &&
+            String(item.email || "").trim().toLowerCase() === email;
+          return !sameId && !sameEmail;
+        })
       );
-      setDeleteEmail("");
+      setSearchResults((current) =>
+        current.filter((item) => {
+          const sameId = id && item.id === id;
+          const sameEmail =
+            email &&
+            String(item.email || "").trim().toLowerCase() === email;
+          return !sameId && !sameEmail;
+        })
+      );
       setMessage("Modelo removida com sucesso (cadastro + midias + email).");
     } catch (err) {
-      setError(err.message || "Erro ao excluir modelo por e-mail.");
+      setError(err.message || "Erro ao excluir modelo.");
     } finally {
-      setDeleteLoading(false);
+      setDeleteLoadingId("");
     }
   };
 
@@ -316,29 +366,52 @@ export default function AdminApprovals() {
           Gestao de <span>modelos</span>
         </h2>
         <p className="muted" style={{ marginTop: 10 }}>
-          Exclua uma modelo por e-mail com remocao completa de cadastro, midias e dados relacionados.
+          Busque por nome e exclua a modelo com remocao completa de cadastro, midias e dados relacionados.
         </p>
 
         <div className="card" style={{ marginTop: 16 }}>
           <div className="form-grid">
             <input
               className="input"
-              type="email"
-              placeholder="Email da modelo para excluir"
-              value={deleteEmail}
-              onChange={(event) => setDeleteEmail(event.target.value)}
+              type="text"
+              placeholder="Nome da modelo para buscar"
+              value={searchName}
+              onChange={(event) => setSearchName(event.target.value)}
             />
             <div className="form-actions">
               <button
                 className="btn btn-outline"
                 type="button"
-                onClick={handleDeleteByEmail}
-                disabled={deleteLoading}
+                onClick={handleSearchModelsByName}
+                disabled={searchLoading}
               >
-                {deleteLoading ? "Excluindo..." : "Excluir modelo por e-mail"}
+                {searchLoading ? "Buscando..." : "Buscar por nome"}
               </button>
             </div>
           </div>
+
+          {searchResults.length > 0 ? (
+            <div className="cards" style={{ marginTop: 16 }}>
+              {searchResults.map((model) => (
+                <div className="card" key={model.id}>
+                  <h4>{model.name}</h4>
+                  <p className="muted">{model.email}</p>
+                  <p className="muted">{model.city || "Cidade nao informada"}</p>
+                  <p className="muted">
+                    Status: {model.isVerified ? "Aprovada" : "Pendente"}
+                  </p>
+                  <button
+                    className="btn btn-outline"
+                    type="button"
+                    onClick={() => handleDeleteFoundModel(model)}
+                    disabled={deleteLoadingId === model.id}
+                  >
+                    {deleteLoadingId === model.id ? "Excluindo..." : "Excluir modelo"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
 
