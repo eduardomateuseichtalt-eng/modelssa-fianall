@@ -23,6 +23,100 @@ const shotTypes = new Set([
 ]);
 
 const SHOT_TTL_HOURS = 24;
+const NEARBY_CITY_RADIUS_KM_DEFAULT = 50;
+const NEARBY_CITY_RADIUS_KM_MAX = 200;
+const CITY_COORD_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+type CityCoord = { lat: number; lon: number; expiresAt: number };
+const cityCoordCache = new Map<string, CityCoord>();
+
+function normalizeCityName(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function haversineDistanceKm(
+  origin: { lat: number; lon: number },
+  target: { lat: number; lon: number }
+) {
+  const earthRadiusKm = 6371;
+  const deltaLat = toRadians(target.lat - origin.lat);
+  const deltaLon = toRadians(target.lon - origin.lon);
+  const lat1 = toRadians(origin.lat);
+  const lat2 = toRadians(target.lat);
+
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(deltaLon / 2) *
+      Math.sin(deltaLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+}
+
+async function geocodeCity(city: string) {
+  const normalized = normalizeCityName(city);
+  if (!normalized) {
+    return null;
+  }
+
+  const cached = cityCoordCache.get(normalized);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return { lat: cached.lat, lon: cached.lon };
+  }
+
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/search");
+    url.searchParams.set("q", `${city}, Brasil`);
+    url.searchParams.set("format", "json");
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("countrycodes", "br");
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "models-club/1.0 (admin@models-club.com)",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json().catch(() => [])) as Array<{
+      lat?: string;
+      lon?: string;
+    }>;
+
+    const first = data[0];
+    const lat = Number(first?.lat);
+    const lon = Number(first?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return null;
+    }
+
+    cityCoordCache.set(normalized, {
+      lat,
+      lon,
+      expiresAt: now + CITY_COORD_CACHE_TTL_MS,
+    });
+
+    return { lat, lon };
+  } catch {
+    return null;
+  }
+}
 
 async function purgeExpiredShots() {
   const cutoff = new Date(Date.now() - SHOT_TTL_HOURS * 60 * 60 * 1000);
@@ -121,6 +215,143 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
   }));
 
   return res.json(response);
+}));
+
+router.get("/nearby", asyncHandler(async (req: Request, res: Response) => {
+  await purgeExpiredShots();
+
+  const city = String(req.query.city || "").trim();
+  if (!city) {
+    return res.status(400).json({ error: "Cidade obrigatoria." });
+  }
+
+  const rawRadius = Number(req.query.radiusKm || NEARBY_CITY_RADIUS_KM_DEFAULT);
+  const radiusKm = Number.isFinite(rawRadius)
+    ? Math.min(Math.max(rawRadius, 5), NEARBY_CITY_RADIUS_KM_MAX)
+    : NEARBY_CITY_RADIUS_KM_DEFAULT;
+
+  const queryCoords = await geocodeCity(city);
+  if (!queryCoords) {
+    return res.json({
+      queryCity: city,
+      radiusKm,
+      nearbyCities: [],
+      items: [],
+    });
+  }
+
+  const user = getUserFromRequest(req);
+
+  const shots = await prisma.shot.findMany({
+    where: {
+      isActive: true,
+      model: {
+        isVerified: true,
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      model: {
+        select: {
+          id: true,
+          name: true,
+          city: true,
+          avatarUrl: true,
+        },
+      },
+    },
+  });
+
+  const uniqueCities = Array.from(
+    new Set(
+      shots
+        .map((shot) => String(shot.model?.city || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  const queryCityKey = normalizeCityName(city);
+  const cityDistanceMap = new Map<
+    string,
+    { city: string; distanceKm: number }
+  >();
+
+  for (const candidateCity of uniqueCities) {
+    const candidateKey = normalizeCityName(candidateCity);
+    if (!candidateKey || candidateKey === queryCityKey) {
+      continue;
+    }
+
+    const coords = await geocodeCity(candidateCity);
+    if (!coords) {
+      continue;
+    }
+
+    const distanceKm = haversineDistanceKm(queryCoords, coords);
+    if (distanceKm <= radiusKm) {
+      cityDistanceMap.set(candidateKey, {
+        city: candidateCity,
+        distanceKm: Number(distanceKm.toFixed(1)),
+      });
+    }
+  }
+
+  if (cityDistanceMap.size === 0) {
+    return res.json({
+      queryCity: city,
+      radiusKm,
+      nearbyCities: [],
+      items: [],
+    });
+  }
+
+  let likedShotIds = new Set<string>();
+
+  if (user) {
+    const likes = await prisma.shotLike.findMany({
+      where: {
+        userId: user.id,
+        shotId: { in: shots.map((shot) => shot.id) },
+      },
+      select: { shotId: true },
+    });
+
+    likedShotIds = new Set(likes.map((like) => like.shotId));
+  }
+
+  const nearbyItems = shots
+    .map((shot) => {
+      const shotCity = String(shot.model?.city || "").trim();
+      const distanceData = cityDistanceMap.get(normalizeCityName(shotCity));
+      if (!distanceData) {
+        return null;
+      }
+
+      return {
+        id: shot.id,
+        videoUrl: shot.videoUrl,
+        imageUrl: shot.imageUrl,
+        type: shot.type,
+        posterUrl: shot.posterUrl,
+        createdAt: shot.createdAt,
+        model: shot.model,
+        likeCount: shot.likeCount,
+        likedByUser: likedShotIds.has(shot.id),
+        nearbyDistanceKm: distanceData.distanceKm,
+      };
+    })
+    .filter(Boolean);
+
+  const nearbyCities = Array.from(cityDistanceMap.values()).sort(
+    (a, b) => a.distanceKm - b.distanceKm
+  );
+
+  return res.json({
+    queryCity: city,
+    radiusKm,
+    nearbyCities,
+    items: nearbyItems,
+  });
 }));
 
 router.post(

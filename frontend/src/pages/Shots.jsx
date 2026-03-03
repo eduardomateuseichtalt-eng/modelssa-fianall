@@ -1,25 +1,40 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
 
+function normalizeCityText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
 export default function Shots() {
   const [shots, setShots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [cityQuery, setCityQuery] = useState("");
+  const [searchCity, setSearchCity] = useState("");
   const [showVideos, setShowVideos] = useState(true);
   const [showPhotos, setShowPhotos] = useState(true);
   const [activeGroup, setActiveGroup] = useState("Mulheres");
+  const [nearbyShots, setNearbyShots] = useState([]);
+  const [nearbyCities, setNearbyCities] = useState([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [nearbyError, setNearbyError] = useState("");
   const [reelsOpen, setReelsOpen] = useState(false);
   const [reelsIndex, setReelsIndex] = useState(0);
+  const [reelsSource, setReelsSource] = useState("filtered");
   const reelsRef = useRef(null);
+  const nearbyCacheRef = useRef(new Map());
 
   const loadShots = async () => {
     setLoading(true);
     setError("");
     try {
       const data = await apiFetch("/api/shots");
-      setShots(data);
+      setShots(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || "Nao foi possivel carregar os shots.");
     } finally {
@@ -42,20 +57,105 @@ export default function Shots() {
     };
   }, [reelsOpen]);
 
+  const matchesTypeFilter = (shot) => {
+    const isVideo = shot.type === "VIDEO";
+    return (showVideos && isVideo) || (showPhotos && !isVideo);
+  };
+
   const filteredShots = useMemo(() => {
     return shots.filter((shot) => {
-      const matchesCity = cityQuery.trim()
+      const matchesCity = searchCity.trim()
         ? (shot.model?.city || "")
             .toLowerCase()
-            .includes(cityQuery.trim().toLowerCase())
+            .includes(searchCity.trim().toLowerCase())
         : true;
-      const isVideo = shot.type === "VIDEO";
-      const matchesType = (showVideos && isVideo) || (showPhotos && !isVideo);
-      return matchesCity && matchesType;
+      return matchesCity && matchesTypeFilter(shot);
     });
-  }, [shots, cityQuery, showVideos, showPhotos]);
+  }, [shots, searchCity, showVideos, showPhotos]);
 
-  const openReels = (index) => {
+  const nearbyFilteredShots = useMemo(
+    () => nearbyShots.filter(matchesTypeFilter),
+    [nearbyShots, showVideos, showPhotos]
+  );
+
+  const reelsShots = reelsSource === "nearby" ? nearbyFilteredShots : filteredShots;
+
+  useEffect(() => {
+    const targetCity = searchCity.trim();
+    const shouldSearchNearby =
+      targetCity.length > 0 &&
+      filteredShots.length === 0 &&
+      (showVideos || showPhotos);
+
+    if (!shouldSearchNearby) {
+      setNearbyLoading(false);
+      setNearbyError("");
+      setNearbyShots([]);
+      setNearbyCities([]);
+      return;
+    }
+
+    const cacheKey = `${normalizeCityText(targetCity)}|50`;
+    const cached = nearbyCacheRef.current.get(cacheKey);
+    if (cached) {
+      setNearbyError("");
+      setNearbyShots(Array.isArray(cached.items) ? cached.items : []);
+      setNearbyCities(Array.isArray(cached.nearbyCities) ? cached.nearbyCities : []);
+      return;
+    }
+
+    let canceled = false;
+    const loadNearbyShots = async () => {
+      setNearbyLoading(true);
+      setNearbyError("");
+      try {
+        const data = await apiFetch(
+          `/api/shots/nearby?city=${encodeURIComponent(targetCity)}&radiusKm=50`
+        );
+        if (canceled) {
+          return;
+        }
+
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const nearbyCitiesList = Array.isArray(data?.nearbyCities)
+          ? data.nearbyCities
+          : [];
+
+        nearbyCacheRef.current.set(cacheKey, {
+          items,
+          nearbyCities: nearbyCitiesList,
+        });
+
+        setNearbyShots(items);
+        setNearbyCities(nearbyCitiesList);
+      } catch (err) {
+        if (canceled) {
+          return;
+        }
+        setNearbyShots([]);
+        setNearbyCities([]);
+        setNearbyError(
+          err.message || "Nao foi possivel carregar shots de cidades proximas."
+        );
+      } finally {
+        if (!canceled) {
+          setNearbyLoading(false);
+        }
+      }
+    };
+
+    loadNearbyShots();
+    return () => {
+      canceled = true;
+    };
+  }, [searchCity, filteredShots.length, showVideos, showPhotos]);
+
+  const handleSearch = () => {
+    setSearchCity(cityQuery.trim());
+  };
+
+  const openReels = (source, index) => {
+    setReelsSource(source);
     setReelsIndex(index);
     setReelsOpen(true);
     requestAnimationFrame(() => {
@@ -90,6 +190,16 @@ export default function Shots() {
               : shot
           )
         );
+        setNearbyShots((prev) =>
+          prev.map((shot) =>
+            shot.id === shotId
+              ? {
+                  ...shot,
+                  likeCount: response.likeCount,
+                }
+              : shot
+          )
+        );
       } catch (err) {
         setActionMessage(err.message || "Nao foi possivel curtir o shot.");
       }
@@ -112,6 +222,17 @@ export default function Shots() {
             : shot
         )
       );
+      setNearbyShots((prev) =>
+        prev.map((shot) =>
+          shot.id === shotId
+            ? {
+                ...shot,
+                likedByUser: response.liked,
+                likeCount: response.likeCount,
+              }
+            : shot
+        )
+      );
     } catch (err) {
       setActionMessage(err.message || "Nao foi possivel atualizar a curtida.");
     }
@@ -122,11 +243,11 @@ export default function Shots() {
       <div className="shots-header">
         <div className="shots-breadcrumb">
           <span>Pagina Inicial</span>
-          <span>›</span>
+          <span>&gt;</span>
           <span>Models Shots</span>
         </div>
         <h1 className="shots-title">
-          Models Shots em <span>{cityQuery || "sua cidade"}</span>
+          Models Shots em <span>{searchCity || "sua cidade"}</span>
         </h1>
         <div className="shots-search">
           <input
@@ -134,8 +255,16 @@ export default function Shots() {
             placeholder="Digite sua cidade"
             value={cityQuery}
             onChange={(event) => setCityQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handleSearch();
+              }
+            }}
           />
-          <span className="shots-search-icon">⌕</span>
+          <button type="button" className="shots-search-btn" onClick={handleSearch}>
+            Buscar
+          </button>
         </div>
         <div className="shots-filters">
           {["Mulheres", "Homens", "Trans"].map((label) => (
@@ -174,9 +303,88 @@ export default function Shots() {
       ) : error ? (
         <p className="notice">{error}</p>
       ) : filteredShots.length === 0 ? (
-        <p className="muted" style={{ marginTop: 24 }}>
-          Nenhum shot encontrado para os filtros atuais.
-        </p>
+        <>
+          <p className="muted" style={{ marginTop: 24 }}>
+            Nenhum shot encontrado para os filtros atuais.
+          </p>
+
+          {nearbyLoading ? (
+            <p className="muted" style={{ marginTop: 12 }}>
+              Buscando shots em cidades proximas (50 km)...
+            </p>
+          ) : null}
+
+          {nearbyError ? (
+            <p className="notice" style={{ marginTop: 12 }}>
+              {nearbyError}
+            </p>
+          ) : null}
+
+          {!nearbyLoading && !nearbyError && nearbyFilteredShots.length > 0 ? (
+            <section className="shots-nearby">
+              <p className="muted" style={{ marginTop: 12 }}>
+                Mostrando shots de cidades proximas em ate 50 km.
+              </p>
+              {nearbyCities.length > 0 ? (
+                <p className="muted shots-nearby-cities">
+                  Cidades encontradas:{" "}
+                  {nearbyCities
+                    .slice(0, 6)
+                    .map((city) => `${city.city} (${city.distanceKm} km)`)
+                    .join(", ")}
+                </p>
+              ) : null}
+              <div className="shots-list">
+                {nearbyFilteredShots.map((shot, index) => (
+                  <button
+                    key={`nearby-${shot.id}`}
+                    type="button"
+                    className="shots-card"
+                    onClick={() => openReels("nearby", index)}
+                  >
+                    <div className="shots-card-thumb">
+                      {shot.type === "IMAGE" && shot.imageUrl ? (
+                        <img
+                          src={shot.imageUrl}
+                          alt={`Shot de ${shot.model?.name || "Modelo"}`}
+                        />
+                      ) : shot.videoUrl ? (
+                        <video
+                          src={shot.videoUrl}
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <div className="shot-placeholder">Shot indisponivel</div>
+                      )}
+                    </div>
+                    <div className="shots-card-meta">
+                      <h3>{shot.model?.name || "Modelo"}</h3>
+                      <p>{shot.model?.city || "Brasil"}</p>
+                      <span>
+                        {shot.likeCount} curtidas
+                        {typeof shot.nearbyDistanceKm === "number"
+                          ? ` - ${shot.nearbyDistanceKm} km`
+                          : ""}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {!nearbyLoading &&
+          !nearbyError &&
+          searchCity.trim() &&
+          nearbyFilteredShots.length === 0 ? (
+            <p className="muted" style={{ marginTop: 12 }}>
+              Tambem nao encontramos shots em cidades proximas (50 km).
+            </p>
+          ) : null}
+        </>
       ) : (
         <div className="shots-list">
           {filteredShots.map((shot, index) => (
@@ -184,19 +392,13 @@ export default function Shots() {
               key={shot.id}
               type="button"
               className="shots-card"
-              onClick={() => openReels(index)}
+              onClick={() => openReels("filtered", index)}
             >
               <div className="shots-card-thumb">
                 {shot.type === "IMAGE" && shot.imageUrl ? (
                   <img src={shot.imageUrl} alt={`Shot de ${shot.model?.name || "Modelo"}`} />
                 ) : shot.videoUrl ? (
-                  <video
-                    src={shot.videoUrl}
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                  />
+                  <video src={shot.videoUrl} muted loop playsInline preload="metadata" />
                 ) : (
                   <div className="shot-placeholder">Shot indisponivel</div>
                 )}
@@ -221,7 +423,7 @@ export default function Shots() {
             Fechar
           </button>
           <div className="reels-container" ref={reelsRef}>
-            {filteredShots.map((shot, index) => (
+            {reelsShots.map((shot, index) => (
               <div
                 key={`reel-${shot.id}`}
                 className="reels-item"
@@ -230,12 +432,7 @@ export default function Shots() {
                 {shot.type === "IMAGE" && shot.imageUrl ? (
                   <img src={shot.imageUrl} alt={`Shot de ${shot.model?.name || "Modelo"}`} />
                 ) : shot.videoUrl ? (
-                  <video
-                    src={shot.videoUrl}
-                    playsInline
-                    controls
-                    preload="metadata"
-                  />
+                  <video src={shot.videoUrl} playsInline controls preload="metadata" />
                 ) : (
                   <div className="shot-placeholder">Shot indisponivel</div>
                 )}

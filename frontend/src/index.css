@@ -2198,6 +2198,24 @@ select {
   color: #b05252;
 }
 
+.shots-search-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #b05252;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shots-nearby {
+  margin-top: 4px;
+}
+
+.shots-nearby-cities {
+  margin-top: 6px;
+}
+
 .shots-filters {
   margin-top: 16px;
   display: flex;
