@@ -158,8 +158,8 @@ export default function Home() {
         <div>
           <div className="hero-spot">
             <h2 className="hero-title-alt">
-              A MELHOR PLATAFORMA DE ACOMPANHANTES. AONDE A BELEZA SE CONECTA
-              A MOMENTOS INESQUECIVEIS
+              A MELHOR PLATAFORMA DE ACOMPANHATES. PERMITA-SE VIVER MOMENTOS
+              INESQUECIVEIS.
             </h2>
             <div className="hero-actions hero-actions-alt">
               <Link to="/seja-modelo" className="btn">
