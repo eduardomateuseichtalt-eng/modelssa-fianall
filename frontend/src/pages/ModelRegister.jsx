@@ -131,6 +131,9 @@ export default function ModelRegister() {
     price30Min: "",
     price15Min: "",
   });
+  const [selectedPlanTier, setSelectedPlanTier] = useState("");
+  const [showPlanSelection, setShowPlanSelection] = useState(false);
+  const [planSelectionError, setPlanSelectionError] = useState("");
   const [pricingError, setPricingError] = useState("");
   const [genderIdentity, setGenderIdentity] = useState("");
   const [genderStepError, setGenderStepError] = useState("");
@@ -400,26 +403,24 @@ export default function ModelRegister() {
     }
   };
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setMessage("");
+  const validateBeforeSubmit = () => {
     setMediaError("");
     setProfileError("");
 
     if (!profileFile) {
       setProfileError("A foto de perfil e obrigatoria.");
-      return;
+      return false;
     }
 
     const hasVideo = mediaFiles.some((file) => file.type.startsWith("video/"));
     if (!hasVideo) {
       setMediaError("Envie pelo menos 1 video de verificacao.");
-      return;
+      return false;
     }
 
     if (Number(form.age) < 18) {
       setMessage("Cadastro permitido apenas para maiores de 18 anos.");
-      return;
+      return false;
     }
 
     if (!emailOtpVerifiedToken || !verifiedEmail) {
@@ -429,10 +430,13 @@ export default function ModelRegister() {
       setShowGenderStep(false);
       setShowProfilePhotoStep(false);
       setIntroStage("email");
-      return;
+      return false;
     }
 
-    if (String(form.email || "").trim().toLowerCase() !== verifiedEmail.toLowerCase()) {
+    if (
+      String(form.email || "").trim().toLowerCase() !==
+      verifiedEmail.toLowerCase()
+    ) {
       setMessage("O e-mail foi alterado. Confirme novamente para continuar.");
       setEmailOtpVerifiedToken("");
       setVerifiedEmail("");
@@ -441,9 +445,40 @@ export default function ModelRegister() {
       setShowGenderStep(false);
       setShowProfilePhotoStep(false);
       setIntroStage("email");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setMessage("");
+    setPlanSelectionError("");
+
+    if (!validateBeforeSubmit()) {
+      setShowPlanSelection(false);
       return;
     }
 
+    setShowPlanSelection(true);
+  };
+
+  const handleConfirmPlanAndSubmit = async () => {
+    setPlanSelectionError("");
+    setMessage("");
+
+    if (!selectedPlanTier) {
+      setPlanSelectionError("Selecione o plano para concluir o envio.");
+      return;
+    }
+
+    if (!validateBeforeSubmit()) {
+      setShowPlanSelection(false);
+      return;
+    }
+
+    setShowPlanSelection(false);
     setLoading(true);
     try {
       const data = await apiFetch("/api/models/register", {
@@ -458,15 +493,33 @@ export default function ModelRegister() {
           waist: form.waist ? Number(form.waist) : null,
           hips: form.hips ? Number(form.hips) : null,
           priceHour: form.priceHour ? Number(form.priceHour) : null,
-          price30Min: pricingValues.price30Min ? Number(pricingValues.price30Min) : null,
-          price15Min: pricingValues.price15Min ? Number(pricingValues.price15Min) : null,
+          price30Min: pricingValues.price30Min
+            ? Number(pricingValues.price30Min)
+            : null,
+          price15Min: pricingValues.price15Min
+            ? Number(pricingValues.price15Min)
+            : null,
+          planTier: selectedPlanTier,
           emailVerificationToken: emailOtpVerifiedToken,
         }),
       });
 
       if (mediaFiles.length > 0 && data?.id) {
+        const loginData = await apiFetch("/api/models/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: form.email,
+            password: form.password,
+          }),
+        });
+
+        const modelAccessToken = String(loginData?.accessToken || "");
+        if (!modelAccessToken) {
+          throw new Error("Nao foi possivel autenticar para envio de midia.");
+        }
+
         const formData = new FormData();
-        formData.append("modelId", data.id);
         if (profileFile) {
           formData.append("files", profileFile);
         }
@@ -475,6 +528,7 @@ export default function ModelRegister() {
         await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.open("POST", `${API_URL}/api/media/upload`);
+          xhr.setRequestHeader("Authorization", `Bearer ${modelAccessToken}`);
           xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
               setUploadProgress(Math.round((event.loaded / event.total) * 100));
@@ -509,6 +563,9 @@ export default function ModelRegister() {
       setEmailOtpVerifiedToken("");
       setVerifiedEmail("");
       setPricingValues({ price30Min: "", price15Min: "" });
+      setSelectedPlanTier("");
+      setShowPlanSelection(false);
+      setPlanSelectionError("");
       setPricingError("");
       setGenderIdentity("");
       setGenderStepError("");
@@ -529,7 +586,7 @@ export default function ModelRegister() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   if (showIntroStep) {
     return (
@@ -732,6 +789,9 @@ export default function ModelRegister() {
               {form.city
                 ? `Modelos na cidade de ${form.city} costumam cobrar a partir de um valor por hora informado no anuncio.`
                 : "Defina um valor de referencia por hora para iniciar seu anuncio."}
+            </p>
+            <p className="muted model-register-pricing-note">
+              A escolha do plano (Basico ou Pro) sera confirmada no envio final do cadastro.
             </p>
 
             <div className="model-register-pricing-actions">
@@ -1445,6 +1505,9 @@ export default function ModelRegister() {
                 setEmailOtpCode("");
                 setEmailOtpVerifiedToken("");
                 setVerifiedEmail("");
+                setSelectedPlanTier("");
+                setShowPlanSelection(false);
+                setPlanSelectionError("");
                 setMediaFiles([]);
                 setMediaPreviews([]);
                 setMediaError("");
@@ -1459,6 +1522,72 @@ export default function ModelRegister() {
               Limpar
             </button>
           </div>
+          {showPlanSelection ? (
+            <div
+              className="card"
+              style={{
+                marginTop: 14,
+                border: "1px solid rgba(212, 175, 55, 0.35)",
+              }}
+            >
+              <h4>Escolha o plano antes de enviar</h4>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Toda nova modelo recebe 30 dias gratis no plano escolhido, a contar da aprovacao do perfil pelo admin.
+              </p>
+
+              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                <label className="model-register-check">
+                  <input
+                    type="radio"
+                    name="planTier"
+                    value="BASIC"
+                    checked={selectedPlanTier === "BASIC"}
+                    onChange={(event) => setSelectedPlanTier(event.target.value)}
+                  />
+                  <span>Plano Basico - R$ 49,90/mes (7 fotos e 3 videos)</span>
+                </label>
+
+                <label className="model-register-check">
+                  <input
+                    type="radio"
+                    name="planTier"
+                    value="PRO"
+                    checked={selectedPlanTier === "PRO"}
+                    onChange={(event) => setSelectedPlanTier(event.target.value)}
+                  />
+                  <span>Plano Pro - R$ 89,90/mes (15 fotos e 7 videos)</span>
+                </label>
+              </div>
+
+              {planSelectionError ? (
+                <div className="notice" style={{ marginTop: 10 }}>
+                  {planSelectionError}
+                </div>
+              ) : null}
+
+              <div className="form-actions" style={{ marginTop: 12 }}>
+                <button
+                  className="btn btn-outline"
+                  type="button"
+                  onClick={() => {
+                    setShowPlanSelection(false);
+                    setPlanSelectionError("");
+                  }}
+                  disabled={loading}
+                >
+                  Voltar
+                </button>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={handleConfirmPlanAndSubmit}
+                  disabled={loading}
+                >
+                  {loading ? "Enviando..." : "Confirmar plano e enviar"}
+                </button>
+              </div>
+            </div>
+          ) : null}
           {uploadProgress > 0 ? (
             <div className="upload-progress">
               <div className="upload-progress-bar" style={{ width: `${uploadProgress}%` }} />

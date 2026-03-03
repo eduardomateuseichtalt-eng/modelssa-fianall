@@ -830,6 +830,39 @@ export default function ModelDashboard() {
     () => calcRate * calcDailyCount * calcWeeklyDays * 4,
     [calcRate, calcDailyCount, calcWeeklyDays]
   );
+  const trialReminderNotice = useMemo(() => {
+    if (!planTrialActive || !planTrialEndsAt) {
+      return "";
+    }
+
+    const trialEnd = new Date(planTrialEndsAt);
+    if (Number.isNaN(trialEnd.getTime())) {
+      return "";
+    }
+
+    const diffMs = trialEnd.getTime() - Date.now();
+    if (diffMs <= 0) {
+      return "";
+    }
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    const daysRemaining = Math.ceil(diffMs / dayMs);
+
+    if (daysRemaining <= 1) {
+      return "Aviso: seu periodo de teste vence em 1 dia. Regularize seu plano para manter o perfil ativo.";
+    }
+
+    if (daysRemaining <= 3) {
+      return "Aviso: faltam 3 dias para o fim do seu periodo de teste. Regularize seu plano com antecedencia.";
+    }
+
+    if (daysRemaining <= 7) {
+      return "Aviso: faltam 7 dias para o fim do seu periodo de teste. Prepare a regularizacao do plano.";
+    }
+
+    return "";
+  }, [planTrialActive, planTrialEndsAt]);
+
   const presenceStatusLabel = useMemo(() => {
     if (!presenceOnline) {
       return "Offline";
@@ -871,6 +904,11 @@ export default function ModelDashboard() {
               : ""}
             {" "}A midia de comparacao continua separada desses limites.
           </p>
+          {trialReminderNotice ? (
+            <div className="notice" style={{ marginTop: 10 }}>
+              {trialReminderNotice}
+            </div>
+          ) : null}
         </div>
         <div className="model-area-actions">
           <div className="model-presence-control" ref={presenceControlRef}>

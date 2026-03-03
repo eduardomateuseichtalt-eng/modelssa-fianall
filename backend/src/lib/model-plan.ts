@@ -31,12 +31,23 @@ export function getModelEffectivePlan(
     return "BASIC";
   }
 
-  const planExpiresAt = toDate(snapshot.planExpiresAt);
-  if (!planExpiresAt) {
+  const trialEndsAt = toDate(snapshot.trialEndsAt);
+  if (trialEndsAt && trialEndsAt.getTime() > now.getTime()) {
     return "PRO";
   }
 
-  return planExpiresAt.getTime() > now.getTime() ? "PRO" : "BASIC";
+  const planExpiresAt = toDate(snapshot.planExpiresAt);
+  if (planExpiresAt) {
+    return planExpiresAt.getTime() > now.getTime() ? "PRO" : "BASIC";
+  }
+
+  // Se houve periodo de trial e nao existe plano pago vigente, volta para BASIC.
+  if (trialEndsAt) {
+    return "BASIC";
+  }
+
+  // Compatibilidade com registros antigos de PRO sem vencimento.
+  return "PRO";
 }
 
 export function getModelMediaLimits(snapshot: ModelPlanSnapshot, now: Date = new Date()) {

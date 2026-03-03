@@ -280,6 +280,7 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
     priceHour,
     price30Min,
     price15Min,
+    planTier,
     emailVerificationToken,
   } = req.body;
 
@@ -313,6 +314,13 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
   }
 
   const parsedAge = toNumberOrNull(age);
+  const planTierRaw = String(planTier || "").trim().toUpperCase();
+
+  if (planTierRaw && planTierRaw !== "BASIC" && planTierRaw !== "PRO") {
+    return res.status(400).json({ error: "Plano invalido. Use BASIC ou PRO." });
+  }
+
+  const safePlanTier: PlanTier = planTierRaw === "PRO" ? "PRO" : "BASIC";
 
   if (parsedAge === null || parsedAge < 18) {
     return res
@@ -366,7 +374,7 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
       priceHour: toNumberOrNull(priceHour),
       price30Min: toNumberOrNull(price30Min),
       price15Min: toNumberOrNull(price15Min),
-      planTier: "BASIC",
+      planTier: safePlanTier,
     },
   });
 
