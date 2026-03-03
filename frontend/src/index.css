@@ -132,6 +132,10 @@ select {
   text-transform: uppercase;
 }
 
+.topbar .brand {
+  color: var(--gold);
+}
+
 .brand-mark {
   width: 40px;
   height: 40px;
