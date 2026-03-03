@@ -17,6 +17,8 @@ export default function AdminApprovals() {
   const [faqReportsError, setFaqReportsError] = useState("");
   const [faqReplyDrafts, setFaqReplyDrafts] = useState({});
   const [faqReplySavingId, setFaqReplySavingId] = useState("");
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -74,6 +76,8 @@ export default function AdminApprovals() {
   };
 
   const handleReject = async (modelId) => {
+    const target = pendingModels.find((model) => model.id === modelId) || null;
+    const targetEmail = String(target?.email || "").trim();
     const confirmed = window.confirm(
       "Tem certeza que deseja excluir este cadastro? Esta acao nao pode ser desfeita."
     );
@@ -83,13 +87,58 @@ export default function AdminApprovals() {
     setMessage("");
     setError("");
     try {
-      await apiFetch(`/api/models/${modelId}`, { method: "DELETE" });
+      if (targetEmail) {
+        await apiFetch(
+          `/api/models/by-email?email=${encodeURIComponent(targetEmail)}`,
+          { method: "DELETE" }
+        );
+      } else {
+        await apiFetch(`/api/models/${modelId}`, { method: "DELETE" });
+      }
       setPendingModels((current) =>
         current.filter((model) => model.id !== modelId)
       );
       setMessage("Cadastro excluido com sucesso.");
     } catch (err) {
       setError(err.message || "Erro ao excluir cadastro.");
+    }
+  };
+
+  const handleDeleteByEmail = async () => {
+    const email = String(deleteEmail || "").trim().toLowerCase();
+
+    if (!email) {
+      setError("Informe o e-mail da modelo para excluir.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Confirmar exclusao completa da modelo ${email}? Essa acao remove cadastro, midias e dados relacionados.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await apiFetch(`/api/models/by-email?email=${encodeURIComponent(email)}`, {
+        method: "DELETE",
+      });
+
+      setPendingModels((current) =>
+        current.filter(
+          (model) => String(model.email || "").trim().toLowerCase() !== email
+        )
+      );
+      setDeleteEmail("");
+      setMessage("Modelo removida com sucesso (cadastro + midias + email).");
+    } catch (err) {
+      setError(err.message || "Erro ao excluir modelo por e-mail.");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -261,6 +310,37 @@ export default function AdminApprovals() {
 
       {mediaError && <div className="notice">{mediaError}</div>}
       {faqReportsError && <div className="notice">{faqReportsError}</div>}
+
+      <section className="section" style={{ marginTop: 24 }}>
+        <h2 className="section-title">
+          Gestao de <span>modelos</span>
+        </h2>
+        <p className="muted" style={{ marginTop: 10 }}>
+          Exclua uma modelo por e-mail com remocao completa de cadastro, midias e dados relacionados.
+        </p>
+
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="form-grid">
+            <input
+              className="input"
+              type="email"
+              placeholder="Email da modelo para excluir"
+              value={deleteEmail}
+              onChange={(event) => setDeleteEmail(event.target.value)}
+            />
+            <div className="form-actions">
+              <button
+                className="btn btn-outline"
+                type="button"
+                onClick={handleDeleteByEmail}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? "Excluindo..." : "Excluir modelo por e-mail"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="section" style={{ marginTop: 32 }}>
         <h2 className="section-title">
