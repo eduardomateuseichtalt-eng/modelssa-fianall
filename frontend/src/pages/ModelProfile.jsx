@@ -8,12 +8,6 @@ export default function ModelProfile() {
   const [media, setMedia] = useState([]);
   const [comparisonMedia, setComparisonMedia] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [contactName, setContactName] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [contactText, setContactText] = useState("");
-  const [contactMessage, setContactMessage] = useState("");
-  const [contactError, setContactError] = useState("");
-  const [contactLoading, setContactLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("media");
   const [modelShots, setModelShots] = useState([]);
   const [shotsLoading, setShotsLoading] = useState(false);
@@ -32,7 +26,6 @@ export default function ModelProfile() {
   const [viewerMode, setViewerMode] = useState("");
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
-  const contactSectionRef = useRef(null);
   const priceCardRef = useRef(null);
 
   useEffect(() => {
@@ -218,13 +211,6 @@ export default function ModelProfile() {
     });
 
     window.location.href = waAppUrl;
-  };
-
-  const openContactSection = () => {
-    setActiveTab("about");
-    window.setTimeout(() => {
-      contactSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
   };
 
   const mediaPhotos = media.filter((item) => item.type !== "VIDEO");
@@ -448,9 +434,6 @@ export default function ModelProfile() {
             </div>
 
             <div className="profile-public-cta">
-              <button className="btn" type="button" onClick={openContactSection}>
-                Entrar em contato
-              </button>
               {wa && wa.length >= 10 ? (
                 <a
                   className="btn profile-public-whatsapp"
@@ -461,11 +444,7 @@ export default function ModelProfile() {
                 >
                   Chamar no WhatsApp
                 </a>
-              ) : (
-                <button className="btn btn-outline" type="button" onClick={openContactSection}>
-                  Enviar mensagem
-                </button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -605,73 +584,6 @@ export default function ModelProfile() {
                 </div>
               </div>
 
-              <div className="section profile-public-contact" ref={contactSectionRef}>
-                <h2 className="section-title">Entrar em contato direto</h2>
-                <p className="muted" style={{ marginTop: 10 }}>
-                  Envie uma mensagem para a modelo. As mensagens nao ficam salvas.
-                </p>
-
-                {contactMessage && <div className="notice">{contactMessage}</div>}
-                {contactError && <div className="notice">{contactError}</div>}
-
-                <div className="form-grid" style={{ marginTop: 16 }}>
-                  <input
-                    className="input"
-                    placeholder="Seu nome (opcional)"
-                    value={contactName}
-                    onChange={(event) => setContactName(event.target.value)}
-                  />
-                  <input
-                    className="input"
-                    placeholder="WhatsApp (opcional)"
-                    value={contactPhone}
-                    onChange={(event) => setContactPhone(event.target.value)}
-                  />
-                  <textarea
-                    className="textarea"
-                    placeholder="Escreva sua mensagem"
-                    value={contactText}
-                    onChange={(event) => setContactText(event.target.value)}
-                    rows={4}
-                  />
-                  <div className="form-actions">
-                    <button
-                      className="btn"
-                      type="button"
-                      disabled={contactLoading || contactText.trim().length === 0}
-                      onClick={async () => {
-                        setContactError("");
-                        setContactMessage("");
-                        const text = contactText.trim();
-                        if (!text) {
-                          setContactError("Digite uma mensagem para enviar.");
-                          return;
-                        }
-                        setContactLoading(true);
-                        try {
-                          await apiFetch(`/api/messages/${id}`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              text,
-                              fromName: contactName.trim(),
-                              fromPhone: contactPhone.trim(),
-                            }),
-                          });
-                          setContactMessage("Mensagem enviada com sucesso.");
-                          setContactText("");
-                        } catch (err) {
-                          setContactError(err.message || "Erro ao enviar mensagem.");
-                        } finally {
-                          setContactLoading(false);
-                        }
-                      }}
-                    >
-                      {contactLoading ? "Enviando..." : "Enviar mensagem"}
-                    </button>
-                  </div>
-                </div>
-              </div>
             </section>
           ) : null}
 
