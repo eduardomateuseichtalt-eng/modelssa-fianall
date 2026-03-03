@@ -8,8 +8,8 @@ const PLANS = [
   {
     id: "basic",
     name: "BASICO",
-    priceText: "R$ 29,90/mes",
-    priceCents: 2990,
+    priceText: "R$ 49,90/mes",
+    priceCents: 4990,
     benefits: [
       "Perfil publico",
       "Ate 7 fotos na galeria",
@@ -21,8 +21,8 @@ const PLANS = [
   {
     id: "pro",
     name: "PRO",
-    priceText: "R$ 59,90/mes",
-    priceCents: 5990,
+    priceText: "R$ 89,90/mes",
+    priceCents: 8990,
     benefits: [
       "Tudo do Basico",
       "Ate 15 fotos na galeria",
