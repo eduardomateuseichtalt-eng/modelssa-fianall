@@ -123,12 +123,10 @@ function toDate(value?: Date | string | null) {
 function modelHasPaidAreaAccess(snapshot: {
   trialEndsAt?: Date | string | null;
   planExpiresAt?: Date | string | null;
-  planTier?: PlanTier | null;
 }) {
   const now = Date.now();
   const trialEndsAt = toDate(snapshot.trialEndsAt);
   const planExpiresAt = toDate(snapshot.planExpiresAt);
-  const planTier = snapshot.planTier || "BASIC";
 
   // Compatibilidade com cadastros antigos sem trial configurado.
   if (!trialEndsAt) {
@@ -143,11 +141,6 @@ function modelHasPaidAreaAccess(snapshot: {
   }
 
   if (planExpiresAt && planExpiresAt.getTime() > now) {
-    return true;
-  }
-
-  // Compatibilidade com perfis antigos PRO sem vencimento.
-  if (planTier === "PRO" && !planExpiresAt) {
     return true;
   }
 
@@ -487,7 +480,6 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
   const hasAreaAccess = modelHasPaidAreaAccess({
     trialEndsAt: model.trialEndsAt,
     planExpiresAt: model.planExpiresAt,
-    planTier: model.planTier,
   });
 
   if (!hasAreaAccess) {
