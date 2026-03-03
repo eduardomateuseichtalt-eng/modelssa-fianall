@@ -145,6 +145,11 @@ export default function ModelRegister() {
   const profileCameraRef = useRef(null);
   const fieldRefs = useRef([]);
   const submitRef = useRef(null);
+  const parsedAge = Number(form.age);
+  const isUnderage =
+    String(form.age || "").trim() !== "" &&
+    Number.isFinite(parsedAge) &&
+    parsedAge < 18;
 
   useEffect(() => {
     return () => {
@@ -419,7 +424,7 @@ export default function ModelRegister() {
     }
 
     if (Number(form.age) < 18) {
-      setMessage("Cadastro permitido apenas para maiores de 18 anos.");
+      setMessage("Voce nao podera concluir o cadastro por ser menor de 18 anos.");
       return false;
     }
 
@@ -1100,6 +1105,11 @@ export default function ModelRegister() {
         </p>
 
         {message && <div className="notice">{message}</div>}
+        {isUnderage ? (
+          <div className="notice">
+            Voce nao podera concluir o cadastro por ser menor de 18 anos.
+          </div>
+        ) : null}
         {mediaError && <div className="notice">{mediaError}</div>}
         {profileError && <div className="notice">{profileError}</div>}
 
@@ -1485,7 +1495,12 @@ export default function ModelRegister() {
             <button
               className="btn"
               type="submit"
-              disabled={loading || !profileFile || !mediaFiles.some((file) => file.type.startsWith("video/"))}
+              disabled={
+                loading ||
+                isUnderage ||
+                !profileFile ||
+                !mediaFiles.some((file) => file.type.startsWith("video/"))
+              }
               ref={submitRef}
             >
               {loading ? "Enviando..." : "Enviar cadastro"}
