@@ -877,6 +877,7 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
       priceHour: true,
       price30Min: true,
       price15Min: true,
+      planTier: true,
     },
   });
 

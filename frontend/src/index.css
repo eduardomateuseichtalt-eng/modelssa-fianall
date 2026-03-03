@@ -745,13 +745,13 @@ select {
 }
 
 .home-models-grid {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
+  grid-template-columns: minmax(220px, 280px);
   justify-content: start;
-  gap: 18px;
+  gap: 16px;
 }
 
 .home-model-card {
-  max-width: 220px;
+  max-width: 280px;
 }
 
 .home-model-photo {
@@ -3086,6 +3086,14 @@ select {
     width: 88px;
     height: 88px;
     border-radius: 16px;
+  }
+
+  .home-models-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-model-card {
+    max-width: 100%;
   }
 
   .model-register-photo-source-row {

@@ -60,7 +60,15 @@ export default function Home() {
       cityLookup.set(key, city);
     }
   });
-  const featuredModels = models.slice(0, 6);
+  const normalizePlanTier = (value) => String(value || "").trim().toUpperCase();
+  const proModels = models.filter((model) => normalizePlanTier(model.planTier) === "PRO");
+  const basicModels = models.filter(
+    (model) => normalizePlanTier(model.planTier) !== "PRO"
+  );
+  const featuredProModels = proModels.slice(0, 10);
+  const remainingSlots = Math.max(15 - featuredProModels.length, 0);
+  const featuredBasicModels = basicModels.slice(0, remainingSlots);
+  const featuredModels = [...featuredProModels, ...featuredBasicModels].slice(0, 15);
   const modelosLink = cityQuery
     ? `/modelos?cidade=${encodeURIComponent(cityQuery)}`
     : "/modelos";
