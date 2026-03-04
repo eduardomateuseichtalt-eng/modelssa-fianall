@@ -45,6 +45,12 @@ const MODEL_PAYMENT_PIX_KEY =
       process.env.MODEL_REGISTER_PIX_KEY ||
       "faa9aca1-3e24-4437-abcb-ae58ae550979"
   ).trim();
+const MODEL_PAYMENT_PIX_KEY_BASIC = String(
+  process.env.MODEL_PAYMENT_PIX_KEY_BASIC || MODEL_PAYMENT_PIX_KEY
+).trim();
+const MODEL_PAYMENT_PIX_KEY_PRO = String(
+  process.env.MODEL_PAYMENT_PIX_KEY_PRO || MODEL_PAYMENT_PIX_KEY
+).trim();
 
 const MODEL_PLAN_PRICING: Record<PlanTier, { label: string; priceCents: number; priceText: string }> = {
   BASIC: {
@@ -485,6 +491,8 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
   if (!hasAreaAccess) {
     const normalizedTier: PlanTier = model.planTier === "PRO" ? "PRO" : "BASIC";
     const pricing = MODEL_PLAN_PRICING[normalizedTier];
+    const pixKeyForPlan =
+      normalizedTier === "PRO" ? MODEL_PAYMENT_PIX_KEY_PRO : MODEL_PAYMENT_PIX_KEY_BASIC;
 
     return res.status(402).json({
       error:
@@ -497,7 +505,7 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
         planLabel: pricing.label,
         priceCents: pricing.priceCents,
         priceText: pricing.priceText,
-        pixKey: MODEL_PAYMENT_PIX_KEY,
+        pixKey: pixKeyForPlan,
         trialEndsAt: model.trialEndsAt ? new Date(model.trialEndsAt).toISOString() : null,
         planExpiresAt: model.planExpiresAt ? new Date(model.planExpiresAt).toISOString() : null,
       },
