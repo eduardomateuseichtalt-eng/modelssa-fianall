@@ -39,18 +39,45 @@ const MODEL_PRESENCE_PULSE_TTL_SECONDS = 120;
 const MODEL_MANUAL_ONLINE_MAX_MINUTES = 24 * 60;
 const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
   String(process.env.MODEL_REGISTER_EMAIL_OTP_REQUIRED || "true").trim().toLowerCase() !== "false";
-const MODEL_PAYMENT_PIX_KEY =
-  String(
-    process.env.MODEL_PAYMENT_PIX_KEY ||
-      process.env.MODEL_REGISTER_PIX_KEY ||
-      "faa9aca1-3e24-4437-abcb-ae58ae550979"
-  ).trim();
-const MODEL_PAYMENT_PIX_KEY_BASIC = String(
+
+function normalizePixKey(rawValue?: string | null) {
+  const raw = String(rawValue || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  const parts = raw
+    .split(/[\s,;|]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (parts.length > 0) {
+    return parts[0];
+  }
+
+  // Fallback: se a chave foi colada duas vezes sem separador, tenta reduzir.
+  if (raw.length % 2 === 0) {
+    const half = raw.length / 2;
+    const firstHalf = raw.slice(0, half);
+    const secondHalf = raw.slice(half);
+    if (firstHalf === secondHalf) {
+      return firstHalf;
+    }
+  }
+
+  return raw;
+}
+
+const MODEL_PAYMENT_PIX_KEY = normalizePixKey(
+  process.env.MODEL_PAYMENT_PIX_KEY ||
+    process.env.MODEL_REGISTER_PIX_KEY ||
+    "faa9aca1-3e24-4437-abcb-ae58ae550979"
+);
+const MODEL_PAYMENT_PIX_KEY_BASIC = normalizePixKey(
   process.env.MODEL_PAYMENT_PIX_KEY_BASIC || MODEL_PAYMENT_PIX_KEY
-).trim();
-const MODEL_PAYMENT_PIX_KEY_PRO = String(
+);
+const MODEL_PAYMENT_PIX_KEY_PRO = normalizePixKey(
   process.env.MODEL_PAYMENT_PIX_KEY_PRO || MODEL_PAYMENT_PIX_KEY
-).trim();
+);
 
 const MODEL_PLAN_PRICING: Record<PlanTier, { label: string; priceCents: number; priceText: string }> = {
   BASIC: {
