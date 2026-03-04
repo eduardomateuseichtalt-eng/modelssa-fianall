@@ -2,6 +2,78 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
+function pixField(id, value) {
+  const str = String(value ?? "");
+  const len = str.length.toString().padStart(2, "0");
+  return `${id}${len}${str}`;
+}
+
+function sanitizePixText(value, maxLen, fallback) {
+  const raw = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (raw || fallback).slice(0, maxLen);
+}
+
+function crc16Ccitt(payload) {
+  let crc = 0xffff;
+  for (let i = 0; i < payload.length; i += 1) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let bit = 0; bit < 8; bit += 1) {
+      if (crc & 0x8000) {
+        crc = (crc << 1) ^ 0x1021;
+      } else {
+        crc <<= 1;
+      }
+      crc &= 0xffff;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+
+function buildPixCopyPaste({
+  key,
+  amountCents,
+  merchantName = "MODELS CLUB",
+  merchantCity = "BLUMENAU",
+  txid = "MODELSCLUB",
+  description = "",
+}) {
+  const amount = (Math.max(0, Number(amountCents) || 0) / 100).toFixed(2);
+  const cleanName = sanitizePixText(merchantName, 25, "MODELS CLUB");
+  const cleanCity = sanitizePixText(merchantCity, 15, "BLUMENAU");
+  const cleanTxid =
+    String(txid || "")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 25) || "MODELSCLUB";
+  const cleanDescription = sanitizePixText(description, 50, "");
+
+  const merchantAccountInfo =
+    pixField("00", "BR.GOV.BCB.PIX") +
+    pixField("01", key) +
+    (cleanDescription ? pixField("02", cleanDescription) : "");
+
+  const additionalData = pixField("05", cleanTxid);
+
+  const payloadWithoutCrc =
+    pixField("00", "01") +
+    pixField("26", merchantAccountInfo) +
+    pixField("52", "0000") +
+    pixField("53", "986") +
+    pixField("54", amount) +
+    pixField("58", "BR") +
+    pixField("59", cleanName) +
+    pixField("60", cleanCity) +
+    pixField("62", additionalData) +
+    "6304";
+
+  const crc = crc16Ccitt(payloadWithoutCrc);
+  return `${payloadWithoutCrc}${crc}`;
+}
+
 async function copyToClipboard(text) {
   try {
     await navigator.clipboard.writeText(text);
@@ -55,6 +127,20 @@ export default function ModelLogin() {
   const [recoverLoading, setRecoverLoading] = useState(false);
   const [paymentBlock, setPaymentBlock] = useState(null);
   const [paymentNotice, setPaymentNotice] = useState("");
+
+  const paymentPixCopyPaste =
+    paymentBlock &&
+    String(paymentBlock.pixKey || "").trim() &&
+    Number.isFinite(Number(paymentBlock.priceCents))
+      ? buildPixCopyPaste({
+          key: paymentBlock.pixKey,
+          amountCents: paymentBlock.priceCents,
+          merchantName: "MODELS CLUB",
+          merchantCity: "BLUMENAU",
+          txid: `MODELO-${paymentBlock.modelId || "SEMID"}`,
+          description: `PLANO ${paymentBlock.planLabel || paymentBlock.planTier || "BASICO"}`,
+        })
+      : "";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -193,33 +279,29 @@ export default function ModelLogin() {
                   </p>
                 ) : null}
                 <p style={{ fontWeight: 700, marginBottom: 6 }}>
-                  Chave Pix copia e cola
+                  Pix copia e cola com valor do plano
                 </p>
-                <div
-                  style={{
-                    border: "1px solid var(--border)",
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    marginBottom: 10,
-                    wordBreak: "break-all",
-                  }}
-                >
-                  {paymentBlock.pixKey || "-"}
-                </div>
+                <textarea
+                  readOnly
+                  value={paymentPixCopyPaste}
+                  rows={4}
+                  className="textarea"
+                  style={{ minHeight: 98, resize: "none", marginBottom: 10 }}
+                />
                 <button
                   className="btn btn-outline"
                   type="button"
                   onClick={async () => {
-                    const pixKey = String(paymentBlock.pixKey || "").trim();
-                    if (!pixKey) {
-                      setPaymentNotice("Chave Pix indisponivel no momento.");
+                    const pixCode = String(paymentPixCopyPaste || "").trim();
+                    if (!pixCode) {
+                      setPaymentNotice("Pix copia e cola indisponivel no momento.");
                       return;
                     }
-                    const ok = await copyToClipboard(pixKey);
-                    setPaymentNotice(ok ? "Chave Pix copiada." : "Nao foi possivel copiar.");
+                    const ok = await copyToClipboard(pixCode);
+                    setPaymentNotice(ok ? "Pix com valor copiado." : "Nao foi possivel copiar.");
                   }}
                 >
-                  Copiar chave Pix
+                  Copiar Pix com valor
                 </button>
                 {paymentNotice ? (
                   <p className="muted" style={{ marginTop: 8 }}>
