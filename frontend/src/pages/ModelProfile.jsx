@@ -518,6 +518,12 @@ export default function ModelProfile() {
 
                     {comparisonMediaCandidate ? (
                       <div className="profile-public-comparison-video">
+                        <img
+                          src="/perfil-verificado-ms.svg"
+                          alt="Selo de perfil verificado"
+                          className="profile-public-comparison-badge"
+                          loading="lazy"
+                        />
                         <video
                           src={comparisonMediaCandidate.url}
                           controls

@@ -1144,6 +1144,7 @@ select {
   overflow: hidden;
   border: 1px solid var(--border);
   background: #0b0b0e;
+  position: relative;
 }
 
 .profile-public-comparison-video video {
@@ -1151,6 +1152,17 @@ select {
   max-height: 430px;
   display: block;
   background: #09090b;
+}
+
+.profile-public-comparison-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: clamp(72px, 12vw, 110px);
+  height: auto;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.78;
 }
 
 .profile-public-comparison > .card {
