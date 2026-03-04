@@ -491,57 +491,19 @@ export default function ModelProfile() {
               </div>
 
               {totalMediaCount > 0 ? (
-                <>
-                  <div className="profile-public-media-grid">
-                    {media.map((item) =>
-                      item.type === "VIDEO" ? (
-                        <div key={item.id} className="profile-public-media-card is-video">
-                          <video src={item.url} controls preload="metadata" />
-                        </div>
-                      ) : (
-                        <div key={item.id} className="profile-public-media-card">
-                          <img src={item.url} alt="Midia da modelo" loading="lazy" />
-                        </div>
-                      )
-                    )}
-                  </div>
-
-                  <div className="profile-public-comparison">
-                    <div className="profile-public-section-head">
-                      <h2>Midia de comparacao</h2>
-                      <span className="pill">Cadastro</span>
-                    </div>
-                    <p className="muted">
-                      Este video ajuda o cliente a comparar as fotos publicadas com a
-                      pessoa do cadastro.
-                    </p>
-
-                    {comparisonMediaCandidate ? (
-                      <div className="profile-public-comparison-video">
-                        <img
-                          src="/perfil-verificado-ms.svg"
-                          alt="Selo de perfil verificado"
-                          className="profile-public-comparison-badge"
-                          loading="lazy"
-                        />
-                        <video
-                          src={comparisonMediaCandidate.url}
-                          controls
-                          preload="metadata"
-                          playsInline
-                        />
+                <div className="profile-public-media-grid">
+                  {media.map((item) =>
+                    item.type === "VIDEO" ? (
+                      <div key={item.id} className="profile-public-media-card is-video">
+                        <video src={item.url} controls preload="metadata" />
                       </div>
                     ) : (
-                      <div className="card">
-                        <h4>Sem video de comparacao visivel</h4>
-                        <p className="muted">
-                          O video de comparacao ainda nao foi aprovado ou nao esta
-                          disponivel no momento.
-                        </p>
+                      <div key={item.id} className="profile-public-media-card">
+                        <img src={item.url} alt="Midia da modelo" loading="lazy" />
                       </div>
-                    )}
-                  </div>
-                </>
+                    )
+                  )}
+                </div>
               ) : (
                 <div className="card">
                   <h4>Sem midias publicadas</h4>
@@ -550,6 +512,42 @@ export default function ModelProfile() {
                   </p>
                 </div>
               )}
+
+              <div className="profile-public-comparison">
+                <div className="profile-public-section-head">
+                  <h2>Midia de comparacao</h2>
+                  <span className="pill">Cadastro</span>
+                </div>
+                <p className="muted">
+                  Este video ajuda o cliente a comparar as fotos publicadas com a
+                  pessoa do cadastro.
+                </p>
+
+                {comparisonMediaCandidate ? (
+                  <div className="profile-public-comparison-video">
+                    <img
+                      src="/perfil-verificado-ms.svg"
+                      alt="Selo de perfil verificado"
+                      className="profile-public-comparison-badge"
+                      loading="lazy"
+                    />
+                    <video
+                      src={comparisonMediaCandidate.url}
+                      controls
+                      preload="metadata"
+                      playsInline
+                    />
+                  </div>
+                ) : (
+                  <div className="card">
+                    <h4>Sem video de comparacao visivel</h4>
+                    <p className="muted">
+                      O video de comparacao ainda nao foi aprovado ou nao esta
+                      disponivel no momento.
+                    </p>
+                  </div>
+                )}
+              </div>
             </section>
           ) : null}
 
