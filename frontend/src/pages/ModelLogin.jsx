@@ -40,7 +40,6 @@ function buildPixCopyPaste({
   merchantName = "MODELS CLUB",
   merchantCity = "BLUMENAU",
   txid = "MODELSCLUB",
-  description = "",
 }) {
   const amount = (Math.max(0, Number(amountCents) || 0) / 100).toFixed(2);
   const cleanName = sanitizePixText(merchantName, 25, "MODELS CLUB");
@@ -49,17 +48,16 @@ function buildPixCopyPaste({
     String(txid || "")
       .replace(/[^a-zA-Z0-9]/g, "")
       .slice(0, 25) || "MODELSCLUB";
-  const cleanDescription = sanitizePixText(description, 50, "");
 
   const merchantAccountInfo =
     pixField("00", "BR.GOV.BCB.PIX") +
-    pixField("01", key) +
-    (cleanDescription ? pixField("02", cleanDescription) : "");
+    pixField("01", key);
 
   const additionalData = pixField("05", cleanTxid);
 
   const payloadWithoutCrc =
     pixField("00", "01") +
+    pixField("01", "12") +
     pixField("26", merchantAccountInfo) +
     pixField("52", "0000") +
     pixField("53", "986") +
@@ -138,7 +136,6 @@ export default function ModelLogin() {
           merchantName: "MODELS CLUB",
           merchantCity: "BLUMENAU",
           txid: `MODELO-${paymentBlock.modelId || "SEMID"}`,
-          description: `PLANO ${paymentBlock.planLabel || paymentBlock.planTier || "BASICO"}`,
         })
       : "";
 
