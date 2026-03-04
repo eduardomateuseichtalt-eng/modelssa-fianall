@@ -37,6 +37,7 @@ model Model {
   piercings        String?
   smoker           String?
   languages        String?
+  offeredServices  String[] @default([])
   priceHour  Int?
   price30Min Int?
   price15Min Int?

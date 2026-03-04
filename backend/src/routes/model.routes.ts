@@ -92,6 +92,19 @@ const MODEL_PLAN_PRICING: Record<PlanTier, { label: string; priceCents: number; 
   },
 };
 
+const sanitizeStringArray = (value: unknown): string[] | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const normalized = value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+  return Array.from(new Set(normalized)).slice(0, 60);
+};
+
 function getClientIp(req: Request) {
   const forwarded = req.headers["x-forwarded-for"];
   if (typeof forwarded === "string") {
@@ -855,6 +868,7 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       piercings: true,
       smoker: true,
       languages: true,
+      offeredServices: true,
       priceHour: true,
       price30Min: true,
       price15Min: true,
@@ -905,6 +919,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   const piercingsRaw = String(req.body?.piercings || "").trim();
   const smokerRaw = String(req.body?.smoker || "").trim();
   const languagesRaw = String(req.body?.languages || "").trim();
+  const offeredServicesRaw = req.body?.offeredServices;
   const priceHourRaw = req.body?.priceHour;
   const price30MinRaw = req.body?.price30Min;
   const price15MinRaw = req.body?.price15Min;
@@ -953,6 +968,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       piercings: piercingsRaw || null,
       smoker: smokerRaw || null,
       languages: languagesRaw || null,
+      offeredServices: sanitizeStringArray(offeredServicesRaw),
       priceHour: toNumberOrNull(priceHourRaw),
       price30Min: toNumberOrNull(price30MinRaw),
       price15Min: toNumberOrNull(price15MinRaw),
@@ -983,6 +999,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       piercings: true,
       smoker: true,
       languages: true,
+      offeredServices: true,
       priceHour: true,
       price30Min: true,
       price15Min: true,
@@ -1283,6 +1300,7 @@ router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
       piercings: true,
       smoker: true,
       languages: true,
+      offeredServices: true,
       priceHour: true,
       price30Min: true,
       price15Min: true,

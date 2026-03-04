@@ -8,6 +8,26 @@ const MAX_SHOT_PHOTOS = 2;
 const DEFAULT_MAX_PHOTOS = 7;
 const DEFAULT_MAX_VIDEOS = 3;
 const ONLINE_DURATION_OPTIONS = [15, 30, 60, 120, 240, 480];
+const SERVICE_OPTIONS = [
+  { name: "Acompanhante", featured: true },
+  { name: "Beijo na boca", featured: true },
+  { name: "Massagem tradicional", featured: true },
+  { name: "Sexo vaginal com preservativo", featured: false },
+  { name: "Sexo oral com preservativo", featured: false },
+  { name: "Sexo oral sem preservativo", featured: false },
+  { name: "Masturbacao", featured: false },
+  { name: "Striptease", featured: false },
+  { name: "Uso de roupas de fantasia/uniformes", featured: false },
+  { name: "Penetracao com acessorios sexuais", featured: false },
+  { name: "Utiliza acessorios eroticos", featured: false },
+  { name: "Sexo com voyeurismo/ser voyeur", featured: false },
+  { name: "Viagem", featured: false },
+  { name: "Bondage", featured: false },
+  { name: "Facef*ck", featured: false },
+  { name: "Tapas/algemas", featured: false },
+  { name: "Fisting", featured: false },
+  { name: "Dominio/submissao", featured: false },
+];
 
 const formatSize = (value) => {
   if (!value && value !== 0) {
@@ -173,6 +193,7 @@ export default function ModelDashboard() {
   const [profilePiercings, setProfilePiercings] = useState("");
   const [profileSmoker, setProfileSmoker] = useState("");
   const [profileLanguages, setProfileLanguages] = useState("");
+  const [profileOfferedServices, setProfileOfferedServices] = useState([]);
   const [profilePriceHour, setProfilePriceHour] = useState("");
   const [profilePrice30Min, setProfilePrice30Min] = useState("");
   const [profilePrice15Min, setProfilePrice15Min] = useState("");
@@ -293,6 +314,11 @@ export default function ModelDashboard() {
       setProfilePiercings(data.piercings || "");
       setProfileSmoker(data.smoker || "");
       setProfileLanguages(data.languages || "");
+      setProfileOfferedServices(
+        Array.isArray(data.offeredServices)
+          ? data.offeredServices
+          : []
+      );
       setProfilePriceHour(data.priceHour ?? "");
       setProfilePrice30Min(data.price30Min ?? "");
       setProfilePrice15Min(data.price15Min ?? "");
@@ -822,6 +848,7 @@ export default function ModelDashboard() {
           piercings: profilePiercings,
           smoker: profileSmoker,
           languages: profileLanguages,
+          offeredServices: profileOfferedServices,
           priceHour: profilePriceHour,
           price30Min: profilePrice30Min,
           price15Min: profilePrice15Min,
@@ -851,6 +878,11 @@ export default function ModelDashboard() {
       setProfilePiercings(data.piercings || "");
       setProfileSmoker(data.smoker || "");
       setProfileLanguages(data.languages || "");
+      setProfileOfferedServices(
+        Array.isArray(data.offeredServices)
+          ? data.offeredServices
+          : []
+      );
       setProfilePriceHour(data.priceHour ?? "");
       setProfilePrice30Min(data.price30Min ?? "");
       setProfilePrice15Min(data.price15Min ?? "");
@@ -1296,6 +1328,50 @@ export default function ModelDashboard() {
                     value={profileLanguages}
                     onChange={(event) => setProfileLanguages(event.target.value)}
                   />
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      padding: 12,
+                      background: "var(--panel-2)",
+                    }}
+                  >
+                    <h4 style={{ margin: 0 }}>Servicos oferecidos</h4>
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      Marque abaixo os servicos que voce oferece no atendimento.
+                    </p>
+                    <div className="model-services-editor-grid">
+                      {SERVICE_OPTIONS.map((serviceItem) => {
+                        const active = profileOfferedServices.includes(serviceItem.name);
+                        return (
+                          <label
+                            key={serviceItem.name}
+                            className={`model-service-option ${active ? "active" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={active}
+                              onChange={() => {
+                                setProfileOfferedServices((current) =>
+                                  current.includes(serviceItem.name)
+                                    ? current.filter((item) => item !== serviceItem.name)
+                                    : [...current, serviceItem.name]
+                                );
+                              }}
+                            />
+                            <span>{serviceItem.name}</span>
+                            {serviceItem.featured ? (
+                              <small>Minha especialidade</small>
+                            ) : null}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <p className="muted" style={{ marginTop: 8 }}>
+                      Selecionados: {profileOfferedServices.length}
+                    </p>
+                  </div>
                   <input
                     className="input"
                     type="number"

@@ -2,6 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
+const SERVICE_OPTIONS = [
+  { name: "Acompanhante", featured: true },
+  { name: "Beijo na boca", featured: true },
+  { name: "Massagem tradicional", featured: true },
+  { name: "Sexo vaginal com preservativo", featured: false },
+  { name: "Sexo oral com preservativo", featured: false },
+  { name: "Sexo oral sem preservativo", featured: false },
+  { name: "Masturbacao", featured: false },
+  { name: "Striptease", featured: false },
+  { name: "Uso de roupas de fantasia/uniformes", featured: false },
+  { name: "Penetracao com acessorios sexuais", featured: false },
+  { name: "Utiliza acessorios eroticos", featured: false },
+  { name: "Sexo com voyeurismo/ser voyeur", featured: false },
+  { name: "Viagem", featured: false },
+  { name: "Bondage", featured: false },
+  { name: "Facef*ck", featured: false },
+  { name: "Tapas/algemas", featured: false },
+  { name: "Fisting", featured: false },
+  { name: "Dominio/submissao", featured: false },
+];
+
 export default function ModelProfile() {
   const { id } = useParams();
   const [model, setModel] = useState(null);
@@ -271,6 +292,16 @@ export default function ModelProfile() {
         return `${monthNames[date.getMonth()]}/${date.getFullYear()}`;
       })()
     : "";
+  const offeredServices = Array.isArray(model.offeredServices)
+    ? model.offeredServices
+    : [];
+  const offeredServiceSet = new Set(offeredServices);
+  const offeredServiceList = SERVICE_OPTIONS.filter((service) =>
+    offeredServiceSet.has(service.name)
+  );
+  const notOfferedServiceList = SERVICE_OPTIONS.filter(
+    (service) => !offeredServiceSet.has(service.name)
+  );
 
   const profileDetails = [
     { label: "Genero", value: model.genderIdentity || "--" },
@@ -592,6 +623,46 @@ export default function ModelProfile() {
                     Verificada em {comparisonVerifiedLabel}
                   </p>
                 ) : null}
+              </div>
+
+              <div className="profile-public-services">
+                <div className="profile-public-services-title">Servicos oferecidos</div>
+                <div className="profile-public-services-grid">
+                  <div className="profile-public-services-column">
+                    <div className="profile-public-services-column-title">
+                      Servicos oferecidos
+                    </div>
+                    {offeredServiceList.length > 0 ? (
+                      offeredServiceList.map((service) => (
+                        <div key={service.name} className="profile-public-service-row">
+                          <span>{service.name}</span>
+                          <div className="profile-public-service-meta">
+                            {service.featured ? (
+                              <span className="profile-public-service-specialty">
+                                Minha especialidade
+                              </span>
+                            ) : null}
+                            <span className="profile-public-service-badge">Faco</span>
+                            <span className="profile-public-service-chevron">v</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="muted">Sem servicos marcados.</p>
+                    )}
+                  </div>
+                  <div className="profile-public-services-column">
+                    <div className="profile-public-services-column-title">
+                      Servicos nao oferecidos
+                    </div>
+                    {notOfferedServiceList.map((service) => (
+                      <div key={service.name} className="profile-public-service-row is-disabled">
+                        <span>{service.name}</span>
+                        <span className="profile-public-service-chevron">v</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </section>
           ) : null}
