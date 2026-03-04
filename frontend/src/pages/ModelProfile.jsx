@@ -273,6 +273,19 @@ export default function ModelProfile() {
     : "";
 
   const profileDetails = [
+    { label: "Genero", value: model.genderIdentity || "--" },
+    { label: "Genitalia", value: model.genitalia || "--" },
+    { label: "Preferencia sexual", value: model.sexualPreference || "--" },
+    { label: "Etnia", value: model.ethnicity || "--" },
+    { label: "Cor dos olhos", value: model.eyeColor || "--" },
+    { label: "Estilo de cabelo", value: model.hairStyle || "--" },
+    { label: "Tamanho de cabelo", value: model.hairLength || "--" },
+    { label: "Tamanho do pe", value: model.shoeSize || "--" },
+    { label: "Silicone", value: model.silicone || "--" },
+    { label: "Tatuagens", value: model.tattoos || "--" },
+    { label: "Piercings", value: model.piercings || "--" },
+    { label: "Fumante", value: model.smoker || "--" },
+    { label: "Idiomas", value: model.languages || "--" },
     { label: "15 minutos", value: model.price15Min ? `R$ ${model.price15Min}` : "--" },
     { label: "30 minutos", value: model.price30Min ? `R$ ${model.price30Min}` : "--" },
     { label: "Altura", value: model.height ? `${model.height} cm` : "--" },

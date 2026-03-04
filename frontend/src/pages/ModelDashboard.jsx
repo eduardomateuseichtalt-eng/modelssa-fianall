@@ -160,6 +160,19 @@ export default function ModelDashboard() {
   const [profileBust, setProfileBust] = useState("");
   const [profileWaist, setProfileWaist] = useState("");
   const [profileHips, setProfileHips] = useState("");
+  const [profileGenderIdentity, setProfileGenderIdentity] = useState("");
+  const [profileGenitalia, setProfileGenitalia] = useState("");
+  const [profileSexualPreference, setProfileSexualPreference] = useState("");
+  const [profileEthnicity, setProfileEthnicity] = useState("");
+  const [profileEyeColor, setProfileEyeColor] = useState("");
+  const [profileHairStyle, setProfileHairStyle] = useState("");
+  const [profileHairLength, setProfileHairLength] = useState("");
+  const [profileShoeSize, setProfileShoeSize] = useState("");
+  const [profileSilicone, setProfileSilicone] = useState("");
+  const [profileTattoos, setProfileTattoos] = useState("");
+  const [profilePiercings, setProfilePiercings] = useState("");
+  const [profileSmoker, setProfileSmoker] = useState("");
+  const [profileLanguages, setProfileLanguages] = useState("");
   const [profilePriceHour, setProfilePriceHour] = useState("");
   const [profilePrice30Min, setProfilePrice30Min] = useState("");
   const [profilePrice15Min, setProfilePrice15Min] = useState("");
@@ -267,6 +280,19 @@ export default function ModelDashboard() {
       setProfileBust(data.bust ?? "");
       setProfileWaist(data.waist ?? "");
       setProfileHips(data.hips ?? "");
+      setProfileGenderIdentity(data.genderIdentity || "");
+      setProfileGenitalia(data.genitalia || "");
+      setProfileSexualPreference(data.sexualPreference || "");
+      setProfileEthnicity(data.ethnicity || "");
+      setProfileEyeColor(data.eyeColor || "");
+      setProfileHairStyle(data.hairStyle || "");
+      setProfileHairLength(data.hairLength || "");
+      setProfileShoeSize(data.shoeSize || "");
+      setProfileSilicone(data.silicone || "");
+      setProfileTattoos(data.tattoos || "");
+      setProfilePiercings(data.piercings || "");
+      setProfileSmoker(data.smoker || "");
+      setProfileLanguages(data.languages || "");
       setProfilePriceHour(data.priceHour ?? "");
       setProfilePrice30Min(data.price30Min ?? "");
       setProfilePrice15Min(data.price15Min ?? "");
@@ -783,6 +809,19 @@ export default function ModelDashboard() {
           bust: profileBust,
           waist: profileWaist,
           hips: profileHips,
+          genderIdentity: profileGenderIdentity,
+          genitalia: profileGenitalia,
+          sexualPreference: profileSexualPreference,
+          ethnicity: profileEthnicity,
+          eyeColor: profileEyeColor,
+          hairStyle: profileHairStyle,
+          hairLength: profileHairLength,
+          shoeSize: profileShoeSize,
+          silicone: profileSilicone,
+          tattoos: profileTattoos,
+          piercings: profilePiercings,
+          smoker: profileSmoker,
+          languages: profileLanguages,
           priceHour: profilePriceHour,
           price30Min: profilePrice30Min,
           price15Min: profilePrice15Min,
@@ -799,6 +838,19 @@ export default function ModelDashboard() {
       setProfileBust(data.bust ?? "");
       setProfileWaist(data.waist ?? "");
       setProfileHips(data.hips ?? "");
+      setProfileGenderIdentity(data.genderIdentity || "");
+      setProfileGenitalia(data.genitalia || "");
+      setProfileSexualPreference(data.sexualPreference || "");
+      setProfileEthnicity(data.ethnicity || "");
+      setProfileEyeColor(data.eyeColor || "");
+      setProfileHairStyle(data.hairStyle || "");
+      setProfileHairLength(data.hairLength || "");
+      setProfileShoeSize(data.shoeSize || "");
+      setProfileSilicone(data.silicone || "");
+      setProfileTattoos(data.tattoos || "");
+      setProfilePiercings(data.piercings || "");
+      setProfileSmoker(data.smoker || "");
+      setProfileLanguages(data.languages || "");
       setProfilePriceHour(data.priceHour ?? "");
       setProfilePrice30Min(data.price30Min ?? "");
       setProfilePrice15Min(data.price15Min ?? "");
@@ -1143,6 +1195,106 @@ export default function ModelDashboard() {
                     placeholder="Quadril (cm)"
                     value={profileHips}
                     onChange={(event) => setProfileHips(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Genero"
+                    value={profileGenderIdentity}
+                    onChange={(event) => setProfileGenderIdentity(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Genitalia"
+                    value={profileGenitalia}
+                    onChange={(event) => setProfileGenitalia(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Preferencia sexual"
+                    value={profileSexualPreference}
+                    onChange={(event) => setProfileSexualPreference(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Etnia"
+                    value={profileEthnicity}
+                    onChange={(event) => setProfileEthnicity(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Cor dos olhos"
+                    value={profileEyeColor}
+                    onChange={(event) => setProfileEyeColor(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Estilo de cabelo"
+                    value={profileHairStyle}
+                    onChange={(event) => setProfileHairStyle(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Tamanho de cabelo"
+                    value={profileHairLength}
+                    onChange={(event) => setProfileHairLength(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Tamanho do pe"
+                    value={profileShoeSize}
+                    onChange={(event) => setProfileShoeSize(event.target.value)}
+                  />
+                  <select
+                    className="input"
+                    value={profileSilicone}
+                    onChange={(event) => setProfileSilicone(event.target.value)}
+                  >
+                    <option value="">Silicone</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Nao">Nao</option>
+                  </select>
+                  <select
+                    className="input"
+                    value={profileTattoos}
+                    onChange={(event) => setProfileTattoos(event.target.value)}
+                  >
+                    <option value="">Tatuagens</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Nao">Nao</option>
+                  </select>
+                  <select
+                    className="input"
+                    value={profilePiercings}
+                    onChange={(event) => setProfilePiercings(event.target.value)}
+                  >
+                    <option value="">Piercings</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Nao">Nao</option>
+                  </select>
+                  <select
+                    className="input"
+                    value={profileSmoker}
+                    onChange={(event) => setProfileSmoker(event.target.value)}
+                  >
+                    <option value="">Fumante</option>
+                    <option value="Nao">Nao</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Nao informado">Nao informado</option>
+                  </select>
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Idiomas"
+                    value={profileLanguages}
+                    onChange={(event) => setProfileLanguages(event.target.value)}
                   />
                   <input
                     className="input"

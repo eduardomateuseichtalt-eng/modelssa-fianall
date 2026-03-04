@@ -24,6 +24,19 @@ model Model {
   bust       Int?
   waist      Int?
   hips       Int?
+  genderIdentity   String?
+  genitalia        String?
+  sexualPreference String?
+  ethnicity        String?
+  eyeColor         String?
+  hairStyle        String?
+  hairLength       String?
+  shoeSize         String?
+  silicone         String?
+  tattoos          String?
+  piercings        String?
+  smoker           String?
+  languages        String?
   priceHour  Int?
   price30Min Int?
   price15Min Int?

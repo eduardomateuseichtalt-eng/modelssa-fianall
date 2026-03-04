@@ -15,7 +15,25 @@ const initialForm = {
   bust: "",
   waist: "",
   hips: "",
+  genitalia: "",
+  sexualPreference: "",
+  ethnicity: "",
+  eyeColor: "",
+  hairStyle: "",
+  hairLength: "",
+  shoeSize: "",
+  silicone: "",
+  tattoos: "",
+  piercings: "",
+  smoker: "",
+  languages: "",
   priceHour: "",
+};
+
+const GENDER_IDENTITY_LABELS = {
+  mulher_cis: "Mulher cis",
+  homem_cis: "Homem cis",
+  mulher_trans: "Mulher trans",
 };
 
 const MAX_FILES = 6;
@@ -492,6 +510,7 @@ export default function ModelRegister() {
         body: JSON.stringify({
           ...form,
           age: Number(form.age),
+          genderIdentity: GENDER_IDENTITY_LABELS[genderIdentity] || null,
           height: form.height ? Number(form.height) : null,
           weight: form.weight ? Number(form.weight) : null,
           bust: form.bust ? Number(form.bust) : null,
@@ -1490,6 +1509,151 @@ export default function ModelRegister() {
                 fieldRefs.current[13] = node;
               }}
             />
+            <input
+              className="input"
+              name="genitalia"
+              placeholder="Genitalia"
+              value={form.genitalia}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(14, event)}
+              ref={(node) => {
+                fieldRefs.current[14] = node;
+              }}
+            />
+            <input
+              className="input"
+              name="sexualPreference"
+              placeholder="Preferencia sexual"
+              value={form.sexualPreference}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(15, event)}
+              ref={(node) => {
+                fieldRefs.current[15] = node;
+              }}
+            />
+            <input
+              className="input"
+              name="ethnicity"
+              placeholder="Etnia"
+              value={form.ethnicity}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(16, event)}
+              ref={(node) => {
+                fieldRefs.current[16] = node;
+              }}
+            />
+            <input
+              className="input"
+              name="eyeColor"
+              placeholder="Cor dos olhos"
+              value={form.eyeColor}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(17, event)}
+              ref={(node) => {
+                fieldRefs.current[17] = node;
+              }}
+            />
+            <input
+              className="input"
+              name="hairStyle"
+              placeholder="Estilo de cabelo"
+              value={form.hairStyle}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(18, event)}
+              ref={(node) => {
+                fieldRefs.current[18] = node;
+              }}
+            />
+            <input
+              className="input"
+              name="hairLength"
+              placeholder="Tamanho de cabelo"
+              value={form.hairLength}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(19, event)}
+              ref={(node) => {
+                fieldRefs.current[19] = node;
+              }}
+            />
+            <input
+              className="input"
+              name="shoeSize"
+              placeholder="Tamanho do pe"
+              value={form.shoeSize}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(20, event)}
+              ref={(node) => {
+                fieldRefs.current[20] = node;
+              }}
+            />
+            <select
+              className="input"
+              name="silicone"
+              value={form.silicone}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(21, event)}
+              ref={(node) => {
+                fieldRefs.current[21] = node;
+              }}
+            >
+              <option value="">Silicone</option>
+              <option value="Sim">Sim</option>
+              <option value="Nao">Nao</option>
+            </select>
+            <select
+              className="input"
+              name="tattoos"
+              value={form.tattoos}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(22, event)}
+              ref={(node) => {
+                fieldRefs.current[22] = node;
+              }}
+            >
+              <option value="">Tatuagens</option>
+              <option value="Sim">Sim</option>
+              <option value="Nao">Nao</option>
+            </select>
+            <select
+              className="input"
+              name="piercings"
+              value={form.piercings}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(23, event)}
+              ref={(node) => {
+                fieldRefs.current[23] = node;
+              }}
+            >
+              <option value="">Piercings</option>
+              <option value="Sim">Sim</option>
+              <option value="Nao">Nao</option>
+            </select>
+            <select
+              className="input"
+              name="smoker"
+              value={form.smoker}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(24, event)}
+              ref={(node) => {
+                fieldRefs.current[24] = node;
+              }}
+            >
+              <option value="">Fumante</option>
+              <option value="Nao">Nao</option>
+              <option value="Sim">Sim</option>
+              <option value="Nao informado">Nao informado</option>
+            </select>
+            <input
+              className="input"
+              name="languages"
+              placeholder="Idiomas (ex.: Portugues, Espanhol)"
+              value={form.languages}
+              onChange={handleChange}
+              onKeyDown={(event) => handleFieldKeyDown(25, event)}
+              ref={(node) => {
+                fieldRefs.current[25] = node;
+              }}
+            />
           </div>
           <div className="form-actions">
             <button
@@ -1521,6 +1685,7 @@ export default function ModelRegister() {
                 setEmailOtpVerifiedToken("");
                 setVerifiedEmail("");
                 setSelectedPlanTier("");
+                setGenderIdentity("");
                 setShowPlanSelection(false);
                 setPlanSelectionError("");
                 setMediaFiles([]);
