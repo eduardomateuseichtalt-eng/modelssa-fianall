@@ -1,4 +1,4 @@
-* {
+﻿* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -1123,8 +1123,8 @@ select {
   background: #09090b;
 }
 
-.profile-public-media-card.is-video::after {
-  content: "▶";
+.profile-public-media-card.is-video::before {
+  content: "";
   position: absolute;
   left: 50%;
   top: 50%;
@@ -1132,32 +1132,43 @@ select {
   width: 48px;
   height: 48px;
   border-radius: 999px;
-  display: grid;
-  place-items: center;
   background: rgba(0, 0, 0, 0.42);
-  color: #fff;
-  font-size: 20px;
-  line-height: 1;
   pointer-events: none;
   z-index: 2;
+}
+
+.profile-public-media-card.is-video::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-35%, -50%);
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 14px solid #fff;
+  border-radius: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 3;
 }
 
 .profile-public-comparison {
   margin-top: 6px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding-top: 6px;
 }
 
-.profile-public-comparison .profile-public-section-head,
-.profile-public-comparison > .muted {
-  width: min(760px, 100%);
+.profile-public-comparison .profile-public-section-head {
+  width: min(320px, 100%);
   margin-left: auto;
   margin-right: auto;
 }
 
 .profile-public-comparison-video {
-  width: min(760px, 100%);
+  width: min(320px, 100%);
   margin-left: auto;
   margin-right: auto;
   border-radius: 14px;
@@ -1167,10 +1178,40 @@ select {
   position: relative;
 }
 
-.profile-public-comparison-video video {
+.profile-public-comparison-video::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.profile-public-comparison-video::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-35%, -50%);
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 16px solid #fff;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.profile-public-comparison-player {
   width: 100%;
-  max-height: 430px;
+  aspect-ratio: 9 / 16;
   display: block;
+  object-fit: cover;
   background: #09090b;
 }
 
@@ -1178,15 +1219,44 @@ select {
   position: absolute;
   top: 10px;
   right: 10px;
-  width: clamp(72px, 12vw, 110px);
+  width: clamp(58px, 11vw, 86px);
   height: auto;
-  z-index: 2;
+  z-index: 4;
   pointer-events: none;
   opacity: 0.78;
 }
 
+.profile-public-comparison-head {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.profile-public-comparison-head h2 {
+  font-size: 26px;
+}
+
+.profile-public-comparison-head-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-soft);
+  display: inline-flex;
+  align-items: center;
+}
+
+.profile-public-comparison-head-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.profile-public-comparison-verified {
+  margin: 0;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
 .profile-public-comparison > .card {
-  width: min(760px, 100%);
+  width: min(320px, 100%);
   margin-left: auto;
   margin-right: auto;
 }
@@ -3057,7 +3127,7 @@ select {
     min-height: 160px;
   }
 
-  .profile-public-comparison-video video {
+  .profile-public-comparison-player {
     max-height: 360px;
   }
 
