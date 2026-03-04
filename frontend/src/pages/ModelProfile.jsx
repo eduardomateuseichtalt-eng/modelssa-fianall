@@ -215,6 +215,7 @@ export default function ModelProfile() {
 
   const mediaPhotos = media.filter((item) => item.type !== "VIDEO");
   const mediaVideos = media.filter((item) => item.type === "VIDEO");
+  const orderedGalleryMedia = [...mediaVideos, ...mediaPhotos];
   const totalMediaCount = media.length;
   const hasShots = modelShots.length > 0;
   const hasHalfHourPrice = Number(model.price30Min || 0) > 0;
@@ -492,7 +493,7 @@ export default function ModelProfile() {
 
               {totalMediaCount > 0 ? (
                 <div className="profile-public-media-grid">
-                  {media.map((item) =>
+                  {orderedGalleryMedia.map((item) =>
                     item.type === "VIDEO" ? (
                       <div key={item.id} className="profile-public-media-card is-video">
                         <video src={item.url} controls preload="metadata" />

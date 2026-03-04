@@ -1107,6 +1107,7 @@ select {
   border: 1px solid var(--border);
   background: var(--panel-2);
   min-height: 220px;
+  position: relative;
 }
 
 .profile-public-media-card img,
@@ -1120,6 +1121,25 @@ select {
 .profile-public-media-card.is-video video {
   object-fit: contain;
   background: #09090b;
+}
+
+.profile-public-media-card.is-video::after {
+  content: "▶";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .profile-public-comparison {
