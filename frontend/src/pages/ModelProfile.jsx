@@ -46,11 +46,11 @@ const PAYMENT_METHOD_LABELS = {
 };
 const ATTENDANCE_DAY_LABELS = {
   MONDAY: "Segunda-feira",
-  TUESDAY: "Terca-feira",
+  TUESDAY: "Ter\u00e7a-feira",
   WEDNESDAY: "Quarta-feira",
   THURSDAY: "Quinta-feira",
   FRIDAY: "Sexta-feira",
-  SATURDAY: "Sabado",
+  SATURDAY: "S\u00e1bado",
   SUNDAY: "Domingo",
 };
 const ATTENDANCE_DAY_ORDER = [
@@ -61,6 +61,15 @@ const ATTENDANCE_DAY_ORDER = [
   "FRIDAY",
   "SATURDAY",
   "SUNDAY",
+];
+const WEEKDAY_BY_JS_INDEX = [
+  "SUNDAY",
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
 ];
 
 const formatPriceBr = (value) => {
@@ -397,6 +406,7 @@ export default function ModelProfile() {
       end: item?.end || "18:00",
     };
   });
+  const currentAttendanceDay = WEEKDAY_BY_JS_INDEX[new Date().getDay()];
 
   const profileDetails = [
     { label: "Genero", value: model.genderIdentity || "--" },
@@ -801,20 +811,26 @@ export default function ModelProfile() {
 
               <div className="profile-public-attendance">
                 <div className="profile-public-attendance-title">
-                  Horario de atendimento
+                  Hor\u00e1rio de expediente
                 </div>
                 <div className="profile-public-attendance-list">
                   {attendanceRows.map((row) => (
-                    <div key={row.day} className="profile-public-attendance-row">
+                    <div
+                      key={row.day}
+                      className={`profile-public-attendance-row ${
+                        row.day === currentAttendanceDay ? "is-today" : ""
+                      }`}
+                    >
                       <span className={row.enabled ? "" : "muted"}>{row.label}</span>
                       <strong className={row.enabled ? "" : "muted"}>
-                        {row.enabled ? `${row.start} - ${row.end}` : "Nao atende"}
+                        {row.enabled ? `${row.start} - ${row.end}` : "N\u00e3o atende"}
                       </strong>
                     </div>
                   ))}
                 </div>
                 <p className="muted profile-public-attendance-note">
-                  A disponibilidade pode variar conforme confirmacao direta com a modelo.
+                  A disponibilidade do anunciante n\u00e3o \u00e9 garantida pelo seu
+                  hor\u00e1rio de atendimento.
                 </p>
               </div>
             </section>

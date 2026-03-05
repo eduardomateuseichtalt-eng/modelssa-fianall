@@ -51,11 +51,11 @@ const SERVICE_OPTIONS = [
 ];
 const ATTENDANCE_DAY_OPTIONS = [
   { day: "MONDAY", label: "Segunda-feira" },
-  { day: "TUESDAY", label: "Terca-feira" },
+  { day: "TUESDAY", label: "Ter\u00e7a-feira" },
   { day: "WEDNESDAY", label: "Quarta-feira" },
   { day: "THURSDAY", label: "Quinta-feira" },
   { day: "FRIDAY", label: "Sexta-feira" },
-  { day: "SATURDAY", label: "Sabado" },
+  { day: "SATURDAY", label: "S\u00e1bado" },
   { day: "SUNDAY", label: "Domingo" },
 ];
 
