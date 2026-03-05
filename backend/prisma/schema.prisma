@@ -45,6 +45,7 @@ model Model {
   price4Hours Int?
   priceOvernight Int?
   paymentMethods String[] @default([])
+  attendanceSchedule Json?
   planTier   PlanTier @default(BASIC)
   planExpiresAt DateTime?
   trialEndsAt DateTime?

@@ -1461,6 +1461,81 @@ select {
   content: "DB";
 }
 
+.profile-public-attendance {
+  width: min(920px, 100%);
+  margin: 2px auto 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.profile-public-attendance-title {
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.profile-public-attendance-list {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.profile-public-attendance-row {
+  min-height: 44px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-public-attendance-row:last-child {
+  border-bottom: 0;
+}
+
+.profile-public-attendance-note {
+  margin: 0;
+}
+
+.model-attendance-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.model-attendance-row {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.model-attendance-row.active {
+  border-color: rgba(220, 38, 38, 0.45);
+}
+
+.model-attendance-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.model-attendance-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.model-attendance-time .input {
+  min-width: 140px;
+}
+
 .model-services-editor-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3375,6 +3450,10 @@ select {
 
   .profile-public-values-grid {
     grid-template-columns: 1fr;
+  }
+
+  .model-attendance-time {
+    flex-wrap: wrap;
   }
 
   .model-services-editor-grid {

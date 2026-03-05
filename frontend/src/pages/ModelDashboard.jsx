@@ -49,6 +49,59 @@ const SERVICE_OPTIONS = [
   { name: "Tapinhas", featured: false },
   { name: "Algemas", featured: false },
 ];
+const ATTENDANCE_DAY_OPTIONS = [
+  { day: "MONDAY", label: "Segunda-feira" },
+  { day: "TUESDAY", label: "Terca-feira" },
+  { day: "WEDNESDAY", label: "Quarta-feira" },
+  { day: "THURSDAY", label: "Quinta-feira" },
+  { day: "FRIDAY", label: "Sexta-feira" },
+  { day: "SATURDAY", label: "Sabado" },
+  { day: "SUNDAY", label: "Domingo" },
+];
+
+const createDefaultAttendanceSchedule = () =>
+  ATTENDANCE_DAY_OPTIONS.map((item) => ({
+    day: item.day,
+    enabled: false,
+    start: "09:00",
+    end: "18:00",
+  }));
+
+const normalizeAttendanceSchedule = (value) => {
+  if (!Array.isArray(value)) {
+    return createDefaultAttendanceSchedule();
+  }
+
+  const byDay = new Map();
+  value.forEach((item) => {
+    if (!item || typeof item !== "object") {
+      return;
+    }
+    const rowDay = String(item.day || "").trim().toUpperCase();
+    if (!rowDay) {
+      return;
+    }
+    byDay.set(rowDay, {
+      day: rowDay,
+      enabled: Boolean(item.enabled),
+      start: String(item.start || "09:00"),
+      end: String(item.end || "18:00"),
+    });
+  });
+
+  return ATTENDANCE_DAY_OPTIONS.map((item) => {
+    const existing = byDay.get(item.day);
+    if (existing) {
+      return existing;
+    }
+    return {
+      day: item.day,
+      enabled: false,
+      start: "09:00",
+      end: "18:00",
+    };
+  });
+};
 
 const formatSize = (value) => {
   if (!value && value !== 0) {
@@ -222,6 +275,9 @@ export default function ModelDashboard() {
   const [profilePrice4Hours, setProfilePrice4Hours] = useState("");
   const [profilePriceOvernight, setProfilePriceOvernight] = useState("");
   const [profilePaymentMethods, setProfilePaymentMethods] = useState([]);
+  const [profileAttendanceSchedule, setProfileAttendanceSchedule] = useState(
+    createDefaultAttendanceSchedule()
+  );
   const [planEffective, setPlanEffective] = useState("BASIC");
   const [planTier, setPlanTier] = useState("BASIC");
   const [planTrialActive, setPlanTrialActive] = useState(false);
@@ -352,6 +408,9 @@ export default function ModelDashboard() {
       setProfilePriceOvernight(data.priceOvernight ?? "");
       setProfilePaymentMethods(
         Array.isArray(data.paymentMethods) ? data.paymentMethods : []
+      );
+      setProfileAttendanceSchedule(
+        normalizeAttendanceSchedule(data.attendanceSchedule)
       );
       applyProfilePlanData(data);
     } catch (err) {
@@ -887,6 +946,7 @@ export default function ModelDashboard() {
           price4Hours: profilePrice4Hours,
           priceOvernight: profilePriceOvernight,
           paymentMethods: profilePaymentMethods,
+          attendanceSchedule: profileAttendanceSchedule,
         }),
       });
 
@@ -926,6 +986,9 @@ export default function ModelDashboard() {
       setProfilePriceOvernight(data.priceOvernight ?? "");
       setProfilePaymentMethods(
         Array.isArray(data.paymentMethods) ? data.paymentMethods : []
+      );
+      setProfileAttendanceSchedule(
+        normalizeAttendanceSchedule(data.attendanceSchedule)
       );
       applyProfilePlanData(data);
       setProfileMessage("Cadastro atualizado com sucesso.");
@@ -1489,6 +1552,94 @@ export default function ModelDashboard() {
                             />
                             <span>{paymentItem.label}</span>
                           </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      padding: 12,
+                      background: "var(--panel-2)",
+                    }}
+                  >
+                    <h4 style={{ margin: 0 }}>Horario de atendimento</h4>
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      Selecione os dias e informe o horario inicial e final.
+                    </p>
+                    <div className="model-attendance-grid">
+                      {ATTENDANCE_DAY_OPTIONS.map((dayItem) => {
+                        const row =
+                          profileAttendanceSchedule.find(
+                            (item) => item.day === dayItem.day
+                          ) || {
+                            day: dayItem.day,
+                            enabled: false,
+                            start: "09:00",
+                            end: "18:00",
+                          };
+                        return (
+                          <div
+                            key={dayItem.day}
+                            className={`model-attendance-row ${
+                              row.enabled ? "active" : ""
+                            }`}
+                          >
+                            <label className="model-attendance-day">
+                              <input
+                                type="checkbox"
+                                checked={row.enabled}
+                                onChange={(event) => {
+                                  const checked = Boolean(event.target.checked);
+                                  setProfileAttendanceSchedule((current) =>
+                                    current.map((item) =>
+                                      item.day === dayItem.day
+                                        ? { ...item, enabled: checked }
+                                        : item
+                                    )
+                                  );
+                                }}
+                              />
+                              <span>{dayItem.label}</span>
+                            </label>
+                            <div className="model-attendance-time">
+                              <input
+                                className="input"
+                                type="time"
+                                value={row.start || "09:00"}
+                                disabled={!row.enabled}
+                                onChange={(event) => {
+                                  const value = event.target.value || "09:00";
+                                  setProfileAttendanceSchedule((current) =>
+                                    current.map((item) =>
+                                      item.day === dayItem.day
+                                        ? { ...item, start: value }
+                                        : item
+                                    )
+                                  );
+                                }}
+                              />
+                              <span>ate</span>
+                              <input
+                                className="input"
+                                type="time"
+                                value={row.end || "18:00"}
+                                disabled={!row.enabled}
+                                onChange={(event) => {
+                                  const value = event.target.value || "18:00";
+                                  setProfileAttendanceSchedule((current) =>
+                                    current.map((item) =>
+                                      item.day === dayItem.day
+                                        ? { ...item, end: value }
+                                        : item
+                                    )
+                                  );
+                                }}
+                              />
+                            </div>
+                          </div>
                         );
                       })}
                     </div>

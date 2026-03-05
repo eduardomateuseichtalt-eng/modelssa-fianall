@@ -107,6 +107,17 @@ const sanitizeStringArray = (value: unknown): string[] | undefined => {
 
 const PAYMENT_METHOD_OPTIONS = ["DINHEIRO", "PIX", "CREDITO", "DEBITO"] as const;
 const PAYMENT_METHOD_SET = new Set<string>(PAYMENT_METHOD_OPTIONS);
+const ATTENDANCE_DAY_OPTIONS = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+] as const;
+const ATTENDANCE_DAY_SET = new Set<string>(ATTENDANCE_DAY_OPTIONS);
+const ATTENDANCE_TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 const sanitizePaymentMethods = (value: unknown): string[] | undefined => {
   const normalized = sanitizeStringArray(value);
@@ -117,6 +128,55 @@ const sanitizePaymentMethods = (value: unknown): string[] | undefined => {
     .map((item) => String(item || "").trim().toUpperCase())
     .filter((item) => PAYMENT_METHOD_SET.has(item))
     .slice(0, PAYMENT_METHOD_OPTIONS.length);
+};
+
+const sanitizeAttendanceSchedule = (
+  value: unknown
+): Prisma.InputJsonValue | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const byDay = new Map<
+    string,
+    { day: string; enabled: boolean; start: string; end: string }
+  >();
+
+  value.forEach((item) => {
+    if (!item || typeof item !== "object") {
+      return;
+    }
+
+    const row = item as Record<string, unknown>;
+    const day = String(row.day || "").trim().toUpperCase();
+    if (!ATTENDANCE_DAY_SET.has(day)) {
+      return;
+    }
+
+    const enabled = Boolean(row.enabled);
+    const startRaw = String(row.start || "").trim();
+    const endRaw = String(row.end || "").trim();
+    const start = ATTENDANCE_TIME_REGEX.test(startRaw) ? startRaw : "09:00";
+    const end = ATTENDANCE_TIME_REGEX.test(endRaw) ? endRaw : "18:00";
+
+    byDay.set(day, { day, enabled, start, end });
+  });
+
+  return ATTENDANCE_DAY_OPTIONS.map((day) => {
+    const existing = byDay.get(day);
+    if (existing) {
+      return existing;
+    }
+    return {
+      day,
+      enabled: false,
+      start: "09:00",
+      end: "18:00",
+    };
+  });
 };
 
 function getClientIp(req: Request) {
@@ -890,6 +950,7 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       price4Hours: true,
       priceOvernight: true,
       paymentMethods: true,
+      attendanceSchedule: true,
       planTier: true,
       planExpiresAt: true,
       trialEndsAt: true,
@@ -945,6 +1006,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   const price4HoursRaw = req.body?.price4Hours;
   const priceOvernightRaw = req.body?.priceOvernight;
   const paymentMethodsRaw = req.body?.paymentMethods;
+  const attendanceScheduleRaw = req.body?.attendanceSchedule;
 
   const toNumberOrNull = (value?: number | string | null) => {
     if (value === null || value === undefined || value === "") {
@@ -998,6 +1060,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       price4Hours: toNumberOrNull(price4HoursRaw),
       priceOvernight: toNumberOrNull(priceOvernightRaw),
       paymentMethods: sanitizePaymentMethods(paymentMethodsRaw),
+      attendanceSchedule: sanitizeAttendanceSchedule(attendanceScheduleRaw),
     },
     select: {
       id: true,
@@ -1033,6 +1096,7 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       price4Hours: true,
       priceOvernight: true,
       paymentMethods: true,
+      attendanceSchedule: true,
       planTier: true,
       planExpiresAt: true,
       trialEndsAt: true,
@@ -1338,6 +1402,7 @@ router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
       price4Hours: true,
       priceOvernight: true,
       paymentMethods: true,
+      attendanceSchedule: true,
     },
   });
 

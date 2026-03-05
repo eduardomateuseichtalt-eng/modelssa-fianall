@@ -44,6 +44,24 @@ const PAYMENT_METHOD_LABELS = {
   CREDITO: "Cr\u00e9dito",
   DEBITO: "D\u00e9bito",
 };
+const ATTENDANCE_DAY_LABELS = {
+  MONDAY: "Segunda-feira",
+  TUESDAY: "Terca-feira",
+  WEDNESDAY: "Quarta-feira",
+  THURSDAY: "Quinta-feira",
+  FRIDAY: "Sexta-feira",
+  SATURDAY: "Sabado",
+  SUNDAY: "Domingo",
+};
+const ATTENDANCE_DAY_ORDER = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+];
 
 const formatPriceBr = (value) => {
   const amount = Number(value || 0);
@@ -351,6 +369,34 @@ export default function ModelProfile() {
         .map((item) => String(item || "").trim().toUpperCase())
         .filter((item) => PAYMENT_METHOD_LABELS[item])
     : [];
+  const attendanceByDay = new Map();
+  if (Array.isArray(model.attendanceSchedule)) {
+    model.attendanceSchedule.forEach((item) => {
+      if (!item || typeof item !== "object") {
+        return;
+      }
+      const day = String(item.day || "").trim().toUpperCase();
+      if (!ATTENDANCE_DAY_LABELS[day]) {
+        return;
+      }
+      attendanceByDay.set(day, {
+        day,
+        enabled: Boolean(item.enabled),
+        start: String(item.start || "09:00"),
+        end: String(item.end || "18:00"),
+      });
+    });
+  }
+  const attendanceRows = ATTENDANCE_DAY_ORDER.map((day) => {
+    const item = attendanceByDay.get(day);
+    return {
+      day,
+      label: ATTENDANCE_DAY_LABELS[day],
+      enabled: Boolean(item?.enabled),
+      start: item?.start || "09:00",
+      end: item?.end || "18:00",
+    };
+  });
 
   const profileDetails = [
     { label: "Genero", value: model.genderIdentity || "--" },
@@ -751,6 +797,25 @@ export default function ModelProfile() {
                     )}
                   </div>
                 </div>
+              </div>
+
+              <div className="profile-public-attendance">
+                <div className="profile-public-attendance-title">
+                  Horario de atendimento
+                </div>
+                <div className="profile-public-attendance-list">
+                  {attendanceRows.map((row) => (
+                    <div key={row.day} className="profile-public-attendance-row">
+                      <span className={row.enabled ? "" : "muted"}>{row.label}</span>
+                      <strong className={row.enabled ? "" : "muted"}>
+                        {row.enabled ? `${row.start} - ${row.end}` : "Nao atende"}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+                <p className="muted profile-public-attendance-note">
+                  A disponibilidade pode variar conforme confirmacao direta com a modelo.
+                </p>
               </div>
             </section>
           ) : null}
