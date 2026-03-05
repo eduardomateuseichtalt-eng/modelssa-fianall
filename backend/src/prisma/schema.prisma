@@ -41,6 +41,10 @@ model Model {
   priceHour  Int?
   price30Min Int?
   price15Min Int?
+  price2Hours Int?
+  price4Hours Int?
+  priceOvernight Int?
+  paymentMethods String[] @default([])
   planTier   PlanTier @default(BASIC)
   planExpiresAt DateTime?
   trialEndsAt DateTime?

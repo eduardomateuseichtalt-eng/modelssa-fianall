@@ -38,6 +38,13 @@ const SERVICE_OPTIONS = [
   { name: "Algemas", featured: false },
 ];
 
+const PAYMENT_METHOD_LABELS = {
+  DINHEIRO: "DINHEIRO",
+  PIX: "PIX",
+  CREDITO: "CREDITO",
+  DEBITO: "DEBITO",
+};
+
 export default function ModelProfile() {
   const { id } = useParams();
   const [model, setModel] = useState(null);
@@ -317,6 +324,21 @@ export default function ModelProfile() {
   const notOfferedServiceList = SERVICE_OPTIONS.filter(
     (service) => !offeredServiceSet.has(service.name)
   );
+  const valuesRows = [
+    { label: "30 minutos", value: model.price30Min },
+    { label: "1 hora", value: model.priceHour },
+    { label: "2 horas", value: model.price2Hours },
+    { label: "4 horas", value: model.price4Hours },
+    { label: "Pernoite", value: model.priceOvernight },
+    { label: "15 minutos", value: model.price15Min },
+  ];
+  const valuesLeftColumn = valuesRows.filter((_, index) => index % 2 === 0);
+  const valuesRightColumn = valuesRows.filter((_, index) => index % 2 !== 0);
+  const paymentMethods = Array.isArray(model.paymentMethods)
+    ? model.paymentMethods
+        .map((item) => String(item || "").trim().toUpperCase())
+        .filter((item) => PAYMENT_METHOD_LABELS[item])
+    : [];
 
   const profileDetails = [
     { label: "Genero", value: model.genderIdentity || "--" },
@@ -676,6 +698,46 @@ export default function ModelProfile() {
                         <span className="profile-public-service-chevron">v</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="profile-public-values">
+                <div className="profile-public-values-title">Valores</div>
+                <div className="profile-public-values-grid">
+                  <div className="profile-public-values-column">
+                    {valuesLeftColumn.map((row) => (
+                      <div key={row.label} className="profile-public-value-row">
+                        <span>{row.label}</span>
+                        <strong>
+                          {Number(row.value || 0) > 0 ? `R$ ${row.value}` : "Nao realiza"}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="profile-public-values-column">
+                    {valuesRightColumn.map((row) => (
+                      <div key={row.label} className="profile-public-value-row">
+                        <span>{row.label}</span>
+                        <strong>
+                          {Number(row.value || 0) > 0 ? `R$ ${row.value}` : "Nao realiza"}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="profile-public-payment">
+                  <span className="profile-public-payment-title">Formas de pagamento:</span>
+                  <div className="profile-public-payment-tags">
+                    {paymentMethods.length > 0 ? (
+                      paymentMethods.map((method) => (
+                        <span key={method} className="profile-public-payment-tag">
+                          {PAYMENT_METHOD_LABELS[method]}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="muted">Nao informado</span>
+                    )}
                   </div>
                 </div>
               </div>

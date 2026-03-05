@@ -8,6 +8,12 @@ const MAX_SHOT_PHOTOS = 2;
 const DEFAULT_MAX_PHOTOS = 7;
 const DEFAULT_MAX_VIDEOS = 3;
 const ONLINE_DURATION_OPTIONS = [15, 30, 60, 120, 240, 480];
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "DINHEIRO", label: "Dinheiro" },
+  { value: "PIX", label: "Pix" },
+  { value: "CREDITO", label: "Cartao de credito" },
+  { value: "DEBITO", label: "Cartao de debito" },
+];
 const SERVICE_OPTIONS = [
   { name: "Acompanhante", featured: true },
   { name: "Beijo na boca", featured: true },
@@ -212,6 +218,10 @@ export default function ModelDashboard() {
   const [profilePriceHour, setProfilePriceHour] = useState("");
   const [profilePrice30Min, setProfilePrice30Min] = useState("");
   const [profilePrice15Min, setProfilePrice15Min] = useState("");
+  const [profilePrice2Hours, setProfilePrice2Hours] = useState("");
+  const [profilePrice4Hours, setProfilePrice4Hours] = useState("");
+  const [profilePriceOvernight, setProfilePriceOvernight] = useState("");
+  const [profilePaymentMethods, setProfilePaymentMethods] = useState([]);
   const [planEffective, setPlanEffective] = useState("BASIC");
   const [planTier, setPlanTier] = useState("BASIC");
   const [planTrialActive, setPlanTrialActive] = useState(false);
@@ -337,6 +347,12 @@ export default function ModelDashboard() {
       setProfilePriceHour(data.priceHour ?? "");
       setProfilePrice30Min(data.price30Min ?? "");
       setProfilePrice15Min(data.price15Min ?? "");
+      setProfilePrice2Hours(data.price2Hours ?? "");
+      setProfilePrice4Hours(data.price4Hours ?? "");
+      setProfilePriceOvernight(data.priceOvernight ?? "");
+      setProfilePaymentMethods(
+        Array.isArray(data.paymentMethods) ? data.paymentMethods : []
+      );
       applyProfilePlanData(data);
     } catch (err) {
       setProfileError(err.message || "Erro ao carregar cadastro.");
@@ -867,6 +883,10 @@ export default function ModelDashboard() {
           priceHour: profilePriceHour,
           price30Min: profilePrice30Min,
           price15Min: profilePrice15Min,
+          price2Hours: profilePrice2Hours,
+          price4Hours: profilePrice4Hours,
+          priceOvernight: profilePriceOvernight,
+          paymentMethods: profilePaymentMethods,
         }),
       });
 
@@ -901,6 +921,12 @@ export default function ModelDashboard() {
       setProfilePriceHour(data.priceHour ?? "");
       setProfilePrice30Min(data.price30Min ?? "");
       setProfilePrice15Min(data.price15Min ?? "");
+      setProfilePrice2Hours(data.price2Hours ?? "");
+      setProfilePrice4Hours(data.price4Hours ?? "");
+      setProfilePriceOvernight(data.priceOvernight ?? "");
+      setProfilePaymentMethods(
+        Array.isArray(data.paymentMethods) ? data.paymentMethods : []
+      );
       applyProfilePlanData(data);
       setProfileMessage("Cadastro atualizado com sucesso.");
 
@@ -1408,6 +1434,65 @@ export default function ModelDashboard() {
                     value={profilePrice15Min}
                     onChange={(event) => setProfilePrice15Min(event.target.value)}
                   />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Valor 2 horas"
+                    value={profilePrice2Hours}
+                    onChange={(event) => setProfilePrice2Hours(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Valor 4 horas"
+                    value={profilePrice4Hours}
+                    onChange={(event) => setProfilePrice4Hours(event.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="Valor pernoite"
+                    value={profilePriceOvernight}
+                    onChange={(event) => setProfilePriceOvernight(event.target.value)}
+                  />
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      padding: 12,
+                      background: "var(--panel-2)",
+                    }}
+                  >
+                    <h4 style={{ margin: 0 }}>Formas de pagamento</h4>
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      Marque as formas de pagamento que voce aceita.
+                    </p>
+                    <div className="model-services-editor-grid">
+                      {PAYMENT_METHOD_OPTIONS.map((paymentItem) => {
+                        const active = profilePaymentMethods.includes(paymentItem.value);
+                        return (
+                          <label
+                            key={paymentItem.value}
+                            className={`model-service-option ${active ? "active" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={active}
+                              onChange={() => {
+                                setProfilePaymentMethods((current) =>
+                                  current.includes(paymentItem.value)
+                                    ? current.filter((item) => item !== paymentItem.value)
+                                    : [...current, paymentItem.value]
+                                );
+                              }}
+                            />
+                            <span>{paymentItem.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
                 <div className="form-actions" style={{ marginTop: 4 }}>
                   <button

@@ -1342,6 +1342,79 @@ select {
   line-height: 1;
 }
 
+.profile-public-values {
+  width: min(920px, 100%);
+  margin: 6px auto 0;
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.profile-public-values-title {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.profile-public-values-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-public-values-column {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.profile-public-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-public-value-row:last-child {
+  border-bottom: 0;
+}
+
+.profile-public-value-row span {
+  color: var(--text-soft);
+}
+
+.profile-public-payment {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.profile-public-payment-title {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.profile-public-payment-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.profile-public-payment-tag {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .model-services-editor-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3251,6 +3324,10 @@ select {
   }
 
   .profile-public-services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-public-values-grid {
     grid-template-columns: 1fr;
   }
 

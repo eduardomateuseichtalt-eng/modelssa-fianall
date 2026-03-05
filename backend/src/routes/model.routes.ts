@@ -105,6 +105,20 @@ const sanitizeStringArray = (value: unknown): string[] | undefined => {
   return Array.from(new Set(normalized)).slice(0, 60);
 };
 
+const PAYMENT_METHOD_OPTIONS = ["DINHEIRO", "PIX", "CREDITO", "DEBITO"] as const;
+const PAYMENT_METHOD_SET = new Set<string>(PAYMENT_METHOD_OPTIONS);
+
+const sanitizePaymentMethods = (value: unknown): string[] | undefined => {
+  const normalized = sanitizeStringArray(value);
+  if (normalized === undefined) {
+    return undefined;
+  }
+  return normalized
+    .map((item) => String(item || "").trim().toUpperCase())
+    .filter((item) => PAYMENT_METHOD_SET.has(item))
+    .slice(0, PAYMENT_METHOD_OPTIONS.length);
+};
+
 function getClientIp(req: Request) {
   const forwarded = req.headers["x-forwarded-for"];
   if (typeof forwarded === "string") {
@@ -872,6 +886,10 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       priceHour: true,
       price30Min: true,
       price15Min: true,
+      price2Hours: true,
+      price4Hours: true,
+      priceOvernight: true,
+      paymentMethods: true,
       planTier: true,
       planExpiresAt: true,
       trialEndsAt: true,
@@ -923,6 +941,10 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   const priceHourRaw = req.body?.priceHour;
   const price30MinRaw = req.body?.price30Min;
   const price15MinRaw = req.body?.price15Min;
+  const price2HoursRaw = req.body?.price2Hours;
+  const price4HoursRaw = req.body?.price4Hours;
+  const priceOvernightRaw = req.body?.priceOvernight;
+  const paymentMethodsRaw = req.body?.paymentMethods;
 
   const toNumberOrNull = (value?: number | string | null) => {
     if (value === null || value === undefined || value === "") {
@@ -972,6 +994,10 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       priceHour: toNumberOrNull(priceHourRaw),
       price30Min: toNumberOrNull(price30MinRaw),
       price15Min: toNumberOrNull(price15MinRaw),
+      price2Hours: toNumberOrNull(price2HoursRaw),
+      price4Hours: toNumberOrNull(price4HoursRaw),
+      priceOvernight: toNumberOrNull(priceOvernightRaw),
+      paymentMethods: sanitizePaymentMethods(paymentMethodsRaw),
     },
     select: {
       id: true,
@@ -1003,6 +1029,10 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       priceHour: true,
       price30Min: true,
       price15Min: true,
+      price2Hours: true,
+      price4Hours: true,
+      priceOvernight: true,
+      paymentMethods: true,
       planTier: true,
       planExpiresAt: true,
       trialEndsAt: true,
@@ -1304,6 +1334,10 @@ router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
       priceHour: true,
       price30Min: true,
       price15Min: true,
+      price2Hours: true,
+      price4Hours: true,
+      priceOvernight: true,
+      paymentMethods: true,
     },
   });
 
