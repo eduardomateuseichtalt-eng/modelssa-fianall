@@ -39,10 +39,22 @@ const SERVICE_OPTIONS = [
 ];
 
 const PAYMENT_METHOD_LABELS = {
-  DINHEIRO: "DINHEIRO",
-  PIX: "PIX",
-  CREDITO: "CREDITO",
-  DEBITO: "DEBITO",
+  DINHEIRO: "Dinheiro",
+  PIX: "Pix",
+  CREDITO: "Cr\u00e9dito",
+  DEBITO: "D\u00e9bito",
+};
+
+const formatPriceBr = (value) => {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return "N\u00e3o realiza";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(amount);
 };
 
 export default function ModelProfile() {
@@ -709,9 +721,7 @@ export default function ModelProfile() {
                     {valuesLeftColumn.map((row) => (
                       <div key={row.label} className="profile-public-value-row">
                         <span>{row.label}</span>
-                        <strong>
-                          {Number(row.value || 0) > 0 ? `R$ ${row.value}` : "Nao realiza"}
-                        </strong>
+                        <strong>{formatPriceBr(row.value)}</strong>
                       </div>
                     ))}
                   </div>
@@ -719,9 +729,7 @@ export default function ModelProfile() {
                     {valuesRightColumn.map((row) => (
                       <div key={row.label} className="profile-public-value-row">
                         <span>{row.label}</span>
-                        <strong>
-                          {Number(row.value || 0) > 0 ? `R$ ${row.value}` : "Nao realiza"}
-                        </strong>
+                        <strong>{formatPriceBr(row.value)}</strong>
                       </div>
                     ))}
                   </div>
@@ -731,12 +739,15 @@ export default function ModelProfile() {
                   <div className="profile-public-payment-tags">
                     {paymentMethods.length > 0 ? (
                       paymentMethods.map((method) => (
-                        <span key={method} className="profile-public-payment-tag">
+                        <span
+                          key={method}
+                          className={`profile-public-payment-tag method-${method.toLowerCase()}`}
+                        >
                           {PAYMENT_METHOD_LABELS[method]}
                         </span>
                       ))
                     ) : (
-                      <span className="muted">Nao informado</span>
+                      <span className="muted">N\u00e3o informado</span>
                     )}
                   </div>
                 </div>

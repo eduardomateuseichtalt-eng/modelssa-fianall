@@ -1352,8 +1352,20 @@ select {
 }
 
 .profile-public-values-title {
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-public-values-title::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #f4bf58, #c9862c);
 }
 
 .profile-public-values-grid {
@@ -1389,13 +1401,15 @@ select {
 
 .profile-public-payment {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   justify-items: center;
 }
 
 .profile-public-payment-title {
   color: var(--text-soft);
-  font-size: 13px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .profile-public-payment-tags {
@@ -1409,10 +1423,42 @@ select {
 .profile-public-payment-tag {
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 5px 12px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 700;
   background: rgba(255, 255, 255, 0.02);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-public-payment-tag::before {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.profile-public-payment-tag.method-dinheiro::before {
+  content: "R$";
+}
+
+.profile-public-payment-tag.method-pix::before {
+  content: "PX";
+}
+
+.profile-public-payment-tag.method-credito::before {
+  content: "CR";
+}
+
+.profile-public-payment-tag.method-debito::before {
+  content: "DB";
 }
 
 .model-services-editor-grid {

@@ -11,8 +11,8 @@ const ONLINE_DURATION_OPTIONS = [15, 30, 60, 120, 240, 480];
 const PAYMENT_METHOD_OPTIONS = [
   { value: "DINHEIRO", label: "Dinheiro" },
   { value: "PIX", label: "Pix" },
-  { value: "CREDITO", label: "Cartao de credito" },
-  { value: "DEBITO", label: "Cartao de debito" },
+  { value: "CREDITO", label: "Cart\u00e3o de cr\u00e9dito" },
+  { value: "DEBITO", label: "Cart\u00e3o de d\u00e9bito" },
 ];
 const SERVICE_OPTIONS = [
   { name: "Acompanhante", featured: true },
