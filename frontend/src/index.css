@@ -590,6 +590,11 @@ select {
   box-shadow: var(--shadow);
   perspective: 1200px;
   animation: heroImagePanelReveal 950ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  background: radial-gradient(circle at 20% 20%, rgba(219, 176, 95, 0.35), rgba(13, 12, 17, 0.94));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
 }
 
 .hero-image img {
@@ -600,6 +605,16 @@ select {
   transform: scale(1.08);
   will-change: transform;
   animation: heroImageDepthFloat 8s ease-in-out 0.9s infinite;
+}
+
+.hero-image img.hero-logo {
+  width: min(70%, 320px);
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+  animation: heroLogoFloat 6s ease-in-out 0.8s infinite;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.35));
 }
 
 @keyframes heroImagePanelReveal {
@@ -622,6 +637,16 @@ select {
   }
   50% {
     transform: scale(1.14) translate3d(0, -16px, 0);
+  }
+}
+
+@keyframes heroLogoFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
   }
 }
 
@@ -756,6 +781,12 @@ select {
 
 .home-model-photo {
   height: 250px;
+}
+
+.home-model-logo {
+  object-fit: contain;
+  padding: 18px;
+  background: radial-gradient(circle at 20% 20%, rgba(219, 176, 95, 0.25), rgba(12, 11, 16, 0.92));
 }
 
 .public-models-grid {

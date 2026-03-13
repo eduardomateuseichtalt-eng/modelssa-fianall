@@ -329,8 +329,9 @@ export default function Home() {
         <div className="hero-visual">
           <div className="hero-image">
             <img
-              src="/foto/ChatGPT%20Image%209%20de%20jan.%20de%202026,%2015_38_16.png"
-              alt="Modelo em destaque"
+              src="/foto/models-club-favicon.png"
+              alt="Models-club"
+              className="hero-logo"
             />
           </div>
           <div className="hero-panel">
@@ -356,9 +357,9 @@ export default function Home() {
           {featuredModels.length === 0 ? (
             <Link to="/seja-modelo" className="model-card home-model-card">
               <img
-                className="model-photo home-model-photo"
-                src="/foto/ChatGPT Image 9 de jan. de 2026, 15_38_16.png"
-                alt="Modelo em destaque"
+                className="model-photo home-model-photo home-model-logo"
+                src="/foto/models-club-favicon.png"
+                alt="Models-club"
                 loading="lazy"
               />
               <div className="model-info">
