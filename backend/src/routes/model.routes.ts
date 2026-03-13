@@ -87,8 +87,8 @@ const MODEL_PLAN_PRICING: Record<PlanTier, { label: string; priceCents: number; 
   },
   PRO: {
     label: "PRO",
-    priceCents: 8990,
-    priceText: "R$ 89,90/mes",
+    priceCents: 6990,
+    priceText: "R$ 69,90/mes",
   },
 };
 

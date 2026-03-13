@@ -1735,7 +1735,7 @@ export default function ModelRegister() {
                     checked={selectedPlanTier === "PRO"}
                     onChange={(event) => setSelectedPlanTier(event.target.value)}
                   />
-                  <span>Plano Pro - R$ 89,90/mes (fotos ilimitadas e 12 videos)</span>
+                  <span>Plano Pro - R$ 69,90/mes (fotos ilimitadas e 12 videos)</span>
                 </label>
               </div>
 
