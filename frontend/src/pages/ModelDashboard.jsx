@@ -313,10 +313,10 @@ export default function ModelDashboard() {
 
   const applyProfilePlanData = (data) => {
     const limits = data?.mediaLimits || {};
-    const nextMaxPhotos = Math.max(
-      1,
-      Number(limits?.maxPhotos || DEFAULT_MAX_PHOTOS)
-    );
+    const nextMaxPhotos =
+      limits?.maxPhotos === null
+        ? null
+        : Math.max(1, Number(limits?.maxPhotos || DEFAULT_MAX_PHOTOS));
     const nextMaxVideos = Math.max(
       1,
       Number(limits?.maxVideos || DEFAULT_MAX_VIDEOS)
@@ -666,7 +666,7 @@ export default function ModelDashboard() {
       mediaPreviews.filter((item) => item.type.startsWith("video/")).length +
       nextPreviews.filter((item) => item.type.startsWith("video/")).length;
 
-    if (existingPhotos + selectedPhotos > maxPhotos) {
+    if (maxPhotos !== null && existingPhotos + selectedPhotos > maxPhotos) {
       errors.push(`Limite de ${maxPhotos} fotos atingido.`);
     }
 
@@ -1083,7 +1083,9 @@ export default function ModelDashboard() {
             Minha <span>midia</span>
           </h1>
           <p className="muted" style={{ marginTop: 10 }}>
-            Plano contratado: {planTier}. Plano efetivo: {planEffective}. Limites da galeria: ate {maxPhotos} fotos e {maxVideos} videos.
+            Plano contratado: {planTier}. Plano efetivo: {planEffective}. Limites da galeria:{" "}
+            {maxPhotos === null ? "fotos ilimitadas" : `ate ${maxPhotos} fotos`} e{" "}
+            {maxVideos} videos.
             {planTrialActive && planTrialEndsAt
               ? ` Trial gratis ativo ate ${new Date(planTrialEndsAt).toLocaleDateString("pt-BR")}.`
               : ""}
@@ -2090,7 +2092,7 @@ export default function ModelDashboard() {
           <div>
             <h4>Adicionar midias</h4>
             <p className="muted">
-              Fotos: {existingPhotos}/{maxPhotos} | Videos: {existingVideos}/{maxVideos}
+              Fotos: {existingPhotos}/{maxPhotos === null ? "Ilimitadas" : maxPhotos} | Videos: {existingVideos}/{maxVideos}
             </p>
           </div>
           <span className="media-count">{mediaPreviews.length}</span>

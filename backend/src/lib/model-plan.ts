@@ -1,8 +1,8 @@
 import { PlanTier } from "@prisma/client";
 
-export const PLAN_MEDIA_LIMITS: Record<PlanTier, { maxPhotos: number; maxVideos: number }> = {
+export const PLAN_MEDIA_LIMITS: Record<PlanTier, { maxPhotos: number | null; maxVideos: number }> = {
   BASIC: { maxPhotos: 7, maxVideos: 3 },
-  PRO: { maxPhotos: 15, maxVideos: 7 },
+  PRO: { maxPhotos: null, maxVideos: 12 },
 };
 
 type ModelPlanSnapshot = {

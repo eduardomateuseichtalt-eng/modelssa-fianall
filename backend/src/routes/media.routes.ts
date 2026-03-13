@@ -188,7 +188,7 @@ router.post(
         .json({ error: `Limite de ${limits.maxVideos} videos atingido para seu plano.` });
     }
 
-    if (existingImages + newImages > limits.maxPhotos) {
+    if (limits.maxPhotos !== null && existingImages + newImages > limits.maxPhotos) {
       return res
         .status(400)
         .json({ error: `Limite de ${limits.maxPhotos} fotos atingido para seu plano.` });

@@ -25,8 +25,8 @@ const PLANS = [
     priceCents: 8990,
     benefits: [
       "Tudo do Basico",
-      "Ate 15 fotos na galeria",
-      "Ate 7 videos na galeria",
+      "Fotos ilimitadas na galeria",
+      "Ate 12 videos na galeria",
       "Midia de comparacao separada",
       "Prioridade na aprovacao",
       "Insights simples",
