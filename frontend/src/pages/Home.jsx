@@ -166,7 +166,7 @@ export default function Home() {
         <div>
           <div className="hero-spot">
             <div className="hero-announcement" role="status" aria-live="polite">
-              aproveite 30 dias gr\u00e1tis para voc\u00ea se surpreender
+              aproveite 30 dias gr&aacute;tis para voc&ecirc; se surpreender
             </div>
             <h2 className="hero-title-alt">
               A MELHOR PLATAFORMA DE ACOMPANHANTES. PERMITA-SE VIVER MOMENTOS
