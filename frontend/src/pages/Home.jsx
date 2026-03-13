@@ -329,7 +329,7 @@ export default function Home() {
         <div className="hero-visual">
           <div className="hero-image">
             <img
-              src="/foto/models-club-favicon.png"
+              src="/models-club-favicon.png"
               alt="Models-club"
               className="hero-logo"
             />
@@ -358,7 +358,7 @@ export default function Home() {
             <Link to="/seja-modelo" className="model-card home-model-card">
               <img
                 className="model-photo home-model-photo home-model-logo"
-                src="/foto/models-club-favicon.png"
+                src="/models-club-favicon.png"
                 alt="Models-club"
                 loading="lazy"
               />
