@@ -582,6 +582,32 @@ select {
   gap: 18px;
 }
 
+.hero-announcement {
+  border: 1px solid rgba(219, 176, 95, 0.6);
+  background: rgba(12, 11, 16, 0.78);
+  color: var(--gold);
+  border-radius: 999px;
+  padding: 12px 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  text-align: center;
+  animation: heroBlink 1.2s ease-in-out infinite;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  margin-bottom: 14px;
+  max-width: 420px;
+}
+
+@keyframes heroBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .hero-image {
   width: 100%;
   border-radius: var(--radius-lg);
@@ -651,6 +677,10 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hero-announcement {
+    animation: none;
+  }
+
   .hero-image {
     animation: none;
   }

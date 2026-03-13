@@ -165,6 +165,9 @@ export default function Home() {
       <section className="hero">
         <div>
           <div className="hero-spot">
+            <div className="hero-announcement" role="status" aria-live="polite">
+              aproveite 30 dias gr\u00e1tis para voc\u00ea se surpreender
+            </div>
             <h2 className="hero-title-alt">
               A MELHOR PLATAFORMA DE ACOMPANHANTES. PERMITA-SE VIVER MOMENTOS
               INESQUECIVEIS.
