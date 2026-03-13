@@ -1118,7 +1118,7 @@ export default function ModelRegister() {
   return (
     <div className="page-tight">
       <div className="form-shell">
-        <h2>Seja modelo</h2>
+        <h2>cadastre-se como acompanhante</h2>
         <p className="muted">
           {"Preencha seus dados para analise. dentro de 24 horas seu perfil estar\u00e1 ativo entre para fazer novas atualiza\u00e7\u00f5es no seu perfil."}
         </p>
