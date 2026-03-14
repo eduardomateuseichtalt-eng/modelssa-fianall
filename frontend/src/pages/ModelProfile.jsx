@@ -811,7 +811,7 @@ export default function ModelProfile() {
 
               <div className="profile-public-attendance">
                 <div className="profile-public-attendance-title">
-                  Hor\u00e1rio de expediente
+                  Hor&aacute;rio de expediente
                 </div>
                 <div className="profile-public-attendance-list">
                   {attendanceRows.map((row) => (
@@ -829,8 +829,8 @@ export default function ModelProfile() {
                   ))}
                 </div>
                 <p className="muted profile-public-attendance-note">
-                  A disponibilidade do anunciante n\u00e3o \u00e9 garantida pelo seu
-                  hor\u00e1rio de atendimento.
+                  A disponibilidade do anunciante n&atilde;o &eacute; garantida pelo seu
+                  hor&aacute;rio de atendimento.
                 </p>
               </div>
             </section>
