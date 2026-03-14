@@ -1319,9 +1319,9 @@ export default function ModelRegister() {
           <div className="media-uploader">
             <div className="media-uploader-head">
               <div>
-                <h4>Fotos e videos de comparacao</h4>
+                <h4>Video de verificacao</h4>
                 <p className="muted">
-                  Envie ate {MAX_FILES} arquivos. Maximo {formatSize(MAX_FILE_SIZE)} cada. Videos ate {MAX_VIDEO_SECONDS}s. Video de verificacao obrigatorio.
+                  aqui vc ir\u00e1 realizar um video de verifica\u00e7\u00e3o
                 </p>
               </div>
               <span className="media-count">{mediaPreviews.length}/{MAX_FILES}</span>
@@ -1331,52 +1331,12 @@ export default function ModelRegister() {
               <button
                 className="btn btn-outline"
                 type="button"
-                onClick={() => {
-                  if (!confirmMediaAccess()) {
-                    return;
-                  }
-                  galleryInputRef.current?.click();
-                }}
-              >
-                Escolher da galeria
-              </button>
-              <button
-                className="btn btn-outline"
-                type="button"
-                onClick={() => {
-                  if (!confirmMediaAccess()) {
-                    return;
-                  }
-                  cameraInputRef.current?.click();
-                }}
-              >
-                Usar camera
-              </button>
-              <button
-                className="btn btn-outline"
-                type="button"
                 onClick={() => videoInputRef.current?.click()}
               >
                 Gravar video
               </button>
             </div>
 
-            <input
-              ref={galleryInputRef}
-              className="media-input"
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              onChange={handleFileInput}
-            />
-            <input
-              ref={cameraInputRef}
-              className="media-input"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleFileInput}
-            />
             <input
               ref={videoInputRef}
               className="media-input"
@@ -1416,7 +1376,7 @@ export default function ModelRegister() {
               </div>
             ) : (
               <p className="muted media-empty">
-                Selecione fotos ou videos para enviar junto ao cadastro.
+                Grave um video para enviar junto ao cadastro.
               </p>
             )}
           </div>
