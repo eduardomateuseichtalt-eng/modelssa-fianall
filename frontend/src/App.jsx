@@ -11,6 +11,7 @@ import ModelLogin from "./pages/ModelLogin";
 import ModelDashboard from "./pages/ModelDashboard";
 import ModelCityStats from "./pages/ModelCityStats";
 import ModelPayment from "./pages/ModelPayment";
+import AgeVerification from "./pages/AgeVerification";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
@@ -63,6 +64,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
+        <Route path="/verificacao-idade" element={<AgeVerification />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Register />} />
         <Route path="/sobre" element={<About />} />

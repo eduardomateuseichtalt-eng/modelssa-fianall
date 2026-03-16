@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
 const SERVICE_OPTIONS = [
@@ -71,6 +71,23 @@ const WEEKDAY_BY_JS_INDEX = [
   "FRIDAY",
   "SATURDAY",
 ];
+const AGE_TOKEN_STORAGE_KEY = "modelsClubAgeToken";
+const AGE_TOKEN_EXP_STORAGE_KEY = "modelsClubAgeTokenExpiresAt";
+
+const readAgeToken = () => {
+  try {
+    const token = String(localStorage.getItem(AGE_TOKEN_STORAGE_KEY) || "").trim();
+    if (!token) return "";
+    const expiresRaw = String(localStorage.getItem(AGE_TOKEN_EXP_STORAGE_KEY) || "");
+    const expiresAt = expiresRaw ? new Date(expiresRaw).getTime() : 0;
+    if (!expiresAt || Date.now() > expiresAt) {
+      return "";
+    }
+    return token;
+  } catch {
+    return "";
+  }
+};
 
 const formatPriceBr = (value) => {
   const amount = Number(value || 0);
@@ -86,9 +103,11 @@ const formatPriceBr = (value) => {
 
 export default function ModelProfile() {
   const { id } = useParams();
+  const location = useLocation();
   const [model, setModel] = useState(null);
   const [media, setMedia] = useState([]);
   const [comparisonMedia, setComparisonMedia] = useState([]);
+  const [mediaSummary, setMediaSummary] = useState({ photos: 0, videos: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("media");
   const [modelShots, setModelShots] = useState([]);
@@ -108,6 +127,8 @@ export default function ModelProfile() {
   const [viewerMode, setViewerMode] = useState("");
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
+  const [ageToken, setAgeToken] = useState(readAgeToken());
+  const [ageGateOpen, setAgeGateOpen] = useState(!readAgeToken());
   const priceCardRef = useRef(null);
 
   useEffect(() => {
@@ -118,20 +139,52 @@ export default function ModelProfile() {
   }, [id]);
 
   useEffect(() => {
-    apiFetch(`/api/media/model/${id}`)
+    if (!ageToken) {
+      setMedia([]);
+      return;
+    }
+
+    apiFetch(`/api/media/model/${id}?ageToken=${encodeURIComponent(ageToken)}`)
       .then((data) => setMedia(data))
-      .catch(() => setMedia([]));
-  }, [id]);
+      .catch((err) => {
+        if (err.status === 403) {
+          setAgeGateOpen(true);
+          setAgeToken("");
+          try {
+            localStorage.removeItem(AGE_TOKEN_STORAGE_KEY);
+            localStorage.removeItem(AGE_TOKEN_EXP_STORAGE_KEY);
+          } catch {
+            // ignore storage errors
+          }
+        }
+        setMedia([]);
+      });
+  }, [id, ageToken]);
 
   useEffect(() => {
+    if (!ageToken) {
+      setComparisonMedia([]);
+      return;
+    }
+
     let active = true;
-    apiFetch(`/api/media/model/${id}/comparison`)
+    apiFetch(`/api/media/model/${id}/comparison?ageToken=${encodeURIComponent(ageToken)}`)
       .then((data) => {
         if (active) {
           setComparisonMedia(Array.isArray(data) ? data : []);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err.status === 403) {
+          setAgeGateOpen(true);
+          setAgeToken("");
+          try {
+            localStorage.removeItem(AGE_TOKEN_STORAGE_KEY);
+            localStorage.removeItem(AGE_TOKEN_EXP_STORAGE_KEY);
+          } catch {
+            // ignore storage errors
+          }
+        }
         if (active) {
           setComparisonMedia([]);
         }
@@ -140,7 +193,7 @@ export default function ModelProfile() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, ageToken]);
 
   useEffect(() => {
     let active = true;
@@ -243,6 +296,38 @@ export default function ModelProfile() {
     };
   }, [priceOptionsOpen]);
 
+  useEffect(() => {
+    const refreshAgeGate = () => {
+      const token = readAgeToken();
+      setAgeToken(token);
+      setAgeGateOpen(!token);
+    };
+    refreshAgeGate();
+    window.addEventListener("focus", refreshAgeGate);
+    window.addEventListener("storage", refreshAgeGate);
+    return () => {
+      window.removeEventListener("focus", refreshAgeGate);
+      window.removeEventListener("storage", refreshAgeGate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ageGateOpen) {
+      return;
+    }
+    apiFetch(`/api/media/model/${id}/summary`)
+      .then((data) => {
+        setMediaSummary({
+          photos: Number(data?.photos || 0),
+          videos: Number(data?.videos || 0),
+          total: Number(data?.total || 0),
+        });
+      })
+      .catch(() => {
+        setMediaSummary({ photos: 0, videos: 0, total: 0 });
+      });
+  }, [id, ageGateOpen]);
+
   if (loading) {
     return (
       <div className="page">
@@ -299,6 +384,9 @@ export default function ModelProfile() {
   const mediaVideos = media.filter((item) => item.type === "VIDEO");
   const orderedGalleryMedia = [...mediaVideos, ...mediaPhotos];
   const totalMediaCount = media.length;
+  const displayMediaCount = ageGateOpen ? mediaSummary.total : totalMediaCount;
+  const displayMediaPhotos = ageGateOpen ? mediaSummary.photos : mediaPhotos.length;
+  const displayMediaVideos = ageGateOpen ? mediaSummary.videos : mediaVideos.length;
   const hasShots = modelShots.length > 0;
   const hasHalfHourPrice = Number(model.price30Min || 0) > 0;
   const priceOptions = [
@@ -407,6 +495,8 @@ export default function ModelProfile() {
     };
   });
   const currentAttendanceDay = WEEKDAY_BY_JS_INDEX[new Date().getDay()];
+  const returnPath = `${location.pathname}${location.search}${location.hash}`;
+  const ageGateLink = `/verificacao-idade?return=${encodeURIComponent(returnPath)}`;
 
   const profileDetails = [
     { label: "Genero", value: model.genderIdentity || "--" },
@@ -599,7 +689,7 @@ export default function ModelProfile() {
               </div>
               <div className="profile-public-mini-card">
                 <span>Midias</span>
-                <strong>{totalMediaCount}</strong>
+                <strong>{displayMediaCount}</strong>
               </div>
             </div>
 
@@ -627,7 +717,7 @@ export default function ModelProfile() {
             className={`profile-public-tab ${activeTab === "media" ? "active" : ""}`}
             onClick={() => setActiveTab("media")}
           >
-            Fotos e videos ({totalMediaCount})
+            Fotos e videos ({displayMediaCount})
           </button>
           <button
             type="button"
@@ -655,17 +745,42 @@ export default function ModelProfile() {
               <div className="profile-public-section-head">
                 <h2>Galeria de fotos e videos</h2>
                 <div className="profile-public-counters">
-                  <span className="pill">{mediaPhotos.length} fotos</span>
-                  <span className="pill">{mediaVideos.length} videos</span>
+                  <span className="pill">{displayMediaPhotos} fotos</span>
+                  <span className="pill">{displayMediaVideos} videos</span>
                 </div>
               </div>
 
-              {totalMediaCount > 0 ? (
+              {ageGateOpen ? (
+                <div className="profile-public-media-grid">
+                  {Array.from({ length: Math.max(displayMediaCount || 6, 6) }).map((_, index) => (
+                    <div
+                      key={`locked-${index}`}
+                      className="profile-public-media-card is-locked is-placeholder"
+                    >
+                      <Link to={ageGateLink} className="profile-public-media-lock">
+                        <div className="profile-public-media-lock-text">
+                          <span>CONTE&Uacute;DO</span>
+                          <strong>+18</strong>
+                          <span className="profile-public-media-lock-action">Visualizar</span>
+                        </div>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : totalMediaCount > 0 ? (
                 <div className="profile-public-media-grid">
                   {orderedGalleryMedia.map((item) =>
                     item.type === "VIDEO" ? (
-                      <div key={item.id} className="profile-public-media-card is-video">
-                        <video src={item.url} controls preload="metadata" />
+                      <div
+                        key={item.id}
+                        className="profile-public-media-card is-video"
+                      >
+                        <video
+                          src={item.url}
+                          controls
+                          preload="metadata"
+                          playsInline
+                        />
                       </div>
                     ) : (
                       <div key={item.id} className="profile-public-media-card">
@@ -698,7 +813,17 @@ export default function ModelProfile() {
                   <h2>Midia de comparacao</h2>
                 </div>
 
-                {comparisonMediaCandidate ? (
+                {ageGateOpen ? (
+                  <div className="profile-public-comparison-video is-locked">
+                    <Link to={ageGateLink} className="profile-public-media-lock">
+                      <div className="profile-public-media-lock-text">
+                        <span>CONTE&Uacute;DO</span>
+                        <strong>+18</strong>
+                        <span className="profile-public-media-lock-action">Visualizar</span>
+                      </div>
+                    </Link>
+                  </div>
+                ) : comparisonMediaCandidate ? (
                   <div className="profile-public-comparison-video">
                     <img
                       src="/perfil-verificado-ms.svg"

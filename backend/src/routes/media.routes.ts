@@ -1,7 +1,8 @@
 import { Router, Request, Response } from "express";
+import crypto from "crypto";
 import multer from "multer";
 import { prisma } from "../lib/prisma";
-import { requireAdmin, requireAuth } from "../lib/auth";
+import { getUserFromRequest, requireAdmin, requireAuth } from "../lib/auth";
 import { deleteFromBunny, uploadToBunny, validateBunnyConnection } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
 import { getModelMediaLimits } from "../lib/model-plan";
@@ -22,10 +23,55 @@ const allowedTypes = new Set([
   "video/mp4",
 ]);
 
+const allowedAgePhotoTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
+const AGE_TOKEN_TTL_DAYS = Number(process.env.AGE_VERIFY_TTL_DAYS || 30);
+const AGE_TOKEN_HEADER = "x-age-token";
+
 const mapMediaType = (mime: string) =>
   mime.startsWith("video/") ? "VIDEO" : "IMAGE";
 
 const normalizeStoredUrl = (value: string) => value.trim();
+
+const getAgeTokenSecret = () => {
+  const secret = process.env.OTP_HASH_SECRET || "";
+  if (!secret && process.env.NODE_ENV === "production") {
+    return "";
+  }
+  return secret || "age_verify_dev_secret";
+};
+
+const getAgeTokenFromRequest = (req: Request) => {
+  const headerToken = req.headers[AGE_TOKEN_HEADER] as string | undefined;
+  const queryToken = req.query.ageToken as string | undefined;
+  return String(headerToken || queryToken || "").trim();
+};
+
+const hashAgeToken = (token: string, secret: string) =>
+  crypto.createHmac("sha256", secret).update(token).digest("hex");
+
+const ensureAgeVerified = async (req: Request, modelId?: string) => {
+  const user = getUserFromRequest(req);
+  if (user && (user.role === "ADMIN" || (modelId && user.id === modelId))) {
+    return true;
+  }
+
+  const token = getAgeTokenFromRequest(req);
+  if (!token) {
+    return false;
+  }
+
+  const secret = getAgeTokenSecret();
+  if (!secret) {
+    return false;
+  }
+
+  const tokenHash = hashAgeToken(token, secret);
+  const record = await prisma.ageVerificationSession.findFirst({
+    where: { tokenHash, expiresAt: { gt: new Date() } },
+  });
+
+  return Boolean(record);
+};
 
 router.post(
   "/upload",
@@ -260,10 +306,67 @@ router.get("/health", requireAdmin, asyncHandler(async (_req: Request, res: Resp
   return res.json({ status: "ok" });
 }));
 
+router.post(
+  "/age-verification",
+  upload.single("photo"),
+  asyncHandler(async (req: Request, res: Response) => {
+    const secret = getAgeTokenSecret();
+    if (!secret) {
+      return res.status(500).json({ error: "Verificacao indisponivel no momento" });
+    }
+
+    const file = req.file as Express.Multer.File | undefined;
+    if (!file) {
+      return res.status(400).json({ error: "Foto obrigatoria para verificacao" });
+    }
+
+    if (!allowedAgePhotoTypes.has(file.mimetype)) {
+      return res.status(400).json({ error: "Formato de foto invalido" });
+    }
+
+    const token = crypto.randomBytes(24).toString("hex");
+    const tokenHash = hashAgeToken(token, secret);
+    const expiresAt = new Date(Date.now() + AGE_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
+
+    await prisma.ageVerificationSession.create({
+      data: {
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    return res.json({ token, expiresAt });
+  })
+);
+
+router.get(
+  "/model/:id/summary",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const [photos, videos] = await Promise.all([
+      prisma.media.count({
+        where: { modelId: id, status: "APPROVED", purpose: "GALLERY", type: "IMAGE" },
+      }),
+      prisma.media.count({
+        where: { modelId: id, status: "APPROVED", purpose: "GALLERY", type: "VIDEO" },
+      }),
+    ]);
+
+    return res.json({
+      photos,
+      videos,
+      total: photos + videos,
+    });
+  })
+);
+
 router.get(
   "/model/:id/comparison",
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
+    if (!(await ensureAgeVerified(req, id))) {
+      return res.status(403).json({ error: "Verificacao de idade necessaria" });
+    }
     const media = await prisma.media.findMany({
       where: { modelId: id, status: "APPROVED", purpose: "COMPARISON" },
       orderBy: { createdAt: "asc" },
@@ -277,6 +380,9 @@ router.get(
   "/model/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
+    if (!(await ensureAgeVerified(req, id))) {
+      return res.status(403).json({ error: "Verificacao de idade necessaria" });
+    }
     const media = await prisma.media.findMany({
       where: { modelId: id, status: "APPROVED", purpose: "GALLERY" },
       orderBy: { createdAt: "desc" },

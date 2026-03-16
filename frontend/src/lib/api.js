@@ -29,15 +29,17 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-    }
-
     const message =
       (data && data.error) ||
       (data && data.message) ||
       `Erro HTTP ${response.status}`;
+    const isAgeGate =
+      typeof message === "string" && message.toLowerCase().includes("verificacao de idade");
+
+    if ((response.status === 401 || response.status === 403) && !isAgeGate) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+    }
     const error = new Error(message);
     error.status = response.status;
     error.data = data;

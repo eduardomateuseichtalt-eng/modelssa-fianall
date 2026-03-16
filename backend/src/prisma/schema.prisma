@@ -134,6 +134,15 @@ model ModelReview {
   @@index([modelId, createdAt])
 }
 
+model AgeVerificationSession {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
 enum MediaType {
   IMAGE
   VIDEO
