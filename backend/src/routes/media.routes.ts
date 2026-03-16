@@ -343,12 +343,30 @@ router.get(
   "/model/:id/summary",
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const [photos, videos] = await Promise.all([
+    const [photos, videos, safePhotos, safeVideos] = await Promise.all([
       prisma.media.count({
         where: { modelId: id, status: "APPROVED", purpose: "GALLERY", type: "IMAGE" },
       }),
       prisma.media.count({
         where: { modelId: id, status: "APPROVED", purpose: "GALLERY", type: "VIDEO" },
+      }),
+      prisma.media.count({
+        where: {
+          modelId: id,
+          status: "APPROVED",
+          purpose: "GALLERY",
+          type: "IMAGE",
+          isExplicit: false,
+        },
+      }),
+      prisma.media.count({
+        where: {
+          modelId: id,
+          status: "APPROVED",
+          purpose: "GALLERY",
+          type: "VIDEO",
+          isExplicit: false,
+        },
       }),
     ]);
 
@@ -356,6 +374,9 @@ router.get(
       photos,
       videos,
       total: photos + videos,
+      safePhotos,
+      safeVideos,
+      safeTotal: safePhotos + safeVideos,
     });
   })
 );
@@ -364,11 +385,14 @@ router.get(
   "/model/:id/comparison",
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    if (!(await ensureAgeVerified(req, id))) {
-      return res.status(403).json({ error: "Verificacao de idade necessaria" });
-    }
+    const ageVerified = await ensureAgeVerified(req, id);
     const media = await prisma.media.findMany({
-      where: { modelId: id, status: "APPROVED", purpose: "COMPARISON" },
+      where: {
+        modelId: id,
+        status: "APPROVED",
+        purpose: "COMPARISON",
+        ...(ageVerified ? {} : { isExplicit: false }),
+      },
       orderBy: { createdAt: "asc" },
     });
 
@@ -380,11 +404,14 @@ router.get(
   "/model/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    if (!(await ensureAgeVerified(req, id))) {
-      return res.status(403).json({ error: "Verificacao de idade necessaria" });
-    }
+    const ageVerified = await ensureAgeVerified(req, id);
     const media = await prisma.media.findMany({
-      where: { modelId: id, status: "APPROVED", purpose: "GALLERY" },
+      where: {
+        modelId: id,
+        status: "APPROVED",
+        purpose: "GALLERY",
+        ...(ageVerified ? {} : { isExplicit: false }),
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -404,10 +431,15 @@ router.get("/pending", requireAdmin, asyncHandler(async (_req: Request, res: Res
 
 router.patch("/:id/approve", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const explicit =
+    typeof req.body?.explicit === "boolean" ? req.body.explicit : undefined;
 
   const updated = await prisma.media.update({
     where: { id },
-    data: { status: "APPROVED" },
+    data: {
+      status: "APPROVED",
+      ...(explicit !== undefined ? { isExplicit: explicit } : {}),
+    },
   });
 
   return res.json(updated);

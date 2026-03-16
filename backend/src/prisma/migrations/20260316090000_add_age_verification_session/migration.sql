@@ -13,3 +13,6 @@ CREATE UNIQUE INDEX "AgeVerificationSession_tokenHash_key" ON "AgeVerificationSe
 
 -- CreateIndex
 CREATE INDEX "AgeVerificationSession_expiresAt_idx" ON "AgeVerificationSession"("expiresAt");
+
+-- AlterTable
+ALTER TABLE "Media" ADD COLUMN "isExplicit" BOOLEAN NOT NULL DEFAULT false;

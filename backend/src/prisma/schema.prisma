@@ -177,6 +177,7 @@ model Media {
   status    MediaStatus @default(PENDING)
   purpose   MediaPurpose @default(GALLERY)
   url       String
+  isExplicit Boolean   @default(false)
   createdAt DateTime    @default(now())
 
   @@index([modelId])

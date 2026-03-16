@@ -107,7 +107,14 @@ export default function ModelProfile() {
   const [model, setModel] = useState(null);
   const [media, setMedia] = useState([]);
   const [comparisonMedia, setComparisonMedia] = useState([]);
-  const [mediaSummary, setMediaSummary] = useState({ photos: 0, videos: 0, total: 0 });
+  const [mediaSummary, setMediaSummary] = useState({
+    photos: 0,
+    videos: 0,
+    total: 0,
+    safePhotos: 0,
+    safeVideos: 0,
+    safeTotal: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("media");
   const [modelShots, setModelShots] = useState([]);
@@ -128,7 +135,6 @@ export default function ModelProfile() {
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
   const [ageToken, setAgeToken] = useState(readAgeToken());
-  const [ageGateOpen, setAgeGateOpen] = useState(!readAgeToken());
   const priceCardRef = useRef(null);
 
   useEffect(() => {
@@ -139,52 +145,24 @@ export default function ModelProfile() {
   }, [id]);
 
   useEffect(() => {
-    if (!ageToken) {
-      setMedia([]);
-      return;
-    }
-
-    apiFetch(`/api/media/model/${id}?ageToken=${encodeURIComponent(ageToken)}`)
-      .then((data) => setMedia(data))
-      .catch((err) => {
-        if (err.status === 403) {
-          setAgeGateOpen(true);
-          setAgeToken("");
-          try {
-            localStorage.removeItem(AGE_TOKEN_STORAGE_KEY);
-            localStorage.removeItem(AGE_TOKEN_EXP_STORAGE_KEY);
-          } catch {
-            // ignore storage errors
-          }
-        }
-        setMedia([]);
-      });
+    const token = ageToken ? encodeURIComponent(ageToken) : "";
+    const query = token ? `?ageToken=${token}` : "";
+    apiFetch(`/api/media/model/${id}${query}`)
+      .then((data) => setMedia(Array.isArray(data) ? data : []))
+      .catch(() => setMedia([]));
   }, [id, ageToken]);
 
   useEffect(() => {
-    if (!ageToken) {
-      setComparisonMedia([]);
-      return;
-    }
-
     let active = true;
-    apiFetch(`/api/media/model/${id}/comparison?ageToken=${encodeURIComponent(ageToken)}`)
+    const token = ageToken ? encodeURIComponent(ageToken) : "";
+    const query = token ? `?ageToken=${token}` : "";
+    apiFetch(`/api/media/model/${id}/comparison${query}`)
       .then((data) => {
         if (active) {
           setComparisonMedia(Array.isArray(data) ? data : []);
         }
       })
-      .catch((err) => {
-        if (err.status === 403) {
-          setAgeGateOpen(true);
-          setAgeToken("");
-          try {
-            localStorage.removeItem(AGE_TOKEN_STORAGE_KEY);
-            localStorage.removeItem(AGE_TOKEN_EXP_STORAGE_KEY);
-          } catch {
-            // ignore storage errors
-          }
-        }
+      .catch(() => {
         if (active) {
           setComparisonMedia([]);
         }
@@ -300,7 +278,6 @@ export default function ModelProfile() {
     const refreshAgeGate = () => {
       const token = readAgeToken();
       setAgeToken(token);
-      setAgeGateOpen(!token);
     };
     refreshAgeGate();
     window.addEventListener("focus", refreshAgeGate);
@@ -312,21 +289,28 @@ export default function ModelProfile() {
   }, []);
 
   useEffect(() => {
-    if (!ageGateOpen) {
-      return;
-    }
     apiFetch(`/api/media/model/${id}/summary`)
       .then((data) => {
         setMediaSummary({
           photos: Number(data?.photos || 0),
           videos: Number(data?.videos || 0),
           total: Number(data?.total || 0),
+          safePhotos: Number(data?.safePhotos || 0),
+          safeVideos: Number(data?.safeVideos || 0),
+          safeTotal: Number(data?.safeTotal || 0),
         });
       })
       .catch(() => {
-        setMediaSummary({ photos: 0, videos: 0, total: 0 });
+        setMediaSummary({
+          photos: 0,
+          videos: 0,
+          total: 0,
+          safePhotos: 0,
+          safeVideos: 0,
+          safeTotal: 0,
+        });
       });
-  }, [id, ageGateOpen]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -384,9 +368,14 @@ export default function ModelProfile() {
   const mediaVideos = media.filter((item) => item.type === "VIDEO");
   const orderedGalleryMedia = [...mediaVideos, ...mediaPhotos];
   const totalMediaCount = media.length;
-  const displayMediaCount = ageGateOpen ? mediaSummary.total : totalMediaCount;
-  const displayMediaPhotos = ageGateOpen ? mediaSummary.photos : mediaPhotos.length;
-  const displayMediaVideos = ageGateOpen ? mediaSummary.videos : mediaVideos.length;
+  const displayMediaCount = mediaSummary.total || totalMediaCount;
+  const displayMediaPhotos = mediaSummary.photos || mediaPhotos.length;
+  const displayMediaVideos = mediaSummary.videos || mediaVideos.length;
+  const restrictedCount = Math.max(
+    0,
+    (mediaSummary.total || totalMediaCount) - totalMediaCount
+  );
+  const shouldShowAgeGate = restrictedCount > 0;
   const hasShots = modelShots.length > 0;
   const hasHalfHourPrice = Number(model.price30Min || 0) > 0;
   const priceOptions = [
@@ -750,9 +739,20 @@ export default function ModelProfile() {
                 </div>
               </div>
 
-              {ageGateOpen ? (
+              {shouldShowAgeGate ? (
                 <div className="profile-public-media-grid">
-                  {Array.from({ length: Math.max(displayMediaCount || 6, 6) }).map((_, index) => (
+                  {orderedGalleryMedia.map((item) =>
+                    item.type === "VIDEO" ? (
+                      <div key={item.id} className="profile-public-media-card is-video">
+                        <video src={item.url} controls preload="metadata" playsInline />
+                      </div>
+                    ) : (
+                      <div key={item.id} className="profile-public-media-card">
+                        <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
+                      </div>
+                    )
+                  )}
+                  {Array.from({ length: Math.max(restrictedCount, 0) }).map((_, index) => (
                     <div
                       key={`locked-${index}`}
                       className="profile-public-media-card is-locked is-placeholder"
@@ -813,7 +813,7 @@ export default function ModelProfile() {
                   <h2>Midia de comparacao</h2>
                 </div>
 
-                {ageGateOpen ? (
+                {shouldShowAgeGate && !comparisonMediaCandidate ? (
                   <div className="profile-public-comparison-video is-locked">
                     <Link to={ageGateLink} className="profile-public-media-lock">
                       <div className="profile-public-media-lock-text">

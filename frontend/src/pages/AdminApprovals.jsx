@@ -17,6 +17,7 @@ export default function AdminApprovals() {
   const [faqReportsError, setFaqReportsError] = useState("");
   const [faqReplyDrafts, setFaqReplyDrafts] = useState({});
   const [faqReplySavingId, setFaqReplySavingId] = useState("");
+  const [explicitFlags, setExplicitFlags] = useState({});
   const [searchName, setSearchName] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -196,7 +197,12 @@ export default function AdminApprovals() {
     setMessage("");
     setError("");
     try {
-      await apiFetch(`/api/media/${mediaId}/approve`, { method: "PATCH" });
+      const isExplicit = Boolean(explicitFlags[mediaId]);
+      await apiFetch(`/api/media/${mediaId}/approve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ explicit: isExplicit }),
+      });
       setPendingMedia((current) =>
         current.filter((media) => media.id !== mediaId)
       );
@@ -524,6 +530,19 @@ export default function AdminApprovals() {
                     style={{ width: "100%", marginTop: 12, borderRadius: 12 }}
                   />
                 )}
+                <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10 }}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(explicitFlags[media.id])}
+                    onChange={(event) =>
+                      setExplicitFlags((current) => ({
+                        ...current,
+                        [media.id]: event.target.checked,
+                      }))
+                    }
+                  />
+                  <span className="muted">Conteudo explicito</span>
+                </label>
                 <button
                   className="btn"
                   type="button"
