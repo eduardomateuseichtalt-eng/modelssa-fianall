@@ -50,25 +50,25 @@ export default function Modelos() {
   return (
     <div className="page">
       <h1 className="section-title">
-        Modelos <span>disponiveis</span>
+        Acompanhantes <span>disponiveis</span>
       </h1>
       <p className="muted" style={{ marginTop: 10 }}>
         Perfis verificados e organizados por cidade.
       </p>
 
       {loading ? (
-        <p style={{ marginTop: 24 }}>Carregando modelos...</p>
+        <p style={{ marginTop: 24 }}>Carregando acompanhantes...</p>
       ) : models.length === 0 && !cityFilter ? (
         <div className="models-grid public-models-grid">
           <Link to="/seja-modelo" className="model-card public-model-card">
             <img
               className="model-photo public-model-photo"
               src="/foto/ChatGPT Image 9 de jan. de 2026, 15_38_16.png"
-              alt="Modelo em destaque"
+              alt="Acompanhante em destaque"
               loading="lazy"
             />
             <div className="model-info">
-              <h3>Modelo em destaque</h3>
+              <h3>Acompanhante em destaque</h3>
               <p>Seu perfil pode aparecer aqui</p>
             </div>
           </Link>

@@ -19,8 +19,8 @@ export default function Footer() {
         <div>
           <h4 className="pill">Explorar</h4>
           <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-            <Link to="/modelos">Modelos</Link>
-            <Link to="/seja-modelo">Seja modelo</Link>
+            <Link to="/modelos">Acompanhantes</Link>
+            <Link to="/seja-modelo">Seja acompanhante</Link>
             <Link to="/anuncie">Anuncie</Link>
           </div>
         </div>

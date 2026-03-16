@@ -57,7 +57,7 @@ export default function Navbar() {
 
         <nav className="nav-links">
           <NavLink to="/">Inicio</NavLink>
-          <NavLink to="/modelos">Modelos</NavLink>
+          <NavLink to="/modelos">Acompanhantes</NavLink>
           <NavLink to="/contato">Contato</NavLink>
         </nav>
 
@@ -82,7 +82,7 @@ export default function Navbar() {
             <>
               <NavLink to="/login">Entrar</NavLink>
               <NavLink to="/cadastro">Cadastro</NavLink>
-              <NavLink to="/modelo/login">Area da modelo</NavLink>
+              <NavLink to="/modelo/login">Area da acompanhante</NavLink>
             </>
           )}
         </div>
@@ -106,7 +106,7 @@ export default function Navbar() {
             Inicio
           </NavLink>
           <NavLink to="/modelos" onClick={() => setMobileMenuOpen(false)}>
-            Modelos
+            Acompanhantes
           </NavLink>
           <NavLink to="/contato" onClick={() => setMobileMenuOpen(false)}>
             Contato
@@ -151,7 +151,7 @@ export default function Navbar() {
                 Cadastro
               </NavLink>
               <NavLink to="/modelo/login" onClick={() => setMobileMenuOpen(false)}>
-                Area da modelo
+                Area da acompanhante
               </NavLink>
             </>
           )}

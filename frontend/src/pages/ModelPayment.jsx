@@ -105,7 +105,7 @@ function buildPixCopyPaste({
 }
 
 function buildWhatsAppLink({ planName, planPriceText, modelId, name, email }) {
-  const identifier = `MODELO-${modelId}`;
+  const identifier = `ACOMPANHANTE-${modelId}`;
 
   const msg =
     `Ola! Quero ativar o PLANO ${planName} (${planPriceText}) no models-club.\n\n` +
@@ -200,7 +200,7 @@ export default function ModelPayment() {
 
   const identifier = useMemo(() => {
     const safeId = modelId || "SEU_ID_AQUI";
-    return `MODELO-${safeId}`;
+    return `ACOMPANHANTE-${safeId}`;
   }, [modelId]);
 
   const whatsappLink = useMemo(() => {
@@ -241,7 +241,7 @@ export default function ModelPayment() {
           Faca o Pix e envie o comprovante no WhatsApp para ativarmos seu plano.
         </p>
         <p className="muted" style={{ marginBottom: 18 }}>
-          Apos a aprovacao do perfil, a modelo recebe 30 dias gratis no plano escolhido.
+          Apos a aprovacao do perfil, a acompanhante recebe 30 dias gratis no plano escolhido.
         </p>
 
         {profileError ? <div className="notice">{profileError}</div> : null}
@@ -258,7 +258,7 @@ export default function ModelPayment() {
             }}
           >
             Atencao: <b>modelId</b> nao foi informado. O identificador ficara como{" "}
-            <b>MODELO-SEU_ID_AQUI</b>. Conecte esta tela ao ID real da modelo antes de publicar.
+            <b>ACOMPANHANTE-SEU_ID_AQUI</b>. Conecte esta tela ao ID real da acompanhante antes de publicar.
           </div>
         ) : null}
 

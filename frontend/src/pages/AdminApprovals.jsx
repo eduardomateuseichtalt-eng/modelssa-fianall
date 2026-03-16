@@ -71,9 +71,9 @@ export default function AdminApprovals() {
       setPendingModels((current) =>
         current.filter((model) => model.id !== modelId)
       );
-      setMessage("Modelo aprovado com sucesso.");
+      setMessage("Acompanhante aprovada com sucesso.");
     } catch (err) {
-      setError(err.message || "Erro ao aprovar modelo.");
+      setError(err.message || "Erro ao aprovar acompanhante.");
     }
   };
 
@@ -127,10 +127,10 @@ export default function AdminApprovals() {
       );
       setSearchResults(Array.isArray(data) ? data : []);
       if (!Array.isArray(data) || data.length === 0) {
-        setMessage("Nenhuma modelo encontrada para esse nome.");
+        setMessage("Nenhuma acompanhante encontrada para esse nome.");
       }
     } catch (err) {
-      setError(err.message || "Erro ao buscar modelos por nome.");
+      setError(err.message || "Erro ao buscar acompanhantes por nome.");
     } finally {
       setSearchLoading(false);
     }
@@ -141,7 +141,7 @@ export default function AdminApprovals() {
     const id = String(model?.id || "").trim();
 
     if (!email && !id) {
-      setError("Modelo invalida para exclusao.");
+      setError("Acompanhante invalida para exclusao.");
       return;
     }
 
@@ -184,9 +184,9 @@ export default function AdminApprovals() {
           return !sameId && !sameEmail;
         })
       );
-      setMessage("Modelo removida com sucesso (cadastro + midias + email).");
+      setMessage("Acompanhante removida com sucesso (cadastro + midias + email).");
     } catch (err) {
-      setError(err.message || "Erro ao excluir modelo.");
+      setError(err.message || "Erro ao excluir acompanhante.");
     } finally {
       setDeleteLoadingId("");
     }
@@ -279,7 +279,7 @@ export default function AdminApprovals() {
   return (
     <div className="page">
       <h1 className="section-title">
-        Aprovacoes de <span>modelos</span>
+        Aprovacoes de <span>acompanhantes</span>
       </h1>
       <p className="muted" style={{ marginTop: 10 }}>
         Aprove cadastros pendentes para publica-los na vitrine.
@@ -363,10 +363,10 @@ export default function AdminApprovals() {
 
       <section className="section" style={{ marginTop: 24 }}>
         <h2 className="section-title">
-          Gestao de <span>modelos</span>
+          Gestao de <span>acompanhantes</span>
         </h2>
         <p className="muted" style={{ marginTop: 10 }}>
-          Busque por nome e exclua a modelo com remocao completa de cadastro, midias e dados relacionados.
+          Busque por nome e exclua a acompanhante com remocao completa de cadastro, midias e dados relacionados.
         </p>
 
         <div className="card" style={{ marginTop: 16 }}>
@@ -374,7 +374,7 @@ export default function AdminApprovals() {
             <input
               className="input"
               type="text"
-              placeholder="Nome da modelo para buscar"
+              placeholder="Nome da acompanhante para buscar"
               value={searchName}
               onChange={(event) => setSearchName(event.target.value)}
             />
@@ -406,7 +406,7 @@ export default function AdminApprovals() {
                     onClick={() => handleDeleteFoundModel(model)}
                     disabled={deleteLoadingId === model.id}
                   >
-                    {deleteLoadingId === model.id ? "Excluindo..." : "Excluir modelo"}
+                    {deleteLoadingId === model.id ? "Excluindo..." : "Excluir acompanhante"}
                   </button>
                 </div>
               ))}
@@ -438,7 +438,7 @@ export default function AdminApprovals() {
                   {new Date(report.createdAt).toLocaleString("pt-BR")}
                 </p>
                 <p className="muted" style={{ marginTop: 6 }}>
-                  Origem: {report.origin === "MODEL" ? "Area da modelo" : "FAQ publico"}
+                  Origem: {report.origin === "MODEL" ? "Area da acompanhante" : "FAQ publico"}
                 </p>
                 {report.category ? (
                   <p className="muted" style={{ marginTop: 6 }}>
@@ -447,7 +447,7 @@ export default function AdminApprovals() {
                 ) : null}
                 {report.modelName ? (
                   <p className="muted" style={{ marginTop: 6 }}>
-                    Modelo: {report.modelName}
+                    Acompanhante: {report.modelName}
                     {report.modelEmail ? ` (${report.modelEmail})` : ""}
                   </p>
                 ) : null}
@@ -510,7 +510,7 @@ export default function AdminApprovals() {
           <div className="cards" style={{ marginTop: 16 }}>
             {pendingMedia.map((media) => (
               <div className="card" key={media.id}>
-                <h4>{media.model?.name || "Modelo"}</h4>
+                <h4>{media.model?.name || "Acompanhante"}</h4>
                 {media.type === "VIDEO" ? (
                   <video
                     src={media.url}

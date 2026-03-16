@@ -135,7 +135,7 @@ export default function ModelLogin() {
           amountCents: paymentBlock.priceCents,
           merchantName: "MODELS CLUB",
           merchantCity: "BLUMENAU",
-          txid: `MODELO-${paymentBlock.modelId || "SEMID"}`,
+          txid: `ACOMPANHANTE-${paymentBlock.modelId || "SEMID"}`,
         })
       : "";
 
@@ -247,7 +247,7 @@ export default function ModelLogin() {
       <div className="form-shell">
         {mode === "login" ? (
           <>
-            <h2>Area da modelo</h2>
+            <h2>Area da acompanhante</h2>
             <p className="muted">Acesse para atualizar suas midias.</p>
             {error && <div className="notice">{error}</div>}
             {recoverMessage && <div className="notice">{recoverMessage}</div>}
@@ -262,7 +262,7 @@ export default function ModelLogin() {
               >
                 <h4 style={{ marginBottom: 10 }}>Gratuidade vencida</h4>
                 <p className="muted" style={{ marginBottom: 8 }}>
-                  Seu periodo de gratuidade venceu. Para acessar a area da modelo,
+                  Seu periodo de gratuidade venceu. Para acessar a area da acompanhante,
                   realize o pagamento do plano escolhido.
                 </p>
                 <p className="muted" style={{ marginBottom: 6 }}>

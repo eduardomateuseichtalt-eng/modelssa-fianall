@@ -6,7 +6,7 @@ export default function Contact() {
         Fale com a <span>equipe</span>
       </h1>
       <p className="muted" style={{ marginTop: 12 }}>
-        atendimento aprimorado para anunciantes e modelos.
+        atendimento aprimorado para anunciantes e acompanhantes.
       </p>
 
       <div className="section">

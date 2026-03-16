@@ -346,7 +346,7 @@ export default function Shots() {
                       {shot.type === "IMAGE" && shot.imageUrl ? (
                         <img
                           src={shot.imageUrl}
-                          alt={`Shot de ${shot.model?.name || "Modelo"}`}
+                          alt={`Shot de ${shot.model?.name || "Acompanhante"}`}
                         />
                       ) : shot.videoUrl ? (
                         <video
@@ -361,7 +361,7 @@ export default function Shots() {
                       )}
                     </div>
                     <div className="shots-card-meta">
-                      <h3>{shot.model?.name || "Modelo"}</h3>
+                      <h3>{shot.model?.name || "Acompanhante"}</h3>
                       <p>{shot.model?.city || "Brasil"}</p>
                       <span>
                         {shot.likeCount} curtidas
@@ -396,7 +396,10 @@ export default function Shots() {
             >
               <div className="shots-card-thumb">
                 {shot.type === "IMAGE" && shot.imageUrl ? (
-                  <img src={shot.imageUrl} alt={`Shot de ${shot.model?.name || "Modelo"}`} />
+                  <img
+                    src={shot.imageUrl}
+                    alt={`Shot de ${shot.model?.name || "Acompanhante"}`}
+                  />
                 ) : shot.videoUrl ? (
                   <video src={shot.videoUrl} muted loop playsInline preload="metadata" />
                 ) : (
@@ -404,7 +407,7 @@ export default function Shots() {
                 )}
               </div>
               <div className="shots-card-meta">
-                <h3>{shot.model?.name || "Modelo"}</h3>
+                <h3>{shot.model?.name || "Acompanhante"}</h3>
                 <p>{shot.model?.city || "Brasil"}</p>
                 <span>{shot.likeCount} curtidas</span>
               </div>
@@ -430,7 +433,10 @@ export default function Shots() {
                 data-reel-index={index}
               >
                 {shot.type === "IMAGE" && shot.imageUrl ? (
-                  <img src={shot.imageUrl} alt={`Shot de ${shot.model?.name || "Modelo"}`} />
+                  <img
+                    src={shot.imageUrl}
+                    alt={`Shot de ${shot.model?.name || "Acompanhante"}`}
+                  />
                 ) : shot.videoUrl ? (
                   <video src={shot.videoUrl} playsInline controls preload="metadata" />
                 ) : (
@@ -438,7 +444,7 @@ export default function Shots() {
                 )}
                 <div className="reels-meta">
                   <div>
-                    <strong>{shot.model?.name || "Modelo"}</strong>
+                    <strong>{shot.model?.name || "Acompanhante"}</strong>
                     <span>{shot.model?.city || "Brasil"}</span>
                   </div>
                   <button

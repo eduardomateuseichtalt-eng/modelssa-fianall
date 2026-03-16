@@ -351,7 +351,7 @@ export default function Home() {
 
       <section className="section">
         <h2 className="section-title">
-          Modelos em destaque
+          Acompanhantes em destaque
         </h2>
         <p className="muted" style={{ marginTop: 10 }}>
           Uma vitrine com os perfis mais acessados da semana.
@@ -366,7 +366,7 @@ export default function Home() {
                 loading="lazy"
               />
               <div className="model-info">
-                <h3>Modelo em destaque</h3>
+                <h3>Acompanhante em destaque</h3>
                 <p>Seja a primeira a criar um perfil premium</p>
               </div>
             </Link>

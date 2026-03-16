@@ -1212,7 +1212,7 @@ export default function ModelDashboard() {
           >
             <div className="model-menu-head">
               <div>
-                <h3>Conta da modelo</h3>
+                <h3>Conta da acompanhante</h3>
                 <p className="muted">Ajustes de cadastro e seguranca.</p>
               </div>
               <button

@@ -339,10 +339,10 @@ export default function ModelProfile() {
   if (!model) {
     return (
       <div className="page">
-        <p>Modelo nao encontrada.</p>
+        <p>Acompanhante nao encontrada.</p>
         <div className="form-actions">
           <Link to="/modelos" className="btn btn-outline">
-            Voltar para modelos
+            Voltar para acompanhantes
           </Link>
         </div>
       </div>
@@ -784,7 +784,7 @@ export default function ModelProfile() {
                       </div>
                     ) : (
                       <div key={item.id} className="profile-public-media-card">
-                        <img src={item.url} alt="Midia da modelo" loading="lazy" />
+                        <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
                       </div>
                     )
                   )}
@@ -793,7 +793,7 @@ export default function ModelProfile() {
                 <div className="card">
                   <h4>Sem midias publicadas</h4>
                   <p className="muted">
-                    A modelo ainda nao publicou fotos ou videos aprovados.
+                    A acompanhante ainda nao publicou fotos ou videos aprovados.
                   </p>
                 </div>
               )}
@@ -1165,7 +1165,7 @@ export default function ModelProfile() {
             </div>
             {!hasShots && !shotsLoading ? (
               <p className="muted" style={{ marginTop: 12 }}>
-                Essa modelo ainda nao publicou shots.
+                Essa acompanhante ainda nao publicou shots.
               </p>
             ) : null}
           </div>
@@ -1200,7 +1200,7 @@ export default function ModelProfile() {
             className="profile-public-viewer"
             role="dialog"
             aria-modal="true"
-            aria-label="Shots da modelo"
+            aria-label="Shots da acompanhante"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="profile-public-viewer-head">
@@ -1230,7 +1230,7 @@ export default function ModelProfile() {
                 ))}
               </div>
             ) : (
-              <p className="muted">Essa modelo ainda nao publicou shots.</p>
+              <p className="muted">Essa acompanhante ainda nao publicou shots.</p>
             )}
           </div>
         </div>
