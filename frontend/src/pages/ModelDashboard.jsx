@@ -279,9 +279,13 @@ export default function ModelDashboard() {
     createDefaultAttendanceSchedule()
   );
   const [profileAvatarUrl, setProfileAvatarUrl] = useState("");
+  const [profileCoverUrl, setProfileCoverUrl] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarNotice, setAvatarNotice] = useState("");
   const [avatarError, setAvatarError] = useState("");
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverNotice, setCoverNotice] = useState("");
+  const [coverError, setCoverError] = useState("");
   const [planEffective, setPlanEffective] = useState("BASIC");
   const [planTier, setPlanTier] = useState("BASIC");
   const [planTrialActive, setPlanTrialActive] = useState(false);
@@ -315,6 +319,7 @@ export default function ModelDashboard() {
   const shotCameraRef = useRef(null);
   const shotVideoRef = useRef(null);
   const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
   const presenceControlRef = useRef(null);
 
   const applyProfilePlanData = (data) => {
@@ -419,6 +424,7 @@ export default function ModelDashboard() {
         normalizeAttendanceSchedule(data.attendanceSchedule)
       );
       setProfileAvatarUrl(data.avatarUrl || "");
+      setProfileCoverUrl(data.coverUrl || "");
       applyProfilePlanData(data);
       setPlanCreatedAt(String(data.createdAt || ""));
     } catch (err) {
@@ -942,6 +948,7 @@ export default function ModelDashboard() {
     paymentMethods: profilePaymentMethods,
     attendanceSchedule: profileAttendanceSchedule,
     avatarUrl: profileAvatarUrl,
+    coverUrl: profileCoverUrl,
     ...overrides,
   });
 
@@ -985,6 +992,7 @@ export default function ModelDashboard() {
       normalizeAttendanceSchedule(data.attendanceSchedule)
     );
     setProfileAvatarUrl(data.avatarUrl || "");
+    setProfileCoverUrl(data.coverUrl || "");
     applyProfilePlanData(data);
 
     const storedUser = localStorage.getItem("user");
@@ -1062,6 +1070,46 @@ export default function ModelDashboard() {
       setAvatarError(err.message || "Erro ao atualizar foto de perfil.");
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const handleCoverUpload = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+      return;
+    }
+    setCoverNotice("");
+    setCoverError("");
+
+    if (!file.type.startsWith("image/")) {
+      setCoverError("Envie uma imagem valida para a foto de capa.");
+      return;
+    }
+
+    setCoverUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("files", file);
+      const upload = await apiFetch("/api/media/upload-self", {
+        method: "POST",
+        body: formData,
+      });
+      const url = upload?.uploads?.[0]?.url;
+      if (!url) {
+        throw new Error("Nao foi possivel salvar a foto de capa.");
+      }
+
+      const data = await apiFetch("/api/models/self/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildProfilePayload({ coverUrl: url })),
+      });
+      applyProfileResponse(data);
+      setCoverNotice("Foto de capa atualizada.");
+    } catch (err) {
+      setCoverError(err.message || "Erro ao atualizar foto de capa.");
+    } finally {
+      setCoverUploading(false);
     }
   };
 
@@ -1387,6 +1435,56 @@ export default function ModelDashboard() {
                     type="file"
                     accept="image/*"
                     onChange={handleAvatarUpload}
+                    style={{ display: "none" }}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 16,
+                    alignItems: "center",
+                    padding: 12,
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--panel-2)",
+                  }}
+                >
+                  <img
+                    src={profileCoverUrl || "/model-placeholder.svg"}
+                    alt="Foto de capa"
+                    style={{
+                      width: 120,
+                      height: 72,
+                      borderRadius: 12,
+                      objectFit: "cover",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  />
+                  <div style={{ display: "grid", gap: 6, flex: 1 }}>
+                    <strong>Foto de capa</strong>
+                    <span className="muted">
+                      Atualize sua capa para destacar o perfil publico.
+                    </span>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => coverInputRef.current?.click()}
+                        disabled={coverUploading}
+                      >
+                        {coverUploading ? "Enviando..." : "Alterar capa"}
+                      </button>
+                      {coverNotice ? (
+                        <span className="muted">{coverNotice}</span>
+                      ) : null}
+                      {coverError ? <span className="muted">{coverError}</span> : null}
+                    </div>
+                  </div>
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
                     style={{ display: "none" }}
                   />
                 </div>
