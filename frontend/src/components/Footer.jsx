@@ -42,6 +42,9 @@ export default function Footer() {
           </div>
         </div>
       </div>
+      <div className="muted" style={{ textAlign: "center", marginTop: 18 }}>
+        &copy; 2026 Models-Club. Todos os direitos reservados.
+      </div>
     </footer>
   );
 }
