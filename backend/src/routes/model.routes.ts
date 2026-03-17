@@ -954,6 +954,8 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       planTier: true,
       planExpiresAt: true,
       trialEndsAt: true,
+      avatarUrl: true,
+      coverUrl: true,
       createdAt: true,
     },
   });
@@ -1000,6 +1002,10 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   const smokerRaw = String(req.body?.smoker || "").trim();
   const languagesRaw = String(req.body?.languages || "").trim();
   const offeredServicesRaw = req.body?.offeredServices;
+  const hasAvatarUrl = Object.prototype.hasOwnProperty.call(req.body || {}, "avatarUrl");
+  const hasCoverUrl = Object.prototype.hasOwnProperty.call(req.body || {}, "coverUrl");
+  const avatarUrlRaw = hasAvatarUrl ? String(req.body?.avatarUrl || "").trim() : "";
+  const coverUrlRaw = hasCoverUrl ? String(req.body?.coverUrl || "").trim() : "";
   const priceHourRaw = req.body?.priceHour;
   const price30MinRaw = req.body?.price30Min;
   const price15MinRaw = req.body?.price15Min;
@@ -1062,6 +1068,8 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       priceOvernight: toNumberOrNull(priceOvernightRaw),
       paymentMethods: sanitizePaymentMethods(paymentMethodsRaw),
       attendanceSchedule: sanitizeAttendanceSchedule(attendanceScheduleRaw),
+      ...(hasAvatarUrl ? { avatarUrl: avatarUrlRaw || null } : {}),
+      ...(hasCoverUrl ? { coverUrl: coverUrlRaw || null } : {}),
     },
     select: {
       id: true,
@@ -1101,6 +1109,8 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
       planTier: true,
       planExpiresAt: true,
       trialEndsAt: true,
+      avatarUrl: true,
+      coverUrl: true,
     },
   });
 

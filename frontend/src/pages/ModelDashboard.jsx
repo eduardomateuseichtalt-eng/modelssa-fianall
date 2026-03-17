@@ -278,6 +278,10 @@ export default function ModelDashboard() {
   const [profileAttendanceSchedule, setProfileAttendanceSchedule] = useState(
     createDefaultAttendanceSchedule()
   );
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarNotice, setAvatarNotice] = useState("");
+  const [avatarError, setAvatarError] = useState("");
   const [planEffective, setPlanEffective] = useState("BASIC");
   const [planTier, setPlanTier] = useState("BASIC");
   const [planTrialActive, setPlanTrialActive] = useState(false);
@@ -310,6 +314,7 @@ export default function ModelDashboard() {
   const shotGalleryRef = useRef(null);
   const shotCameraRef = useRef(null);
   const shotVideoRef = useRef(null);
+  const avatarInputRef = useRef(null);
   const presenceControlRef = useRef(null);
 
   const applyProfilePlanData = (data) => {
@@ -413,6 +418,7 @@ export default function ModelDashboard() {
       setProfileAttendanceSchedule(
         normalizeAttendanceSchedule(data.attendanceSchedule)
       );
+      setProfileAvatarUrl(data.avatarUrl || "");
       applyProfilePlanData(data);
       setPlanCreatedAt(String(data.createdAt || ""));
     } catch (err) {
@@ -902,6 +908,97 @@ export default function ModelDashboard() {
     }
   };
 
+  const buildProfilePayload = (overrides = {}) => ({
+    name: profileName,
+    instagram: profileInstagram,
+    whatsapp: profileWhatsapp,
+    city: profileCity,
+    bio: profileBio,
+    height: profileHeight,
+    weight: profileWeight,
+    bust: profileBust,
+    waist: profileWaist,
+    hips: profileHips,
+    genderIdentity: profileGenderIdentity,
+    genitalia: profileGenitalia,
+    sexualPreference: profileSexualPreference,
+    ethnicity: profileEthnicity,
+    eyeColor: profileEyeColor,
+    hairStyle: profileHairStyle,
+    hairLength: profileHairLength,
+    shoeSize: profileShoeSize,
+    silicone: profileSilicone,
+    tattoos: profileTattoos,
+    piercings: profilePiercings,
+    smoker: profileSmoker,
+    languages: profileLanguages,
+    offeredServices: profileOfferedServices,
+    priceHour: profilePriceHour,
+    price30Min: profilePrice30Min,
+    price15Min: profilePrice15Min,
+    price2Hours: profilePrice2Hours,
+    price4Hours: profilePrice4Hours,
+    priceOvernight: profilePriceOvernight,
+    paymentMethods: profilePaymentMethods,
+    attendanceSchedule: profileAttendanceSchedule,
+    avatarUrl: profileAvatarUrl,
+    ...overrides,
+  });
+
+  const applyProfileResponse = (data) => {
+    setProfileName(data.name || "");
+    setProfileInstagram(data.instagram || "");
+    setProfileWhatsapp(data.whatsapp || "");
+    setProfileCity(data.city || "");
+    setProfileBio(data.bio || "");
+    setProfileHeight(data.height ?? "");
+    setProfileWeight(data.weight ?? "");
+    setProfileBust(data.bust ?? "");
+    setProfileWaist(data.waist ?? "");
+    setProfileHips(data.hips ?? "");
+    setProfileGenderIdentity(data.genderIdentity || "");
+    setProfileGenitalia(data.genitalia || "");
+    setProfileSexualPreference(data.sexualPreference || "");
+    setProfileEthnicity(data.ethnicity || "");
+    setProfileEyeColor(data.eyeColor || "");
+    setProfileHairStyle(data.hairStyle || "");
+    setProfileHairLength(data.hairLength || "");
+    setProfileShoeSize(data.shoeSize || "");
+    setProfileSilicone(data.silicone || "");
+    setProfileTattoos(data.tattoos || "");
+    setProfilePiercings(data.piercings || "");
+    setProfileSmoker(data.smoker || "");
+    setProfileLanguages(data.languages || "");
+    setProfileOfferedServices(
+      Array.isArray(data.offeredServices) ? data.offeredServices : []
+    );
+    setProfilePriceHour(data.priceHour ?? "");
+    setProfilePrice30Min(data.price30Min ?? "");
+    setProfilePrice15Min(data.price15Min ?? "");
+    setProfilePrice2Hours(data.price2Hours ?? "");
+    setProfilePrice4Hours(data.price4Hours ?? "");
+    setProfilePriceOvernight(data.priceOvernight ?? "");
+    setProfilePaymentMethods(
+      Array.isArray(data.paymentMethods) ? data.paymentMethods : []
+    );
+    setProfileAttendanceSchedule(
+      normalizeAttendanceSchedule(data.attendanceSchedule)
+    );
+    setProfileAvatarUrl(data.avatarUrl || "");
+    applyProfilePlanData(data);
+
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        parsed.displayName = data.name || parsed.displayName;
+        localStorage.setItem("user", JSON.stringify(parsed));
+      } catch {
+        // Ignora parse invalido de cache local
+      }
+    }
+  };
+
   const handleSaveProfile = async () => {
     setProfileError("");
     setProfileMessage("");
@@ -916,99 +1013,55 @@ export default function ModelDashboard() {
       const data = await apiFetch("/api/models/self/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: profileName,
-          instagram: profileInstagram,
-          whatsapp: profileWhatsapp,
-          city: profileCity,
-          bio: profileBio,
-          height: profileHeight,
-          weight: profileWeight,
-          bust: profileBust,
-          waist: profileWaist,
-          hips: profileHips,
-          genderIdentity: profileGenderIdentity,
-          genitalia: profileGenitalia,
-          sexualPreference: profileSexualPreference,
-          ethnicity: profileEthnicity,
-          eyeColor: profileEyeColor,
-          hairStyle: profileHairStyle,
-          hairLength: profileHairLength,
-          shoeSize: profileShoeSize,
-          silicone: profileSilicone,
-          tattoos: profileTattoos,
-          piercings: profilePiercings,
-          smoker: profileSmoker,
-          languages: profileLanguages,
-          offeredServices: profileOfferedServices,
-          priceHour: profilePriceHour,
-          price30Min: profilePrice30Min,
-          price15Min: profilePrice15Min,
-          price2Hours: profilePrice2Hours,
-          price4Hours: profilePrice4Hours,
-          priceOvernight: profilePriceOvernight,
-          paymentMethods: profilePaymentMethods,
-          attendanceSchedule: profileAttendanceSchedule,
-        }),
+        body: JSON.stringify(buildProfilePayload()),
       });
 
-      setProfileName(data.name || "");
-      setProfileInstagram(data.instagram || "");
-      setProfileWhatsapp(data.whatsapp || "");
-      setProfileCity(data.city || "");
-      setProfileBio(data.bio || "");
-      setProfileHeight(data.height ?? "");
-      setProfileWeight(data.weight ?? "");
-      setProfileBust(data.bust ?? "");
-      setProfileWaist(data.waist ?? "");
-      setProfileHips(data.hips ?? "");
-      setProfileGenderIdentity(data.genderIdentity || "");
-      setProfileGenitalia(data.genitalia || "");
-      setProfileSexualPreference(data.sexualPreference || "");
-      setProfileEthnicity(data.ethnicity || "");
-      setProfileEyeColor(data.eyeColor || "");
-      setProfileHairStyle(data.hairStyle || "");
-      setProfileHairLength(data.hairLength || "");
-      setProfileShoeSize(data.shoeSize || "");
-      setProfileSilicone(data.silicone || "");
-      setProfileTattoos(data.tattoos || "");
-      setProfilePiercings(data.piercings || "");
-      setProfileSmoker(data.smoker || "");
-      setProfileLanguages(data.languages || "");
-      setProfileOfferedServices(
-        Array.isArray(data.offeredServices)
-          ? data.offeredServices
-          : []
-      );
-      setProfilePriceHour(data.priceHour ?? "");
-      setProfilePrice30Min(data.price30Min ?? "");
-      setProfilePrice15Min(data.price15Min ?? "");
-      setProfilePrice2Hours(data.price2Hours ?? "");
-      setProfilePrice4Hours(data.price4Hours ?? "");
-      setProfilePriceOvernight(data.priceOvernight ?? "");
-      setProfilePaymentMethods(
-        Array.isArray(data.paymentMethods) ? data.paymentMethods : []
-      );
-      setProfileAttendanceSchedule(
-        normalizeAttendanceSchedule(data.attendanceSchedule)
-      );
-      applyProfilePlanData(data);
+      applyProfileResponse(data);
       setProfileMessage("Cadastro atualizado com sucesso.");
-
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        try {
-          const parsed = JSON.parse(storedUser);
-          parsed.displayName = data.name || parsed.displayName;
-          localStorage.setItem("user", JSON.stringify(parsed));
-        } catch {
-          // Ignora parse invalido de cache local
-        }
-      }
     } catch (err) {
       setProfileError(err.message || "Erro ao atualizar cadastro.");
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) {
+      return;
+    }
+    setAvatarNotice("");
+    setAvatarError("");
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Envie uma imagem valida para a foto de perfil.");
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("files", file);
+      const upload = await apiFetch("/api/media/upload-self", {
+        method: "POST",
+        body: formData,
+      });
+      const url = upload?.uploads?.[0]?.url;
+      if (!url) {
+        throw new Error("Nao foi possivel salvar a foto de perfil.");
+      }
+
+      const data = await apiFetch("/api/models/self/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildProfilePayload({ avatarUrl: url })),
+      });
+      applyProfileResponse(data);
+      setAvatarNotice("Foto de perfil atualizada.");
+    } catch (err) {
+      setAvatarError(err.message || "Erro ao atualizar foto de perfil.");
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -1287,6 +1340,56 @@ export default function ModelDashboard() {
                 {profileLoading ? <p className="muted">Carregando cadastro...</p> : null}
                 {profileMessage ? <div className="notice">{profileMessage}</div> : null}
                 {profileError ? <div className="notice">{profileError}</div> : null}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 16,
+                    alignItems: "center",
+                    padding: 12,
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--panel-2)",
+                  }}
+                >
+                  <img
+                    src={profileAvatarUrl || "/model-placeholder.svg"}
+                    alt="Foto de perfil"
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  />
+                  <div style={{ display: "grid", gap: 6, flex: 1 }}>
+                    <strong>Foto de perfil</strong>
+                    <span className="muted">
+                      Atualize sua foto para aparecer melhor no perfil publico.
+                    </span>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={avatarUploading}
+                      >
+                        {avatarUploading ? "Enviando..." : "Alterar foto"}
+                      </button>
+                      {avatarNotice ? (
+                        <span className="muted">{avatarNotice}</span>
+                      ) : null}
+                      {avatarError ? <span className="muted">{avatarError}</span> : null}
+                    </div>
+                  </div>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    style={{ display: "none" }}
+                  />
+                </div>
                 <input
                   className="input"
                   type="text"
