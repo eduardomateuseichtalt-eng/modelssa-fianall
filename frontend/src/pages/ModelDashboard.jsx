@@ -283,6 +283,7 @@ export default function ModelDashboard() {
   const [planTrialActive, setPlanTrialActive] = useState(false);
   const [planTrialEndsAt, setPlanTrialEndsAt] = useState("");
   const [planExpiresAt, setPlanExpiresAt] = useState("");
+  const [planCreatedAt, setPlanCreatedAt] = useState("");
   const [maxPhotos, setMaxPhotos] = useState(DEFAULT_MAX_PHOTOS);
   const [maxVideos, setMaxVideos] = useState(DEFAULT_MAX_VIDEOS);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -413,6 +414,7 @@ export default function ModelDashboard() {
         normalizeAttendanceSchedule(data.attendanceSchedule)
       );
       applyProfilePlanData(data);
+      setPlanCreatedAt(String(data.createdAt || ""));
     } catch (err) {
       setProfileError(err.message || "Erro ao carregar cadastro.");
     } finally {
@@ -1075,6 +1077,30 @@ export default function ModelDashboard() {
     });
   }, [presenceUntil]);
 
+  const planExpiryLabel = useMemo(() => {
+    const preferredExpiry =
+      (planTrialActive && planTrialEndsAt ? planTrialEndsAt : "") ||
+      planExpiresAt ||
+      "";
+
+    if (preferredExpiry) {
+      const parsed = new Date(preferredExpiry);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleDateString("pt-BR");
+      }
+    }
+
+    if (planCreatedAt) {
+      const parsed = new Date(planCreatedAt);
+      if (!Number.isNaN(parsed.getTime())) {
+        const fallback = new Date(parsed.getTime() + 30 * 24 * 60 * 60 * 1000);
+        return fallback.toLocaleDateString("pt-BR");
+      }
+    }
+
+    return "";
+  }, [planTrialActive, planTrialEndsAt, planExpiresAt, planCreatedAt]);
+
   return (
     <div className="page">
       <div className="model-area-head">
@@ -1092,6 +1118,7 @@ export default function ModelDashboard() {
             {!planTrialActive && planExpiresAt
               ? ` Plano pago ativo ate ${new Date(planExpiresAt).toLocaleDateString("pt-BR")}.`
               : ""}
+            {planExpiryLabel ? ` Seu plano expira dia: ${planExpiryLabel}.` : ""}
             {" "}A midia de comparacao continua separada desses limites.
           </p>
           {trialReminderNotice ? (

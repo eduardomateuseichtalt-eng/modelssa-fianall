@@ -954,6 +954,7 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
       planTier: true,
       planExpiresAt: true,
       trialEndsAt: true,
+      createdAt: true,
     },
   });
 
