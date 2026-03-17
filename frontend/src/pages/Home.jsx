@@ -414,6 +414,13 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      <div
+        className="muted"
+        style={{ textAlign: "center", marginTop: 28, marginBottom: 12 }}
+      >
+        &copy; 2026 Models-Club. Todos os direitos reservados.
+      </div>
     </div>
   );
 }
