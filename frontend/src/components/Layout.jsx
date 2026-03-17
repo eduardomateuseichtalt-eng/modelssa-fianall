@@ -7,11 +7,12 @@ import { apiFetch } from "../lib/api";
 
 export default function Layout() {
   useEffect(() => {
-    if (sessionStorage.getItem("siteVisitTracked")) {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem("siteVisitTrackedDay") === todayKey) {
       return;
     }
 
-    sessionStorage.setItem("siteVisitTracked", "true");
+    localStorage.setItem("siteVisitTrackedDay", todayKey);
     apiFetch("/api/metrics/visit", { method: "POST" }).catch(() => {});
   }, []);
 

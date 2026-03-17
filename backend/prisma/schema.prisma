@@ -126,10 +126,14 @@ model Media {
 }
 
 model SiteAccess {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  id              String   @id @default(uuid())
+  dayKey          String
+  fingerprintHash String
+  createdAt       DateTime @default(now())
 
   @@index([createdAt])
+  @@index([dayKey])
+  @@unique([dayKey, fingerprintHash])
 }
 
 model FaqReport {
