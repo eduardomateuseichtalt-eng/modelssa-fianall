@@ -1049,12 +1049,12 @@ export default function ModelDashboard() {
     setAvatarUploading(true);
     try {
       const formData = new FormData();
-      formData.append("files", file);
-      const upload = await apiFetch("/api/media/upload-self", {
+      formData.append("file", file);
+      const upload = await apiFetch("/api/media/profile-image", {
         method: "POST",
         body: formData,
       });
-      const url = upload?.uploads?.[0]?.url;
+      const url = upload?.url;
       if (!url) {
         throw new Error("Nao foi possivel salvar a foto de perfil.");
       }
@@ -1089,12 +1089,12 @@ export default function ModelDashboard() {
     setCoverUploading(true);
     try {
       const formData = new FormData();
-      formData.append("files", file);
-      const upload = await apiFetch("/api/media/upload-self", {
+      formData.append("file", file);
+      const upload = await apiFetch("/api/media/profile-image", {
         method: "POST",
         body: formData,
       });
-      const url = upload?.uploads?.[0]?.url;
+      const url = upload?.url;
       if (!url) {
         throw new Error("Nao foi possivel salvar a foto de capa.");
       }

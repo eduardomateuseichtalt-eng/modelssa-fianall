@@ -22,6 +22,7 @@ const allowedTypes = new Set([
   "image/png",
   "video/mp4",
 ]);
+const allowedImageTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
 
 const allowedAgePhotoTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
 const AGE_TOKEN_TTL_DAYS = Number(process.env.AGE_VERIFY_TTL_DAYS || 30);
@@ -284,6 +285,48 @@ router.post(
     }
 
     return res.status(201).json({ uploads, mediaLimits: limits });
+  })
+);
+
+router.post(
+  "/profile-image",
+  requireAuth,
+  upload.single("file"),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = res.locals.user as { id: string; role: string } | undefined;
+    if (!user || user.role !== "MODEL") {
+      return res.status(403).json({ error: "Acesso restrito" });
+    }
+
+    const file = req.file as Express.Multer.File | undefined;
+    if (!file) {
+      return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    }
+
+    if (!allowedImageTypes.has(file.mimetype)) {
+      return res.status(400).json({ error: "Formato de imagem invalido" });
+    }
+
+    const model = await prisma.model.findUnique({
+      where: { id: user.id },
+      select: { id: true, isVerified: true },
+    });
+
+    if (!model) {
+      return res.status(404).json({ error: "Modelo nao encontrada" });
+    }
+
+    if (!model.isVerified) {
+      return res.status(403).json({ error: "Modelo nao aprovada" });
+    }
+
+    const result = await uploadToBunny(
+      file.buffer,
+      file.originalname,
+      file.mimetype
+    );
+
+    return res.json({ url: normalizeStoredUrl(result.url) });
   })
 );
 
