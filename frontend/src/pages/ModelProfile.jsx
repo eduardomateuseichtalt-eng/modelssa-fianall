@@ -132,6 +132,7 @@ export default function ModelProfile() {
   const [reviewSubmitError, setReviewSubmitError] = useState("");
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [viewerMode, setViewerMode] = useState("");
+  const [mediaViewerItem, setMediaViewerItem] = useState(null);
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
   const [ageToken, setAgeToken] = useState(readAgeToken());
@@ -236,6 +237,7 @@ export default function ModelProfile() {
       if (event.key === "Escape") {
         setAvatarMenuOpen(false);
         setViewerMode("");
+        setMediaViewerItem(null);
       }
     };
 
@@ -529,9 +531,18 @@ export default function ModelProfile() {
     setViewerMode("shots");
   };
 
+  const openMediaViewer = (item) => {
+    if (!item) {
+      return;
+    }
+    setMediaViewerItem(item);
+    setViewerMode("media");
+  };
+
   const closeOverlays = () => {
     setAvatarMenuOpen(false);
     setViewerMode("");
+    setMediaViewerItem(null);
   };
 
   const ratingToStars = (value) => {
@@ -743,13 +754,23 @@ export default function ModelProfile() {
                 <div className="profile-public-media-grid">
                   {orderedGalleryMedia.map((item) =>
                     item.type === "VIDEO" ? (
-                      <div key={item.id} className="profile-public-media-card is-video">
-                        <video src={item.url} controls preload="metadata" playsInline />
-                      </div>
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="profile-public-media-card is-video"
+                        onClick={() => openMediaViewer(item)}
+                      >
+                        <video src={item.url} preload="metadata" playsInline />
+                      </button>
                     ) : (
-                      <div key={item.id} className="profile-public-media-card">
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="profile-public-media-card"
+                        onClick={() => openMediaViewer(item)}
+                      >
                         <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
-                      </div>
+                      </button>
                     )
                   )}
                   {Array.from({ length: Math.max(restrictedCount, 0) }).map((_, index) => (
@@ -771,21 +792,23 @@ export default function ModelProfile() {
                 <div className="profile-public-media-grid">
                   {orderedGalleryMedia.map((item) =>
                     item.type === "VIDEO" ? (
-                      <div
+                      <button
                         key={item.id}
+                        type="button"
                         className="profile-public-media-card is-video"
+                        onClick={() => openMediaViewer(item)}
                       >
-                        <video
-                          src={item.url}
-                          controls
-                          preload="metadata"
-                          playsInline
-                        />
-                      </div>
+                        <video src={item.url} preload="metadata" playsInline />
+                      </button>
                     ) : (
-                      <div key={item.id} className="profile-public-media-card">
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="profile-public-media-card"
+                        onClick={() => openMediaViewer(item)}
+                      >
                         <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
-                      </div>
+                      </button>
                     )
                   )}
                 </div>
@@ -1232,6 +1255,32 @@ export default function ModelProfile() {
             ) : (
               <p className="muted">Essa acompanhante ainda nao publicou shots.</p>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {viewerMode === "media" && mediaViewerItem ? (
+        <div className="profile-public-overlay" role="presentation" onClick={closeOverlays}>
+          <div
+            className="profile-public-viewer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Midia da acompanhante"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="profile-public-viewer-head">
+              <h3>Midia da acompanhante</h3>
+              <button type="button" className="btn btn-outline" onClick={closeOverlays}>
+                Fechar
+              </button>
+            </div>
+            <div className="profile-public-viewer-media">
+              {mediaViewerItem.type === "VIDEO" ? (
+                <video src={mediaViewerItem.url} controls preload="metadata" playsInline />
+              ) : (
+                <img src={mediaViewerItem.url} alt="Midia da acompanhante" />
+              )}
+            </div>
           </div>
         </div>
       ) : null}
