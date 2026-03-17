@@ -312,6 +312,10 @@ export default function AdminApprovals() {
               <p className="muted">{metrics.total}</p>
             </div>
           </div>
+          <div className="card" style={{ marginTop: 12 }}>
+            <h4>Visualizacoes totais desde 25/02/2026</h4>
+            <p className="muted">72.398 visualizacoes</p>
+          </div>
           <div
             className="card"
             style={{ marginTop: 20, padding: 20, display: "grid", gap: 12 }}
