@@ -1443,10 +1443,6 @@ router.post("/:id/profile-view", asyncHandler(async (req: Request, res: Response
   const { id } = req.params;
   const secret = getMetricsSecret();
 
-  if (!secret) {
-    return res.status(200).json({ status: "skipped" });
-  }
-
   const modelExists = await prisma.model.findFirst({
     where: { id, isVerified: true },
     select: { id: true },
@@ -1459,18 +1455,10 @@ router.post("/:id/profile-view", asyncHandler(async (req: Request, res: Response
   const now = new Date();
   const dayKey = now.toISOString().slice(0, 10);
   const fingerprint = getClientFingerprint(req);
-  const fingerprintHash = createHmac("sha256", secret).update(fingerprint).digest("hex");
+  const fingerprintHash = createHmac("sha256", secret || "metrics_hash_dev").update(fingerprint).digest("hex");
 
-  await prisma.modelProfileAccess.upsert({
-    where: {
-      dayKey_modelId_fingerprintHash: {
-        dayKey,
-        modelId: id,
-        fingerprintHash,
-      },
-    },
-    update: {},
-    create: {
+  await prisma.modelProfileAccess.create({
+    data: {
       dayKey,
       modelId: id,
       fingerprintHash,

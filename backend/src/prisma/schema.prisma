@@ -116,7 +116,6 @@ model ModelProfileAccess {
   @@index([modelId])
   @@index([createdAt])
   @@index([dayKey])
-  @@unique([dayKey, modelId, fingerprintHash])
 }
 
 model FaqReport {
