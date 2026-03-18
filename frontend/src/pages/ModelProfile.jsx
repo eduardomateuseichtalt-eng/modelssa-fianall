@@ -146,13 +146,20 @@ export default function ModelProfile() {
   const [viewerMode, setViewerMode] = useState("");
   const [mediaViewerItem, setMediaViewerItem] = useState(null);
   const [mediaZoom, setMediaZoom] = useState(1);
+  const [mediaPan, setMediaPan] = useState({ x: 0, y: 0 });
+  const [isMediaDragging, setIsMediaDragging] = useState(false);
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
   const [ageToken, setAgeToken] = useState(readAgeToken());
   const priceCardRef = useRef(null);
+  const mediaImageRef = useRef(null);
   const pinchStartDistanceRef = useRef(0);
   const pinchStartZoomRef = useRef(1);
   const didPinchRef = useRef(false);
+  const didDragRef = useRef(false);
+  const dragStartPointRef = useRef({ x: 0, y: 0 });
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
 
   useEffect(() => {
     apiFetch(`/api/models/${id}`)
@@ -259,6 +266,8 @@ export default function ModelProfile() {
         setViewerMode("");
         setMediaViewerItem(null);
         setMediaZoom(1);
+        setMediaPan({ x: 0, y: 0 });
+        setIsMediaDragging(false);
       }
     };
 
@@ -559,7 +568,11 @@ export default function ModelProfile() {
     pinchStartDistanceRef.current = 0;
     pinchStartZoomRef.current = 1;
     didPinchRef.current = false;
+    didDragRef.current = false;
+    isDraggingRef.current = false;
+    setIsMediaDragging(false);
     setMediaZoom(1);
+    setMediaPan({ x: 0, y: 0 });
     setMediaViewerItem(item);
     setViewerMode("media");
   };
@@ -571,7 +584,25 @@ export default function ModelProfile() {
     pinchStartDistanceRef.current = 0;
     pinchStartZoomRef.current = 1;
     didPinchRef.current = false;
+    didDragRef.current = false;
+    isDraggingRef.current = false;
+    setIsMediaDragging(false);
     setMediaZoom(1);
+    setMediaPan({ x: 0, y: 0 });
+  };
+
+  const clampMediaPan = (x, y, zoomValue = mediaZoom) => {
+    const imageEl = mediaImageRef.current;
+    if (!imageEl || zoomValue <= 1) {
+      return { x: 0, y: 0 };
+    }
+
+    const maxX = ((zoomValue - 1) * imageEl.clientWidth) / 2;
+    const maxY = ((zoomValue - 1) * imageEl.clientHeight) / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
   };
 
   const zoomOutMedia = () => {
@@ -583,8 +614,9 @@ export default function ModelProfile() {
   };
 
   const toggleMediaZoom = () => {
-    if (didPinchRef.current) {
+    if (didPinchRef.current || didDragRef.current) {
       didPinchRef.current = false;
+      didDragRef.current = false;
       return;
     }
     setMediaZoom((current) => (current > 1 ? 1 : 2));
@@ -597,37 +629,126 @@ export default function ModelProfile() {
   };
 
   const handleMediaTouchStart = (event) => {
-    if (event.touches.length !== 2) {
+    if (event.touches.length === 2) {
+      const distance = getTouchDistance(event.touches[0], event.touches[1]);
+      pinchStartDistanceRef.current = distance;
+      pinchStartZoomRef.current = mediaZoom;
+      didPinchRef.current = false;
+      didDragRef.current = false;
+      isDraggingRef.current = false;
+      setIsMediaDragging(false);
       return;
     }
-    const distance = getTouchDistance(event.touches[0], event.touches[1]);
-    pinchStartDistanceRef.current = distance;
-    pinchStartZoomRef.current = mediaZoom;
-    didPinchRef.current = false;
+
+    if (event.touches.length === 1 && mediaZoom > 1) {
+      const touch = event.touches[0];
+      dragStartPointRef.current = { x: touch.clientX, y: touch.clientY };
+      panStartRef.current = mediaPan;
+      isDraggingRef.current = true;
+      setIsMediaDragging(true);
+      didDragRef.current = false;
+    }
   };
 
   const handleMediaTouchMove = (event) => {
-    if (event.touches.length !== 2) {
+    if (event.touches.length === 2) {
+      const startDistance = pinchStartDistanceRef.current;
+      if (!startDistance) {
+        return;
+      }
+      const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
+      const ratio = currentDistance / startDistance;
+      const nextZoom = Math.min(4, Math.max(1, pinchStartZoomRef.current * ratio));
+      didPinchRef.current = true;
+      setMediaZoom(Number(nextZoom.toFixed(2)));
+      event.preventDefault();
       return;
     }
-    const startDistance = pinchStartDistanceRef.current;
-    if (!startDistance) {
+
+    if (event.touches.length !== 1 || !isDraggingRef.current || mediaZoom <= 1) {
       return;
     }
-    const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
-    const ratio = currentDistance / startDistance;
-    const nextZoom = Math.min(4, Math.max(1, pinchStartZoomRef.current * ratio));
-    didPinchRef.current = true;
-    setMediaZoom(Number(nextZoom.toFixed(2)));
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - dragStartPointRef.current.x;
+    const deltaY = touch.clientY - dragStartPointRef.current.y;
+    if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+      didDragRef.current = true;
+    }
+    const nextPan = clampMediaPan(
+      panStartRef.current.x + deltaX,
+      panStartRef.current.y + deltaY,
+      mediaZoom
+    );
+    setMediaPan(nextPan);
     event.preventDefault();
   };
 
-  const handleMediaTouchEnd = () => {
+  const handleMediaTouchEnd = (event) => {
     if (pinchStartDistanceRef.current > 0) {
       pinchStartDistanceRef.current = 0;
       pinchStartZoomRef.current = mediaZoom;
     }
+    if (event.touches.length === 0) {
+      isDraggingRef.current = false;
+      setIsMediaDragging(false);
+    }
   };
+
+  const handleMediaMouseDown = (event) => {
+    if (mediaZoom <= 1) {
+      return;
+    }
+    event.preventDefault();
+    dragStartPointRef.current = { x: event.clientX, y: event.clientY };
+    panStartRef.current = mediaPan;
+    isDraggingRef.current = true;
+    didDragRef.current = false;
+    setIsMediaDragging(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      if (!isDraggingRef.current || mediaZoom <= 1) {
+        return;
+      }
+      const deltaX = event.clientX - dragStartPointRef.current.x;
+      const deltaY = event.clientY - dragStartPointRef.current.y;
+      if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+        didDragRef.current = true;
+      }
+      const nextPan = clampMediaPan(
+        panStartRef.current.x + deltaX,
+        panStartRef.current.y + deltaY,
+        mediaZoom
+      );
+      setMediaPan(nextPan);
+    };
+
+    const handleMouseUp = () => {
+      if (!isDraggingRef.current) {
+        return;
+      }
+      isDraggingRef.current = false;
+      setIsMediaDragging(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [mediaZoom]);
+
+  useEffect(() => {
+    if (mediaZoom <= 1) {
+      setMediaPan({ x: 0, y: 0 });
+      return;
+    }
+    setMediaPan((current) => clampMediaPan(current.x, current.y, mediaZoom));
+  }, [mediaZoom]);
 
   const ratingToStars = (value) => {
     const score = Math.max(0, Math.min(5, Number(value) || 0));
@@ -1385,16 +1506,21 @@ export default function ModelProfile() {
                 <video src={mediaViewerItem.url} controls preload="metadata" playsInline />
               ) : (
                 <img
+                  ref={mediaImageRef}
+                  draggable={false}
                   src={mediaViewerItem.url}
                   alt="Midia da acompanhante"
-                  className="profile-public-viewer-zoomable"
+                  className={`profile-public-viewer-zoomable ${
+                    mediaZoom > 1 ? "is-zoomed" : ""
+                  } ${isMediaDragging ? "is-dragging" : ""}`}
                   onClick={toggleMediaZoom}
+                  onMouseDown={handleMediaMouseDown}
                   onTouchStart={handleMediaTouchStart}
                   onTouchMove={handleMediaTouchMove}
                   onTouchEnd={handleMediaTouchEnd}
                   onTouchCancel={handleMediaTouchEnd}
                   style={{
-                    transform: `scale(${mediaZoom})`,
+                    transform: `translate3d(${mediaPan.x}px, ${mediaPan.y}px, 0) scale(${mediaZoom})`,
                   }}
                 />
               )}
