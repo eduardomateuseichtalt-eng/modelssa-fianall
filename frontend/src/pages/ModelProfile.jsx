@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
@@ -353,7 +353,7 @@ export default function ModelProfile() {
 
   const wa = String(model.whatsapp || "").replace(/\D/g, "");
   const waMsg = encodeURIComponent(
-    `olá ${model.name}! vi seu perfil no models-club e gostaria de marcar um atendimento. quando você tem disponibilidade?`
+    `ol\u00e1 ${model.name}! vi seu perfil no models-club e gostaria de marcar um atendimento. quando voc\u00ea tem disponibilidade?`
   );
   const waWebUrl = wa ? `https://wa.me/${wa}?text=${waMsg}` : "";
   const waAppUrl = wa ? `whatsapp://send?phone=${wa}&text=${waMsg}` : "";
@@ -563,7 +563,7 @@ export default function ModelProfile() {
 
   const ratingToStars = (value) => {
     const score = Math.max(0, Math.min(5, Number(value) || 0));
-    return `${"★".repeat(score)}${"☆".repeat(5 - score)}`;
+    return `${"â˜…".repeat(score)}${"â˜†".repeat(5 - score)}`;
   };
 
   const averageScore = reviews.length
@@ -590,7 +590,7 @@ export default function ModelProfile() {
             aria-label={`${score} estrelas`}
             aria-pressed={value === score}
           >
-            {score === 0 ? "0" : "★".repeat(score)}
+            {score === 0 ? "0" : "â˜…".repeat(score)}
           </button>
         ))}
       </div>
@@ -895,11 +895,11 @@ export default function ModelProfile() {
               </div>
 
               <div className="profile-public-services">
-                <div className="profile-public-services-title">Serviços oferecidos</div>
+                <div className="profile-public-services-title">Servi&ccedil;os oferecidos</div>
                 <div className="profile-public-services-grid">
                   <div className="profile-public-services-column">
                     <div className="profile-public-services-column-title">
-                      Serviços oferecidos
+                      Servi&ccedil;os oferecidos
                     </div>
                     {offeredServiceList.length > 0 ? (
                       offeredServiceList.map((service) => (
@@ -911,18 +911,18 @@ export default function ModelProfile() {
                                 Minha especialidade
                               </span>
                             ) : null}
-                            <span className="profile-public-service-badge">Fa\u00e7o</span>
+                            <span className="profile-public-service-badge">Fa&ccedil;o</span>
                             <span className="profile-public-service-chevron">v</span>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="muted">Sem serviços marcados.</p>
+                      <p className="muted">Sem servi&ccedil;os marcados.</p>
                     )}
                   </div>
                   <div className="profile-public-services-column">
                     <div className="profile-public-services-column-title">
-                      Serviços não oferecidos
+                      Servi&ccedil;os n&atilde;o oferecidos
                     </div>
                     {notOfferedServiceList.map((service) => (
                       <div key={service.name} className="profile-public-service-row is-disabled">
@@ -967,7 +967,7 @@ export default function ModelProfile() {
                         </span>
                       ))
                     ) : (
-                      <span className="muted">N\u00e3o informado</span>
+                      <span className="muted">N&atilde;o informado</span>
                     )}
                   </div>
                 </div>
@@ -1303,4 +1303,5 @@ export default function ModelProfile() {
     </div>
   );
 }
+
 

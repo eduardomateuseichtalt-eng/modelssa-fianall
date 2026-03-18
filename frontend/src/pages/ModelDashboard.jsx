@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
@@ -1450,7 +1450,7 @@ export default function ModelDashboard() {
                 className={`model-menu-tab ${menuTab === "profile" ? "active" : ""}`}
                 onClick={() => setMenuTab("profile")}
               >
-                Atualização de perfil
+                  Atualiza&ccedil;&atilde;o de perfil
               </button>
               <button
                 type="button"
@@ -1762,9 +1762,9 @@ export default function ModelDashboard() {
                       background: "var(--panel-2)",
                     }}
                   >
-                    <h4 style={{ margin: 0 }}>Servi\u00e7os oferecidos</h4>
+                    <h4 style={{ margin: 0 }}>Servi&ccedil;os oferecidos</h4>
                     <p className="muted" style={{ marginTop: 6 }}>
-                      Marque abaixo os servi\u00e7os que voc\u00ea oferece no atendimento.
+                      Marque abaixo os servi&ccedil;os que voc&ecirc; oferece no atendimento.
                     </p>
                     <div className="model-services-editor-grid">
                       {SERVICE_OPTIONS.map((serviceItem) => {
@@ -2569,3 +2569,4 @@ export default function ModelDashboard() {
   );
 }
  
+
