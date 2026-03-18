@@ -146,6 +146,10 @@ export default function ModelProfile() {
   }, [id]);
 
   useEffect(() => {
+    apiFetch(`/api/models/${id}/profile-view`, { method: "POST" }).catch(() => {});
+  }, [id]);
+
+  useEffect(() => {
     const token = ageToken ? encodeURIComponent(ageToken) : "";
     const query = token ? `?ageToken=${token}` : "";
     apiFetch(`/api/media/model/${id}${query}`)

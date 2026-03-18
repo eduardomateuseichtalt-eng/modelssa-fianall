@@ -148,6 +148,17 @@ const getRemainingFromUntil = (untilValue) => {
   return Math.ceil(diffMs / 1000);
 };
 
+const formatDayKeyLabel = (dayKey) => {
+  const parsed = new Date(`${dayKey}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return dayKey;
+  }
+  return parsed.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+};
+
 const stripImageMetadata = (file) =>
   new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -312,6 +323,10 @@ export default function ModelDashboard() {
   const [presenceRemainingSeconds, setPresenceRemainingSeconds] = useState(0);
   const [presenceUntil, setPresenceUntil] = useState("");
   const [selectedPresenceMinutes, setSelectedPresenceMinutes] = useState(60);
+  const [profileClicksLoading, setProfileClicksLoading] = useState(false);
+  const [profileClicksError, setProfileClicksError] = useState("");
+  const [profileClicksSeries, setProfileClicksSeries] = useState([]);
+  const [profileClicksTotal, setProfileClicksTotal] = useState(0);
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -453,6 +468,27 @@ export default function ModelDashboard() {
     }
   };
 
+  const loadProfileClicks = async () => {
+    setProfileClicksLoading(true);
+    setProfileClicksError("");
+    try {
+      const data = await apiFetch("/api/models/self/profile-clicks?days=14");
+      const series = Array.isArray(data?.series) ? data.series : [];
+      setProfileClicksSeries(series);
+      setProfileClicksTotal(
+        Number.isFinite(Number(data?.total))
+          ? Number(data.total)
+          : series.reduce((sum, item) => sum + Number(item?.clicks || 0), 0)
+      );
+    } catch (err) {
+      setProfileClicksSeries([]);
+      setProfileClicksTotal(0);
+      setProfileClicksError(err.message || "Nao foi possivel carregar os cliques.");
+    } finally {
+      setProfileClicksLoading(false);
+    }
+  };
+
   const applyPresenceState = (data) => {
     const nextMode = String(data?.mode || "offline");
     const nextUntil = String(data?.until || "");
@@ -521,6 +557,7 @@ export default function ModelDashboard() {
     loadSupportReports();
     loadAccountProfile();
     loadPresenceStatus();
+    loadProfileClicks();
   }, []);
 
   useEffect(() => {
@@ -1331,6 +1368,49 @@ export default function ModelDashboard() {
       {shotError && <div className="notice">{shotError}</div>}
       {message && <div className="notice">{message}</div>}
       {mediaError && <div className="notice">{mediaError}</div>}
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <h4>Cliques no seu perfil publico por dia</h4>
+        <p className="muted" style={{ marginTop: 6 }}>
+          Ultimos 14 dias: <strong>{profileClicksTotal}</strong> cliques unicos.
+        </p>
+        {profileClicksLoading ? (
+          <p className="muted" style={{ marginTop: 10 }}>
+            Carregando cliques...
+          </p>
+        ) : null}
+        {profileClicksError ? (
+          <div className="notice" style={{ marginTop: 10 }}>
+            {profileClicksError}
+          </div>
+        ) : null}
+        {!profileClicksLoading && !profileClicksError ? (
+          <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+            {profileClicksSeries.length > 0 ? (
+              profileClicksSeries
+                .slice()
+                .reverse()
+                .map((item) => (
+                  <div
+                    key={item.dayKey}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      borderBottom: "1px solid rgba(255,255,255,0.08)",
+                      paddingBottom: 6,
+                    }}
+                  >
+                    <span className="muted">{formatDayKeyLabel(String(item.dayKey || ""))}</span>
+                    <strong>{Number(item.clicks || 0)}</strong>
+                  </div>
+                ))
+            ) : (
+              <p className="muted">Sem cliques registrados ainda.</p>
+            )}
+          </div>
+        ) : null}
+      </div>
 
       {menuOpen ? (
         <div className="model-menu-overlay" onClick={() => setMenuOpen(false)}>

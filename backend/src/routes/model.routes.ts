@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomUUID } from "crypto";
+import { createHmac, randomUUID } from "crypto";
 import { PlanTier, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { requireAdmin, requireAuth } from "../lib/auth";
@@ -39,6 +39,8 @@ const MODEL_PRESENCE_PULSE_TTL_SECONDS = 120;
 const MODEL_MANUAL_ONLINE_MAX_MINUTES = 24 * 60;
 const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
   String(process.env.MODEL_REGISTER_EMAIL_OTP_REQUIRED || "true").trim().toLowerCase() !== "false";
+const PROFILE_CLICKS_DEFAULT_DAYS = 14;
+const PROFILE_CLICKS_MAX_DAYS = 90;
 
 function normalizePixKey(rawValue?: string | null) {
   const raw = String(rawValue || "").trim();
@@ -188,6 +190,21 @@ function getClientIp(req: Request) {
     return forwarded[0];
   }
   return req.ip || "unknown";
+}
+
+function getMetricsSecret() {
+  const secret = process.env.OTP_HASH_SECRET || "";
+  if (!secret && process.env.NODE_ENV === "production") {
+    return "";
+  }
+  return secret || "metrics_hash_dev";
+}
+
+function getClientFingerprint(req: Request) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const ip = forwarded || req.ip || "";
+  const userAgent = String(req.headers["user-agent"] || "");
+  return `${ip}|${userAgent}`;
 }
 
 type LocalRateBucket = { count: number; expiresAt: number };
@@ -972,6 +989,53 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
   });
 }));
 
+router.get("/self/profile-clicks", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const user = res.locals.user as { id: string; role: string } | undefined;
+  if (!user || user.role !== "MODEL") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const rawDays = Number.parseInt(String(req.query.days || PROFILE_CLICKS_DEFAULT_DAYS), 10);
+  const days = Number.isFinite(rawDays)
+    ? Math.min(Math.max(rawDays, 1), PROFILE_CLICKS_MAX_DAYS)
+    : PROFILE_CLICKS_DEFAULT_DAYS;
+
+  const dateKeys: string[] = [];
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() - offset);
+    dateKeys.push(date.toISOString().slice(0, 10));
+  }
+  const firstDayKey = dateKeys[0];
+
+  const grouped = await prisma.modelProfileAccess.groupBy({
+    by: ["dayKey"],
+    where: {
+      modelId: user.id,
+      dayKey: { gte: firstDayKey },
+    },
+    _count: { _all: true },
+    orderBy: { dayKey: "asc" },
+  });
+
+  const countByDay = new Map<string, number>();
+  grouped.forEach((item) => {
+    countByDay.set(item.dayKey, item._count._all);
+  });
+
+  const series = dateKeys.map((dayKey) => ({
+    dayKey,
+    clicks: countByDay.get(dayKey) || 0,
+  }));
+  const total = series.reduce((sum, item) => sum + item.clicks, 0);
+
+  return res.json({
+    days,
+    total,
+    series,
+  });
+}));
+
 router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const user = res.locals.user as { id: string; role: string } | undefined;
   if (!user || user.role !== "MODEL") {
@@ -1331,6 +1395,7 @@ router.delete("/by-email", requireAdmin, asyncHandler(async (req: Request, res: 
   operations.push(
     prisma.shot.deleteMany({ where: { modelId: model.id } }),
     prisma.media.deleteMany({ where: { modelId: model.id } }),
+    prisma.modelProfileAccess.deleteMany({ where: { modelId: model.id } }),
     prisma.cityStat.deleteMany({ where: { modelId: model.id } }),
     prisma.model.delete({ where: { id: model.id } })
   );
@@ -1364,6 +1429,7 @@ router.delete("/:id", requireAdmin, asyncHandler(async (req: Request, res: Respo
   operations.push(
     prisma.shot.deleteMany({ where: { modelId: id } }),
     prisma.media.deleteMany({ where: { modelId: id } }),
+    prisma.modelProfileAccess.deleteMany({ where: { modelId: id } }),
     prisma.cityStat.deleteMany({ where: { modelId: id } }),
     prisma.model.delete({ where: { id } })
   );
@@ -1371,6 +1437,47 @@ router.delete("/:id", requireAdmin, asyncHandler(async (req: Request, res: Respo
   await prisma.$transaction(operations);
 
   return res.json({ status: "deleted" });
+}));
+
+router.post("/:id/profile-view", asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const secret = getMetricsSecret();
+
+  if (!secret) {
+    return res.status(200).json({ status: "skipped" });
+  }
+
+  const modelExists = await prisma.model.findFirst({
+    where: { id, isVerified: true },
+    select: { id: true },
+  });
+
+  if (!modelExists) {
+    return res.status(404).json({ error: "Acompanhante nao encontrada" });
+  }
+
+  const now = new Date();
+  const dayKey = now.toISOString().slice(0, 10);
+  const fingerprint = getClientFingerprint(req);
+  const fingerprintHash = createHmac("sha256", secret).update(fingerprint).digest("hex");
+
+  await prisma.modelProfileAccess.upsert({
+    where: {
+      dayKey_modelId_fingerprintHash: {
+        dayKey,
+        modelId: id,
+        fingerprintHash,
+      },
+    },
+    update: {},
+    create: {
+      dayKey,
+      modelId: id,
+      fingerprintHash,
+    },
+  });
+
+  return res.status(201).json({ status: "ok" });
 }));
 
 router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
