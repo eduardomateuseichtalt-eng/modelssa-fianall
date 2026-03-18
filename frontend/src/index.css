@@ -1972,6 +1972,12 @@ select {
   gap: 12px;
 }
 
+.profile-public-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .profile-public-viewer-head h3 {
   margin: 0;
   font-size: 18px;
@@ -1989,6 +1995,13 @@ select {
   max-height: 72dvh;
   display: block;
   object-fit: contain;
+}
+
+.profile-public-viewer-zoomable {
+  cursor: zoom-in;
+  transform-origin: center;
+  transition: transform 180ms ease;
+  touch-action: none;
 }
 
 .profile-public-shots-grid {

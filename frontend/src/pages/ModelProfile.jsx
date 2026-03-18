@@ -145,10 +145,14 @@ export default function ModelProfile() {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [viewerMode, setViewerMode] = useState("");
   const [mediaViewerItem, setMediaViewerItem] = useState(null);
+  const [mediaZoom, setMediaZoom] = useState(1);
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
   const [ageToken, setAgeToken] = useState(readAgeToken());
   const priceCardRef = useRef(null);
+  const pinchStartDistanceRef = useRef(0);
+  const pinchStartZoomRef = useRef(1);
+  const didPinchRef = useRef(false);
 
   useEffect(() => {
     apiFetch(`/api/models/${id}`)
@@ -254,6 +258,7 @@ export default function ModelProfile() {
         setAvatarMenuOpen(false);
         setViewerMode("");
         setMediaViewerItem(null);
+        setMediaZoom(1);
       }
     };
 
@@ -551,6 +556,10 @@ export default function ModelProfile() {
     if (!item) {
       return;
     }
+    pinchStartDistanceRef.current = 0;
+    pinchStartZoomRef.current = 1;
+    didPinchRef.current = false;
+    setMediaZoom(1);
     setMediaViewerItem(item);
     setViewerMode("media");
   };
@@ -559,6 +568,65 @@ export default function ModelProfile() {
     setAvatarMenuOpen(false);
     setViewerMode("");
     setMediaViewerItem(null);
+    pinchStartDistanceRef.current = 0;
+    pinchStartZoomRef.current = 1;
+    didPinchRef.current = false;
+    setMediaZoom(1);
+  };
+
+  const zoomOutMedia = () => {
+    setMediaZoom((current) => Math.max(1, Number((current - 0.5).toFixed(1))));
+  };
+
+  const zoomInMedia = () => {
+    setMediaZoom((current) => Math.min(4, Number((current + 0.5).toFixed(1))));
+  };
+
+  const toggleMediaZoom = () => {
+    if (didPinchRef.current) {
+      didPinchRef.current = false;
+      return;
+    }
+    setMediaZoom((current) => (current > 1 ? 1 : 2));
+  };
+
+  const getTouchDistance = (touchA, touchB) => {
+    const dx = touchA.clientX - touchB.clientX;
+    const dy = touchA.clientY - touchB.clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const handleMediaTouchStart = (event) => {
+    if (event.touches.length !== 2) {
+      return;
+    }
+    const distance = getTouchDistance(event.touches[0], event.touches[1]);
+    pinchStartDistanceRef.current = distance;
+    pinchStartZoomRef.current = mediaZoom;
+    didPinchRef.current = false;
+  };
+
+  const handleMediaTouchMove = (event) => {
+    if (event.touches.length !== 2) {
+      return;
+    }
+    const startDistance = pinchStartDistanceRef.current;
+    if (!startDistance) {
+      return;
+    }
+    const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
+    const ratio = currentDistance / startDistance;
+    const nextZoom = Math.min(4, Math.max(1, pinchStartZoomRef.current * ratio));
+    didPinchRef.current = true;
+    setMediaZoom(Number(nextZoom.toFixed(2)));
+    event.preventDefault();
+  };
+
+  const handleMediaTouchEnd = () => {
+    if (pinchStartDistanceRef.current > 0) {
+      pinchStartDistanceRef.current = 0;
+      pinchStartZoomRef.current = mediaZoom;
+    }
   };
 
   const ratingToStars = (value) => {
@@ -1286,15 +1354,49 @@ export default function ModelProfile() {
           >
             <div className="profile-public-viewer-head">
               <h3>Midia da acompanhante</h3>
-              <button type="button" className="btn btn-outline" onClick={closeOverlays}>
-                Fechar
-              </button>
+              <div className="profile-public-viewer-actions">
+                {mediaViewerItem.type !== "VIDEO" ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={zoomOutMedia}
+                      disabled={mediaZoom <= 1}
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={zoomInMedia}
+                      disabled={mediaZoom >= 4}
+                    >
+                      +
+                    </button>
+                  </>
+                ) : null}
+                <button type="button" className="btn btn-outline" onClick={closeOverlays}>
+                  Fechar
+                </button>
+              </div>
             </div>
             <div className="profile-public-viewer-media">
               {mediaViewerItem.type === "VIDEO" ? (
                 <video src={mediaViewerItem.url} controls preload="metadata" playsInline />
               ) : (
-                <img src={mediaViewerItem.url} alt="Midia da acompanhante" />
+                <img
+                  src={mediaViewerItem.url}
+                  alt="Midia da acompanhante"
+                  className="profile-public-viewer-zoomable"
+                  onClick={toggleMediaZoom}
+                  onTouchStart={handleMediaTouchStart}
+                  onTouchMove={handleMediaTouchMove}
+                  onTouchEnd={handleMediaTouchEnd}
+                  onTouchCancel={handleMediaTouchEnd}
+                  style={{
+                    transform: `scale(${mediaZoom})`,
+                  }}
+                />
               )}
             </div>
           </div>
