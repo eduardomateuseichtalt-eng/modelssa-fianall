@@ -883,11 +883,11 @@ export default function ModelProfile() {
               </div>
 
               <div className="profile-public-services">
-                <div className="profile-public-services-title">Servicos oferecidos</div>
+                <div className="profile-public-services-title">Serviços oferecidos</div>
                 <div className="profile-public-services-grid">
                   <div className="profile-public-services-column">
                     <div className="profile-public-services-column-title">
-                      Servicos oferecidos
+                      Serviços oferecidos
                     </div>
                     {offeredServiceList.length > 0 ? (
                       offeredServiceList.map((service) => (
@@ -905,12 +905,12 @@ export default function ModelProfile() {
                         </div>
                       ))
                     ) : (
-                      <p className="muted">Sem servicos marcados.</p>
+                      <p className="muted">Sem serviços marcados.</p>
                     )}
                   </div>
                   <div className="profile-public-services-column">
                     <div className="profile-public-services-column-title">
-                      Servicos nao oferecidos
+                      Serviços não oferecidos
                     </div>
                     {notOfferedServiceList.map((service) => (
                       <div key={service.name} className="profile-public-service-row is-disabled">
