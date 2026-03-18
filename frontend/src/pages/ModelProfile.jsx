@@ -146,13 +146,21 @@ export default function ModelProfile() {
   const [viewerMode, setViewerMode] = useState("");
   const [mediaViewerItem, setMediaViewerItem] = useState(null);
   const [mediaZoom, setMediaZoom] = useState(1);
+  const [mediaPan, setMediaPan] = useState({ x: 0, y: 0 });
+  const [isMediaDragging, setIsMediaDragging] = useState(false);
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
   const [ageToken, setAgeToken] = useState(readAgeToken());
   const priceCardRef = useRef(null);
+  const mediaImageRef = useRef(null);
   const pinchStartDistanceRef = useRef(0);
   const pinchStartZoomRef = useRef(1);
   const didPinchRef = useRef(false);
+  const didDragRef = useRef(false);
+  const isMouseDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const touchPanStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
 
   useEffect(() => {
     apiFetch(`/api/models/${id}`)
@@ -258,6 +266,10 @@ export default function ModelProfile() {
         setAvatarMenuOpen(false);
         setViewerMode("");
         setMediaViewerItem(null);
+        setMediaPan({ x: 0, y: 0 });
+        setIsMediaDragging(false);
+        isMouseDraggingRef.current = false;
+        didDragRef.current = false;
         setMediaZoom(1);
       }
     };
@@ -334,6 +346,52 @@ export default function ModelProfile() {
         });
       });
   }, [id]);
+
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      if (!isMouseDraggingRef.current || mediaZoom <= 1) {
+        return;
+      }
+
+      const dx = event.clientX - dragStartRef.current.x;
+      const dy = event.clientY - dragStartRef.current.y;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+        didDragRef.current = true;
+      }
+
+      const next = clampMediaPan(
+        panStartRef.current.x + dx,
+        panStartRef.current.y + dy
+      );
+      setMediaPan(next);
+    };
+
+    const handleMouseUp = () => {
+      if (!isMouseDraggingRef.current) {
+        return;
+      }
+      isMouseDraggingRef.current = false;
+      setIsMediaDragging(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [mediaZoom]);
+
+  useEffect(() => {
+    if (mediaZoom <= 1) {
+      setMediaPan({ x: 0, y: 0 });
+      setIsMediaDragging(false);
+      isMouseDraggingRef.current = false;
+      return;
+    }
+    setMediaPan((current) => clampMediaPan(current.x, current.y));
+  }, [mediaZoom]);
 
   if (loading) {
     return (
@@ -559,7 +617,11 @@ export default function ModelProfile() {
     pinchStartDistanceRef.current = 0;
     pinchStartZoomRef.current = 1;
     didPinchRef.current = false;
+    didDragRef.current = false;
+    isMouseDraggingRef.current = false;
+    setIsMediaDragging(false);
     setMediaZoom(1);
+    setMediaPan({ x: 0, y: 0 });
     setMediaViewerItem(item);
     setViewerMode("media");
   };
@@ -571,7 +633,11 @@ export default function ModelProfile() {
     pinchStartDistanceRef.current = 0;
     pinchStartZoomRef.current = 1;
     didPinchRef.current = false;
+    didDragRef.current = false;
+    isMouseDraggingRef.current = false;
+    setIsMediaDragging(false);
     setMediaZoom(1);
+    setMediaPan({ x: 0, y: 0 });
   };
 
   const zoomOutMedia = () => {
@@ -583,11 +649,28 @@ export default function ModelProfile() {
   };
 
   const toggleMediaZoom = () => {
-    if (didPinchRef.current) {
+    if (didPinchRef.current || didDragRef.current) {
       didPinchRef.current = false;
+      didDragRef.current = false;
       return;
     }
     setMediaZoom((current) => (current > 1 ? 1 : 2));
+  };
+
+  const clampMediaPan = (x, y) => {
+    const image = mediaImageRef.current;
+    if (!image || mediaZoom <= 1) {
+      return { x: 0, y: 0 };
+    }
+
+    const rect = image.getBoundingClientRect();
+    const maxX = Math.max(0, ((rect.width * mediaZoom) - rect.width) / 2);
+    const maxY = Math.max(0, ((rect.height * mediaZoom) - rect.height) / 2);
+
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
   };
 
   const getTouchDistance = (touchA, touchB) => {
@@ -596,37 +679,87 @@ export default function ModelProfile() {
     return Math.hypot(dx, dy);
   };
 
-  const handleMediaTouchStart = (event) => {
-    if (event.touches.length !== 2) {
+  const handleMediaMouseDown = (event) => {
+    if (mediaZoom <= 1 || event.button !== 0) {
       return;
     }
-    const distance = getTouchDistance(event.touches[0], event.touches[1]);
-    pinchStartDistanceRef.current = distance;
-    pinchStartZoomRef.current = mediaZoom;
-    didPinchRef.current = false;
+    event.preventDefault();
+    isMouseDraggingRef.current = true;
+    setIsMediaDragging(true);
+    didDragRef.current = false;
+    dragStartRef.current = { x: event.clientX, y: event.clientY };
+    panStartRef.current = { x: mediaPan.x, y: mediaPan.y };
+  };
+
+  const handleMediaTouchStart = (event) => {
+    if (event.touches.length === 2) {
+      const distance = getTouchDistance(event.touches[0], event.touches[1]);
+      pinchStartDistanceRef.current = distance;
+      pinchStartZoomRef.current = mediaZoom;
+      didPinchRef.current = false;
+      return;
+    }
+
+    if (event.touches.length !== 1 || mediaZoom <= 1) {
+      return;
+    }
+    const touch = event.touches[0];
+    didDragRef.current = false;
+    touchPanStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      panX: mediaPan.x,
+      panY: mediaPan.y,
+    };
   };
 
   const handleMediaTouchMove = (event) => {
-    if (event.touches.length !== 2) {
+    if (event.touches.length === 2) {
+      const startDistance = pinchStartDistanceRef.current;
+      if (!startDistance) {
+        return;
+      }
+      const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
+      const ratio = currentDistance / startDistance;
+      const nextZoom = Math.min(4, Math.max(1, pinchStartZoomRef.current * ratio));
+      didPinchRef.current = true;
+      setMediaZoom(Number(nextZoom.toFixed(2)));
+      event.preventDefault();
       return;
     }
-    const startDistance = pinchStartDistanceRef.current;
-    if (!startDistance) {
+
+    if (event.touches.length !== 1 || mediaZoom <= 1) {
       return;
     }
-    const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
-    const ratio = currentDistance / startDistance;
-    const nextZoom = Math.min(4, Math.max(1, pinchStartZoomRef.current * ratio));
-    didPinchRef.current = true;
-    setMediaZoom(Number(nextZoom.toFixed(2)));
+
+    const touch = event.touches[0];
+    const dx = touch.clientX - touchPanStartRef.current.x;
+    const dy = touch.clientY - touchPanStartRef.current.y;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      didDragRef.current = true;
+    }
+    const next = clampMediaPan(
+      touchPanStartRef.current.panX + dx,
+      touchPanStartRef.current.panY + dy
+    );
+    setMediaPan(next);
     event.preventDefault();
   };
 
-  const handleMediaTouchEnd = () => {
-    if (pinchStartDistanceRef.current > 0) {
-      pinchStartDistanceRef.current = 0;
-      pinchStartZoomRef.current = mediaZoom;
+  const handleMediaTouchEnd = (event) => {
+    if (event.touches.length === 1 && mediaZoom > 1) {
+      const touch = event.touches[0];
+      touchPanStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        panX: mediaPan.x,
+        panY: mediaPan.y,
+      };
+      return;
     }
+
+    pinchStartDistanceRef.current = 0;
+    pinchStartZoomRef.current = mediaZoom;
   };
 
   const ratingToStars = (value) => {
@@ -1385,16 +1518,21 @@ export default function ModelProfile() {
                 <video src={mediaViewerItem.url} controls preload="metadata" playsInline />
               ) : (
                 <img
+                  ref={mediaImageRef}
                   src={mediaViewerItem.url}
                   alt="Midia da acompanhante"
-                  className="profile-public-viewer-zoomable"
+                  className={`profile-public-viewer-zoomable ${
+                    mediaZoom > 1 ? "is-zoomed" : ""
+                  } ${isMediaDragging ? "is-dragging" : ""}`}
+                  onMouseDown={handleMediaMouseDown}
                   onClick={toggleMediaZoom}
                   onTouchStart={handleMediaTouchStart}
                   onTouchMove={handleMediaTouchMove}
                   onTouchEnd={handleMediaTouchEnd}
                   onTouchCancel={handleMediaTouchEnd}
+                  onDragStart={(event) => event.preventDefault()}
                   style={{
-                    transform: `scale(${mediaZoom})`,
+                    transform: `translate3d(${mediaPan.x}px, ${mediaPan.y}px, 0) scale(${mediaZoom})`,
                   }}
                 />
               )}
