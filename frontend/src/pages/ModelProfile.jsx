@@ -482,6 +482,12 @@ export default function ModelProfile() {
   const topPriceLabel = activePriceOption?.cardLabel || "Valor por hora";
   const topPriceValue = activePriceOption?.value || "Consultar";
   const profileImageUrl = model.avatarUrl || model.coverUrl || "/model-placeholder.svg";
+  const instagramDisplay = String(model.instagram || "").trim();
+  const hasInstagramDisplay =
+    instagramDisplay.length > 0 &&
+    !["@instagram", "instagram", "@insta", "insta"].includes(
+      instagramDisplay.toLowerCase()
+    );
   const comparisonVideo = comparisonMedia.find((item) => item.type === "VIDEO") || null;
   const comparisonMediaCandidate =
     comparisonVideo ||
@@ -845,10 +851,11 @@ export default function ModelProfile() {
                   {model.bio || "Perfil exclusivo. Entre em contato para mais detalhes."}
                 </p>
 
-                <div className="tag-list profile-public-tags">
-                  <span className="pill">{model.instagram || "@instagram"}</span>
-                  <span className="pill">{model.whatsapp || "WhatsApp"}</span>
-                </div>
+                {hasInstagramDisplay ? (
+                  <div className="tag-list profile-public-tags">
+                    <span className="pill">{instagramDisplay}</span>
+                  </div>
+                ) : null}
               </div>
             </div>
 
