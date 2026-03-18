@@ -37,6 +37,18 @@ const SERVICE_OPTIONS = [
   { name: "Tapinhas", featured: false },
   { name: "Algemas", featured: false },
 ];
+const SERVICE_LABELS = {
+  Masturbacao: "Masturba\u00e7\u00e3o",
+  "Penetracao com acessorios sexuais": "Penetra\u00e7\u00e3o com acess\u00f3rios sexuais",
+  "Utiliza acessorios eroticos": "Utiliza acess\u00f3rios er\u00f3ticos",
+  "Massagem tantrica": "Massagem t\u00e2ntrica",
+  "Dupla penetracao": "Dupla penetra\u00e7\u00e3o",
+  "Tripla penetracao": "Tripla penetra\u00e7\u00e3o",
+  Dominacao: "Domina\u00e7\u00e3o",
+  "Penis/fingering": "P\u00eanis/fingering",
+};
+
+const getServiceLabel = (serviceName) => SERVICE_LABELS[serviceName] || serviceName;
 
 const PAYMENT_METHOD_LABELS = {
   DINHEIRO: "Dinheiro",
@@ -892,14 +904,14 @@ export default function ModelProfile() {
                     {offeredServiceList.length > 0 ? (
                       offeredServiceList.map((service) => (
                         <div key={service.name} className="profile-public-service-row">
-                          <span>{service.name}</span>
+                          <span>{getServiceLabel(service.name)}</span>
                           <div className="profile-public-service-meta">
                             {service.featured ? (
                               <span className="profile-public-service-specialty">
                                 Minha especialidade
                               </span>
                             ) : null}
-                            <span className="profile-public-service-badge">Faco</span>
+                            <span className="profile-public-service-badge">Fa\u00e7o</span>
                             <span className="profile-public-service-chevron">v</span>
                           </div>
                         </div>
@@ -914,7 +926,7 @@ export default function ModelProfile() {
                     </div>
                     {notOfferedServiceList.map((service) => (
                       <div key={service.name} className="profile-public-service-row is-disabled">
-                        <span>{service.name}</span>
+                        <span>{getServiceLabel(service.name)}</span>
                         <span className="profile-public-service-chevron">v</span>
                       </div>
                     ))}

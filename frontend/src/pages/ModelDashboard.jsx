@@ -49,6 +49,17 @@ const SERVICE_OPTIONS = [
   { name: "Tapinhas", featured: false },
   { name: "Algemas", featured: false },
 ];
+const SERVICE_LABELS = {
+  Masturbacao: "Masturba\u00e7\u00e3o",
+  "Penetracao com acessorios sexuais": "Penetra\u00e7\u00e3o com acess\u00f3rios sexuais",
+  "Utiliza acessorios eroticos": "Utiliza acess\u00f3rios er\u00f3ticos",
+  "Massagem tantrica": "Massagem t\u00e2ntrica",
+  "Dupla penetracao": "Dupla penetra\u00e7\u00e3o",
+  "Tripla penetracao": "Tripla penetra\u00e7\u00e3o",
+  Dominacao: "Domina\u00e7\u00e3o",
+  "Penis/fingering": "P\u00eanis/fingering",
+};
+const getServiceLabel = (serviceName) => SERVICE_LABELS[serviceName] || serviceName;
 const ATTENDANCE_DAY_OPTIONS = [
   { day: "MONDAY", label: "Segunda-feira" },
   { day: "TUESDAY", label: "Ter\u00e7a-feira" },
@@ -1751,9 +1762,9 @@ export default function ModelDashboard() {
                       background: "var(--panel-2)",
                     }}
                   >
-                    <h4 style={{ margin: 0 }}>Servicos oferecidos</h4>
+                    <h4 style={{ margin: 0 }}>Servi\u00e7os oferecidos</h4>
                     <p className="muted" style={{ marginTop: 6 }}>
-                      Marque abaixo os servicos que voce oferece no atendimento.
+                      Marque abaixo os servi\u00e7os que voc\u00ea oferece no atendimento.
                     </p>
                     <div className="model-services-editor-grid">
                       {SERVICE_OPTIONS.map((serviceItem) => {
@@ -1774,7 +1785,7 @@ export default function ModelDashboard() {
                                 );
                               }}
                             />
-                            <span>{serviceItem.name}</span>
+                            <span>{getServiceLabel(serviceItem.name)}</span>
                             {serviceItem.featured ? (
                               <small>Minha especialidade</small>
                             ) : null}
