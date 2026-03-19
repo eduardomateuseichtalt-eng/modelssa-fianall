@@ -1220,8 +1220,9 @@ export default function ModelProfile() {
                   <div className="divider" />
                   <h4>Contato e redes</h4>
                   <div className="tag-list" style={{ marginTop: 12 }}>
-                    <span className="pill">{model.instagram || "@instagram"}</span>
-                    <span className="pill">{model.whatsapp || "WhatsApp"}</span>
+                    {hasInstagramDisplay ? (
+                      <span className="pill">{instagramDisplay}</span>
+                    ) : null}
                     <span className="pill">{model.city || "Brasil"}</span>
                   </div>
 
