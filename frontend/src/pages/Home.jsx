@@ -2,6 +2,98 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
+function HomeFeaturedModelCard({ model }) {
+  const fallbackPhoto = model.coverUrl || model.avatarUrl || "/model-placeholder.svg";
+  const galleryPhotos = Array.isArray(model.galleryPreviewPhotos)
+    ? model.galleryPreviewPhotos.filter(Boolean)
+    : [];
+  const photos = (galleryPhotos.length > 0 ? galleryPhotos : [fallbackPhoto]).slice(0, 3);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const touchStartXRef = useRef(0);
+  const touchDeltaXRef = useRef(0);
+  const blockNextClickRef = useRef(false);
+
+  const handleTouchStart = (event) => {
+    if (photos.length <= 1 || !event.touches?.length) {
+      return;
+    }
+    touchStartXRef.current = event.touches[0].clientX;
+    touchDeltaXRef.current = 0;
+  };
+
+  const handleTouchMove = (event) => {
+    if (photos.length <= 1 || !event.touches?.length) {
+      return;
+    }
+    touchDeltaXRef.current = event.touches[0].clientX - touchStartXRef.current;
+  };
+
+  const handleTouchEnd = () => {
+    if (photos.length <= 1) {
+      return;
+    }
+    const deltaX = touchDeltaXRef.current;
+    touchStartXRef.current = 0;
+    touchDeltaXRef.current = 0;
+    if (Math.abs(deltaX) < 35) {
+      return;
+    }
+
+    blockNextClickRef.current = true;
+    setActivePhotoIndex((current) => {
+      if (deltaX < 0) {
+        return current + 1 >= photos.length ? 0 : current + 1;
+      }
+      return current - 1 < 0 ? photos.length - 1 : current - 1;
+    });
+  };
+
+  const handleCardClick = (event) => {
+    if (!blockNextClickRef.current) {
+      return;
+    }
+    event.preventDefault();
+    blockNextClickRef.current = false;
+  };
+
+  return (
+    <Link
+      to={`/modelos/${model.id}`}
+      className="model-card home-model-card"
+      onClick={handleCardClick}
+    >
+      <div
+        className="home-model-photo-frame"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+      >
+        <img
+          className="model-photo home-model-photo"
+          src={photos[activePhotoIndex] || fallbackPhoto}
+          alt={model.name}
+          loading="lazy"
+        />
+        {photos.length > 1 ? (
+          <div className="home-model-photo-dots" aria-hidden="true">
+            {photos.map((_, index) => (
+              <span
+                key={`${model.id}-dot-${index}`}
+                className={`home-model-photo-dot ${index === activePhotoIndex ? "active" : ""}`}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <div className="model-info">
+        <h3>{model.name}</h3>
+        <p>{model.city || "Brasil"}</p>
+      </div>
+    </Link>
+  );
+}
+
 export default function Home() {
   const [models, setModels] = useState([]);
   const [citySearch, setCitySearch] = useState("");
@@ -372,22 +464,7 @@ export default function Home() {
             </Link>
           ) : (
             featuredModels.map((model) => (
-              <Link
-                to={`/modelos/${model.id}`}
-                key={model.id}
-                className="model-card home-model-card"
-              >
-                <img
-                  className="model-photo home-model-photo"
-                  src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
-                  alt={model.name}
-                  loading="lazy"
-                />
-                <div className="model-info">
-                  <h3>{model.name}</h3>
-                  <p>{model.city || "Brasil"}</p>
-                </div>
-              </Link>
+              <HomeFeaturedModelCard model={model} key={model.id} />
             ))
           )}
         </div>

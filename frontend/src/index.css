@@ -809,8 +809,39 @@ select {
   max-width: 280px;
 }
 
+.home-model-photo-frame {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
 .home-model-photo {
   height: 250px;
+}
+
+.home-model-photo-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.home-model-photo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.home-model-photo-dot.active {
+  background: #ffffff;
 }
 
 .home-model-logo {

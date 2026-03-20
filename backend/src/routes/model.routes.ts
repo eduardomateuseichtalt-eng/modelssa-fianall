@@ -1244,7 +1244,7 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
     media: { some: { status: "APPROVED" } },
   };
 
-  const models = await prisma.model.findMany({
+  const modelsRaw = await prisma.model.findMany({
     where,
     select: {
       id: true,
@@ -1256,8 +1256,23 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
       price30Min: true,
       price15Min: true,
       planTier: true,
+      media: {
+        where: {
+          status: "APPROVED",
+          purpose: "GALLERY",
+          type: "IMAGE",
+        },
+        orderBy: { createdAt: "asc" },
+        take: 3,
+        select: { url: true },
+      },
     },
   });
+
+  const models = modelsRaw.map(({ media, ...model }) => ({
+    ...model,
+    galleryPreviewPhotos: media.map((item) => item.url).filter(Boolean),
+  }));
 
   const cityFilteredModels = city
     ? models.filter((model) => normalizeCity(model.city) === city)
