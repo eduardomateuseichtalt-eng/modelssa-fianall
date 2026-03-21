@@ -42,6 +42,12 @@ const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
   String(process.env.MODEL_REGISTER_EMAIL_OTP_REQUIRED || "true").trim().toLowerCase() !== "false";
 const PROFILE_CLICKS_DEFAULT_DAYS = 14;
 const PROFILE_CLICKS_MAX_DAYS = 90;
+const MODEL_NEARBY_RADIUS_KM_DEFAULT = 50;
+const MODEL_NEARBY_RADIUS_KM_MAX = 200;
+const MODEL_CITY_COORD_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+type CityCoord = { lat: number; lon: number; expiresAt: number };
+const modelCityCoordCache = new Map<string, CityCoord>();
 
 const sanitizeStringArray = (value: unknown): string[] | undefined => {
   if (value === undefined) {
@@ -185,6 +191,184 @@ async function incrementWithExpiry(key: string, ttlSeconds: number) {
   } catch (error) {
     console.error("Model rate-limit Redis fallback:", error);
     return incrementLocalRate(key, ttlSeconds);
+  }
+}
+
+type PublicModelBase = {
+  id: string;
+  name: string;
+  city: string | null;
+  avatarUrl: string | null;
+  coverUrl: string | null;
+  genderIdentity: string | null;
+  priceHour: number | null;
+  price30Min: number | null;
+  price15Min: number | null;
+  planTier: PlanTier;
+  galleryPreviewPhotos: string[];
+};
+
+const PUBLIC_MODEL_SELECT: Prisma.ModelSelect = {
+  id: true,
+  name: true,
+  city: true,
+  avatarUrl: true,
+  coverUrl: true,
+  genderIdentity: true,
+  priceHour: true,
+  price30Min: true,
+  price15Min: true,
+  planTier: true,
+  media: {
+    where: {
+      status: "APPROVED",
+      purpose: "GALLERY",
+      type: "IMAGE",
+    },
+    orderBy: { createdAt: "asc" },
+    take: 3,
+    select: { url: true },
+  },
+};
+
+async function getPublicModelsBase(): Promise<PublicModelBase[]> {
+  const modelsRaw = await prisma.model.findMany({
+    where: {
+      isVerified: true,
+      media: { some: { status: "APPROVED" } },
+    },
+    select: PUBLIC_MODEL_SELECT,
+  });
+
+  return modelsRaw.map(({ media, ...model }) => ({
+    ...model,
+    galleryPreviewPhotos: media.map((item) => item.url).filter(Boolean),
+  }));
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function haversineDistanceKm(
+  origin: { lat: number; lon: number },
+  target: { lat: number; lon: number }
+) {
+  const earthRadiusKm = 6371;
+  const deltaLat = toRadians(target.lat - origin.lat);
+  const deltaLon = toRadians(target.lon - origin.lon);
+  const lat1 = toRadians(origin.lat);
+  const lat2 = toRadians(target.lat);
+
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(deltaLon / 2) *
+      Math.sin(deltaLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+}
+
+async function geocodeModelCity(city: string) {
+  const normalized = normalizeCity(city);
+  if (!normalized) {
+    return null;
+  }
+
+  const cached = modelCityCoordCache.get(normalized);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return { lat: cached.lat, lon: cached.lon };
+  }
+
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/search");
+    url.searchParams.set("q", `${city}, Brasil`);
+    url.searchParams.set("format", "json");
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("countrycodes", "br");
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "models-club/1.0 (api@models-club.com)",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json().catch(() => [])) as Array<{
+      lat?: string;
+      lon?: string;
+    }>;
+
+    const first = data[0];
+    const lat = Number(first?.lat);
+    const lon = Number(first?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return null;
+    }
+
+    modelCityCoordCache.set(normalized, {
+      lat,
+      lon,
+      expiresAt: now + MODEL_CITY_COORD_CACHE_TTL_MS,
+    });
+
+    return { lat, lon };
+  } catch {
+    return null;
+  }
+}
+
+async function reverseGeocodeModelCity(lat: number, lon: number) {
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/reverse");
+    url.searchParams.set("lat", String(lat));
+    url.searchParams.set("lon", String(lon));
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("zoom", "10");
+    url.searchParams.set("addressdetails", "1");
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "models-club/1.0 (api@models-club.com)",
+      },
+    });
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json().catch(() => null)) as
+      | {
+          address?: {
+            city?: string;
+            town?: string;
+            municipality?: string;
+            village?: string;
+            county?: string;
+          };
+        }
+      | null;
+
+    const address = data?.address;
+    const city =
+      String(
+        address?.city ||
+          address?.town ||
+          address?.municipality ||
+          address?.village ||
+          address?.county ||
+          ""
+      ).trim() || null;
+    return city;
+  } catch {
+    return null;
   }
 }
 
@@ -1216,41 +1400,7 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
     ? Math.min(Math.max(rawLimit, 1), 60)
     : 24;
 
-  const where: Prisma.ModelWhereInput = {
-    isVerified: true,
-    media: { some: { status: "APPROVED" } },
-  };
-
-  const modelsRaw = await prisma.model.findMany({
-    where,
-    select: {
-      id: true,
-      name: true,
-      city: true,
-      avatarUrl: true,
-      coverUrl: true,
-      genderIdentity: true,
-      priceHour: true,
-      price30Min: true,
-      price15Min: true,
-      planTier: true,
-      media: {
-        where: {
-          status: "APPROVED",
-          purpose: "GALLERY",
-          type: "IMAGE",
-        },
-        orderBy: { createdAt: "asc" },
-        take: 3,
-        select: { url: true },
-      },
-    },
-  });
-
-  const models = modelsRaw.map(({ media, ...model }) => ({
-    ...model,
-    galleryPreviewPhotos: media.map((item) => item.url).filter(Boolean),
-  }));
+  const models = await getPublicModelsBase();
 
   const cityFilteredModels = city
     ? models.filter((model) => normalizeCity(model.city) === city)
@@ -1275,6 +1425,144 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
     limit,
     total: ranked.length,
     rotationWindowHours,
+    items,
+  });
+}));
+
+router.get("/auto-nearby", asyncHandler(async (req: Request, res: Response) => {
+  const rawLat = Number(req.query.lat);
+  const rawLon = Number(req.query.lon);
+
+  if (!Number.isFinite(rawLat) || !Number.isFinite(rawLon)) {
+    return res.status(400).json({ error: "Latitude/longitude invalidas." });
+  }
+
+  const rawRadius = Number(req.query.radiusKm || MODEL_NEARBY_RADIUS_KM_DEFAULT);
+  const radiusKm = Number.isFinite(rawRadius)
+    ? Math.min(Math.max(rawRadius, 5), MODEL_NEARBY_RADIUS_KM_MAX)
+    : MODEL_NEARBY_RADIUS_KM_DEFAULT;
+
+  const rawPage = Number.parseInt(String(req.query.page || "1"), 10);
+  const rawLimit = Number.parseInt(String(req.query.limit || "24"), 10);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const limit = Number.isFinite(rawLimit)
+    ? Math.min(Math.max(rawLimit, 1), 60)
+    : 24;
+
+  const models = await getPublicModelsBase();
+  const rotationWindowHours = 6;
+  const seed = rotationSeed(rotationWindowHours);
+  const start = (page - 1) * limit;
+
+  const detectedCity = await reverseGeocodeModelCity(rawLat, rawLon);
+  const normalizedDetectedCity = normalizeCity(detectedCity);
+
+  if (normalizedDetectedCity) {
+    const sameCity = models.filter(
+      (model) => normalizeCity(model.city) === normalizedDetectedCity
+    );
+
+    if (sameCity.length > 0) {
+      const ranked = sameCity
+        .map((model) => ({
+          ...model,
+          _score: stableHash01(`${model.id}|${seed}|${normalizedDetectedCity}`),
+        }))
+        .sort((a, b) => b._score - a._score);
+
+      const items = ranked.slice(start, start + limit).map(({ _score, ...rest }) => rest);
+
+      return res.json({
+        page,
+        limit,
+        total: ranked.length,
+        rotationWindowHours,
+        usedDeviceLocation: true,
+        detectedCity,
+        fallbackUsed: false,
+        radiusKm,
+        items,
+      });
+    }
+  }
+
+  const uniqueCities = Array.from(
+    new Set(
+      models
+        .map((model) => String(model.city || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  const cityCoordsList = await Promise.all(
+    uniqueCities.map(async (cityName) => [cityName, await geocodeModelCity(cityName)] as const)
+  );
+  const cityCoordsMap = new Map(
+    cityCoordsList
+      .filter((entry): entry is readonly [string, { lat: number; lon: number }] => Boolean(entry[1]))
+      .map(([cityName, coords]) => [normalizeCity(cityName), coords])
+  );
+
+  const cityDistanceMap = new Map<string, { city: string; distanceKm: number }>();
+  const nearbyRanked = models
+    .map((model) => {
+      const cityName = String(model.city || "").trim();
+      const cityKey = normalizeCity(cityName);
+      if (!cityKey) {
+        return null;
+      }
+      const coords = cityCoordsMap.get(cityKey);
+      if (!coords) {
+        return null;
+      }
+
+      const distanceKm = haversineDistanceKm(
+        { lat: rawLat, lon: rawLon },
+        coords
+      );
+
+      if (distanceKm > radiusKm) {
+        return null;
+      }
+
+      const existing = cityDistanceMap.get(cityKey);
+      if (!existing || distanceKm < existing.distanceKm) {
+        cityDistanceMap.set(cityKey, { city: cityName, distanceKm });
+      }
+
+      return {
+        ...model,
+        nearbyDistanceKm: Number(distanceKm.toFixed(1)),
+        _score: stableHash01(`${model.id}|${seed}|nearby`),
+      };
+    })
+    .filter((item): item is PublicModelBase & { nearbyDistanceKm: number; _score: number } => Boolean(item))
+    .sort((a, b) => {
+      if (a.nearbyDistanceKm !== b.nearbyDistanceKm) {
+        return a.nearbyDistanceKm - b.nearbyDistanceKm;
+      }
+      return b._score - a._score;
+    });
+
+  const nearbyCities = Array.from(cityDistanceMap.values())
+    .map((item) => ({
+      city: item.city,
+      distanceKm: Number(item.distanceKm.toFixed(1)),
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+
+  const items = nearbyRanked.slice(start, start + limit).map(({ _score, ...rest }) => rest);
+
+  return res.json({
+    page,
+    limit,
+    total: nearbyRanked.length,
+    rotationWindowHours,
+    usedDeviceLocation: true,
+    detectedCity,
+    fallbackUsed: true,
+    radiusKm,
+    nearbyCities,
     items,
   });
 }));
