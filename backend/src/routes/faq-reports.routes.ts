@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { prisma } from "../lib/prisma";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import { asyncHandler } from "../lib/async-handler";
+import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 
 type FaqReportRow = {
   id: string;
@@ -26,6 +27,16 @@ const MAX_MESSAGE_LENGTH = 2000;
 const MAX_CONTACT_LENGTH = 255;
 const MAX_RESPONSE_LENGTH = 2000;
 const ALLOWED_CATEGORIES = new Set(["DENUNCIA", "SUGESTAO", "RECLAMACAO"]);
+
+const respondModelTrialExpired = (
+  res: Response,
+  model: {
+    id: string;
+    planTier?: "BASIC" | "PRO" | null;
+    trialEndsAt?: Date | string | null;
+    planExpiresAt?: Date | string | null;
+  }
+) => res.status(402).json(buildModelTrialExpiredResponse(model));
 
 const trimToNull = (value: unknown) => {
   const text = String(value ?? "").trim();
@@ -95,10 +106,23 @@ router.post(
 
     const model = await prisma.model.findUnique({
       where: { id: user.id },
-      select: { id: true },
+      select: {
+        id: true,
+        planTier: true,
+        trialEndsAt: true,
+        planExpiresAt: true,
+      },
     });
     if (!model) {
       return res.status(404).json({ error: "Modelo nao encontrada." });
+    }
+
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
     }
 
     const reportId = randomUUID();
@@ -122,6 +146,27 @@ router.get(
     const user = res.locals.user as { id: string; role: string } | undefined;
     if (!user || user.role !== "MODEL") {
       return res.status(403).json({ error: "Acesso restrito" });
+    }
+
+    const model = await prisma.model.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        planTier: true,
+        trialEndsAt: true,
+        planExpiresAt: true,
+      },
+    });
+    if (!model) {
+      return res.status(404).json({ error: "Modelo nao encontrada." });
+    }
+
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
     }
 
     const rows = await prisma.$queryRaw<FaqReportRow[]>`

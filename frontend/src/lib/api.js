@@ -36,7 +36,13 @@ export async function apiFetch(path, options = {}) {
     const isAgeGate =
       typeof message === "string" && message.toLowerCase().includes("verificacao de idade");
 
-    if ((response.status === 401 || response.status === 403) && !isAgeGate) {
+    const isModelTrialExpired =
+      response.status === 402 &&
+      data &&
+      data.code === "MODEL_TRIAL_EXPIRED" &&
+      data.paymentRequired === true;
+
+    if ((response.status === 401 || response.status === 403 || isModelTrialExpired) && !isAgeGate) {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
     }

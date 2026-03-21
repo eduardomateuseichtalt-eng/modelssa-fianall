@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { getUserFromRequest, requireAuth } from "../lib/auth";
 import { deleteFromBunny, uploadToBunny } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
+import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 
 const router = Router();
 
@@ -29,6 +30,16 @@ const CITY_COORD_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type CityCoord = { lat: number; lon: number; expiresAt: number };
 const cityCoordCache = new Map<string, CityCoord>();
+
+const respondModelTrialExpired = (
+  res: Response,
+  model: {
+    id: string;
+    planTier?: "BASIC" | "PRO" | null;
+    trialEndsAt?: Date | string | null;
+    planExpiresAt?: Date | string | null;
+  }
+) => res.status(402).json(buildModelTrialExpiredResponse(model));
 
 function normalizeCityName(value: string) {
   return String(value || "")
@@ -376,6 +387,14 @@ router.post(
     }
     if (!model.isVerified) {
       return res.status(403).json({ error: "Modelo nao aprovada" });
+    }
+
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
     }
 
     let images = 0;

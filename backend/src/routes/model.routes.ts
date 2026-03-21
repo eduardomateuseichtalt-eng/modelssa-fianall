@@ -12,6 +12,7 @@ import { sendWhatsAppText } from "../lib/whatsapp";
 import { asyncHandler } from "../lib/async-handler";
 import { normalizeCity, rotationSeed, stableHash01 } from "../utils/rotation";
 import { getModelMediaLimits, getModelTrialEndDate } from "../lib/model-plan";
+import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 
 const router = Router();
 const isProduction = process.env.NODE_ENV === "production";
@@ -41,58 +42,6 @@ const MODEL_REGISTER_EMAIL_OTP_REQUIRED =
   String(process.env.MODEL_REGISTER_EMAIL_OTP_REQUIRED || "true").trim().toLowerCase() !== "false";
 const PROFILE_CLICKS_DEFAULT_DAYS = 14;
 const PROFILE_CLICKS_MAX_DAYS = 90;
-
-function normalizePixKey(rawValue?: string | null) {
-  const raw = String(rawValue || "").trim();
-  if (!raw) {
-    return "";
-  }
-
-  const parts = raw
-    .split(/[\s,;|]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-  if (parts.length > 0) {
-    return parts[0];
-  }
-
-  // Fallback: se a chave foi colada duas vezes sem separador, tenta reduzir.
-  if (raw.length % 2 === 0) {
-    const half = raw.length / 2;
-    const firstHalf = raw.slice(0, half);
-    const secondHalf = raw.slice(half);
-    if (firstHalf === secondHalf) {
-      return firstHalf;
-    }
-  }
-
-  return raw;
-}
-
-const MODEL_PAYMENT_PIX_KEY = normalizePixKey(
-  process.env.MODEL_PAYMENT_PIX_KEY ||
-    process.env.MODEL_REGISTER_PIX_KEY ||
-    "faa9aca1-3e24-4437-abcb-ae58ae550979"
-);
-const MODEL_PAYMENT_PIX_KEY_BASIC = normalizePixKey(
-  process.env.MODEL_PAYMENT_PIX_KEY_BASIC || MODEL_PAYMENT_PIX_KEY
-);
-const MODEL_PAYMENT_PIX_KEY_PRO = normalizePixKey(
-  process.env.MODEL_PAYMENT_PIX_KEY_PRO || MODEL_PAYMENT_PIX_KEY
-);
-
-const MODEL_PLAN_PRICING: Record<PlanTier, { label: string; priceCents: number; priceText: string }> = {
-  BASIC: {
-    label: "BASICO",
-    priceCents: 4990,
-    priceText: "R$ 49,90/mes",
-  },
-  PRO: {
-    label: "PRO",
-    priceCents: 6990,
-    priceText: "R$ 69,90/mes",
-  },
-};
 
 const sanitizeStringArray = (value: unknown): string[] | undefined => {
   if (value === undefined) {
@@ -249,39 +198,45 @@ function formatWhatsAppDigits(phoneDigits: string) {
   return phoneDigits;
 }
 
-function toDate(value?: Date | string | null) {
-  if (!value) {
-    return null;
+function respondModelTrialExpired(
+  res: Response,
+  model: {
+    id: string;
+    planTier?: PlanTier | null;
+    trialEndsAt?: Date | string | null;
+    planExpiresAt?: Date | string | null;
   }
-  const parsed = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+) {
+  return res.status(402).json(buildModelTrialExpiredResponse(model));
 }
 
-function modelHasPaidAreaAccess(snapshot: {
-  trialEndsAt?: Date | string | null;
-  planExpiresAt?: Date | string | null;
-}) {
-  const now = Date.now();
-  const trialEndsAt = toDate(snapshot.trialEndsAt);
-  const planExpiresAt = toDate(snapshot.planExpiresAt);
+async function ensureModelPaidAreaAccessOrRespond(res: Response, modelId: string) {
+  const model = await prisma.model.findUnique({
+    where: { id: modelId },
+    select: {
+      id: true,
+      planTier: true,
+      trialEndsAt: true,
+      planExpiresAt: true,
+    },
+  });
 
-  // Compatibilidade com cadastros antigos sem trial configurado.
-  if (!trialEndsAt) {
-    if (!planExpiresAt) {
-      return true;
-    }
-    return planExpiresAt.getTime() > now;
+  if (!model) {
+    res.status(404).json({ error: "Modelo nao encontrada" });
+    return null;
   }
 
-  if (trialEndsAt.getTime() > now) {
-    return true;
+  const hasAreaAccess = modelHasPaidAreaAccess({
+    trialEndsAt: model.trialEndsAt,
+    planExpiresAt: model.planExpiresAt,
+  });
+
+  if (!hasAreaAccess) {
+    respondModelTrialExpired(res, model);
+    return null;
   }
 
-  if (planExpiresAt && planExpiresAt.getTime() > now) {
-    return true;
-  }
-
-  return false;
+  return model;
 }
 
 function modelPresenceKey(modelId: string) {
@@ -646,27 +601,7 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
   });
 
   if (!hasAreaAccess) {
-    const normalizedTier: PlanTier = model.planTier === "PRO" ? "PRO" : "BASIC";
-    const pricing = MODEL_PLAN_PRICING[normalizedTier];
-    const pixKeyForPlan =
-      normalizedTier === "PRO" ? MODEL_PAYMENT_PIX_KEY_PRO : MODEL_PAYMENT_PIX_KEY_BASIC;
-
-    return res.status(402).json({
-      error:
-        "Sua gratuidade venceu. Para acessar a area da modelo, realize o pagamento do plano escolhido.",
-      code: "MODEL_TRIAL_EXPIRED",
-      paymentRequired: true,
-      payment: {
-        modelId: model.id,
-        planTier: normalizedTier,
-        planLabel: pricing.label,
-        priceCents: pricing.priceCents,
-        priceText: pricing.priceText,
-        pixKey: pixKeyForPlan,
-        trialEndsAt: model.trialEndsAt ? new Date(model.trialEndsAt).toISOString() : null,
-        planExpiresAt: model.planExpiresAt ? new Date(model.planExpiresAt).toISOString() : null,
-      },
-    });
+    return respondModelTrialExpired(res, model);
   }
 
   const accessToken = jwt.sign(
@@ -703,6 +638,10 @@ router.post("/presence/heartbeat", requireAuth, asyncHandler(async (_req: Reques
     return res.status(403).json({ error: "Acesso restrito" });
   }
 
+  if (!(await ensureModelPaidAreaAccessOrRespond(res, user.id))) {
+    return;
+  }
+
   await markModelOnlinePulse(user.id);
 
   return res.json({
@@ -718,6 +657,10 @@ router.get("/presence/self", requireAuth, asyncHandler(async (_req: Request, res
     return res.status(403).json({ error: "Acesso restrito" });
   }
 
+  if (!(await ensureModelPaidAreaAccessOrRespond(res, user.id))) {
+    return;
+  }
+
   const state = await getModelPresenceState(user.id);
   return res.json(state);
 }));
@@ -726,6 +669,10 @@ router.post("/presence/manual", requireAuth, asyncHandler(async (req: Request, r
   const user = res.locals.user as { id: string; role: string } | undefined;
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  if (!(await ensureModelPaidAreaAccessOrRespond(res, user.id))) {
+    return;
   }
 
   const rawMinutes = req.body?.durationMinutes;
@@ -904,11 +851,25 @@ router.post("/change-password", requireAuth, asyncHandler(async (req: Request, r
 
   const model = await prisma.model.findUnique({
     where: { id: user.id },
-    select: { id: true, password: true },
+    select: {
+      id: true,
+      password: true,
+      planTier: true,
+      trialEndsAt: true,
+      planExpiresAt: true,
+    },
   });
 
   if (!model) {
     return res.status(404).json({ error: "Modelo nao encontrada" });
+  }
+
+  const hasAreaAccess = modelHasPaidAreaAccess({
+    trialEndsAt: model.trialEndsAt,
+    planExpiresAt: model.planExpiresAt,
+  });
+  if (!hasAreaAccess) {
+    return respondModelTrialExpired(res, model);
   }
 
   const valid = await bcrypt.compare(currentPassword, model.password);
@@ -981,6 +942,14 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
     return res.status(404).json({ error: "Modelo nao encontrada" });
   }
 
+  const hasAreaAccess = modelHasPaidAreaAccess({
+    trialEndsAt: model.trialEndsAt,
+    planExpiresAt: model.planExpiresAt,
+  });
+  if (!hasAreaAccess) {
+    return respondModelTrialExpired(res, model);
+  }
+
   const mediaLimits = getModelMediaLimits(model);
 
   return res.json({
@@ -993,6 +962,10 @@ router.get("/self/profile-clicks", requireAuth, asyncHandler(async (req: Request
   const user = res.locals.user as { id: string; role: string } | undefined;
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  if (!(await ensureModelPaidAreaAccessOrRespond(res, user.id))) {
+    return;
   }
 
   const rawDays = Number.parseInt(String(req.query.days || PROFILE_CLICKS_DEFAULT_DAYS), 10);
@@ -1040,6 +1013,10 @@ router.patch("/self/profile", requireAuth, asyncHandler(async (req: Request, res
   const user = res.locals.user as { id: string; role: string } | undefined;
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  if (!(await ensureModelPaidAreaAccessOrRespond(res, user.id))) {
+    return;
   }
 
   const name = String(req.body?.name || "").trim();

@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../lib/auth";
 import { asyncHandler } from "../lib/async-handler";
+import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 
 type Message = {
   id: string;
@@ -20,6 +21,16 @@ type MessageStore = {
 
 const messageStore = new Map<string, MessageStore>();
 const MAX_MESSAGES = 50;
+
+const respondModelTrialExpired = (
+  res: Response,
+  model: {
+    id: string;
+    planTier?: "BASIC" | "PRO" | null;
+    trialEndsAt?: Date | string | null;
+    planExpiresAt?: Date | string | null;
+  }
+) => res.status(402).json(buildModelTrialExpiredResponse(model));
 
 const getStore = (modelId: string) => {
   const existing = messageStore.get(modelId);
@@ -82,6 +93,26 @@ router.get(
       return res.status(403).json({ error: "Acesso restrito" });
     }
 
+    const model = await prisma.model.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        planTier: true,
+        trialEndsAt: true,
+        planExpiresAt: true,
+      },
+    });
+    if (!model) {
+      return res.status(404).json({ error: "Modelo nao encontrada." });
+    }
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
+    }
+
     const store = getStore(user.id);
     const unreadCount = store.messages.filter(
       (message) => message.createdAt > store.lastReadAt
@@ -101,6 +132,26 @@ router.post(
     const user = res.locals.user;
     if (!user || user.role !== "MODEL") {
       return res.status(403).json({ error: "Acesso restrito" });
+    }
+
+    const model = await prisma.model.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        planTier: true,
+        trialEndsAt: true,
+        planExpiresAt: true,
+      },
+    });
+    if (!model) {
+      return res.status(404).json({ error: "Modelo nao encontrada." });
+    }
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
     }
 
     const store = getStore(user.id);

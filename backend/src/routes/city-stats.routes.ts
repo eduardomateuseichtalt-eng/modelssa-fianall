@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../lib/auth";
 import { asyncHandler } from "../lib/async-handler";
+import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 
 const router = Router();
 
@@ -14,6 +15,16 @@ const allowedColors = new Set([
   "OTHER",
 ]);
 
+const respondModelTrialExpired = (
+  res: Response,
+  model: {
+    id: string;
+    planTier?: "BASIC" | "PRO" | null;
+    trialEndsAt?: Date | string | null;
+    planExpiresAt?: Date | string | null;
+  }
+) => res.status(402).json(buildModelTrialExpiredResponse(model));
+
 const toCityKey = (value: string) =>
   value
     .trim()
@@ -24,6 +35,26 @@ router.post("/", requireAuth, asyncHandler(async (req: Request, res: Response) =
   const user = res.locals.user as { id: string; role: string };
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const model = await prisma.model.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      planTier: true,
+      trialEndsAt: true,
+      planExpiresAt: true,
+    },
+  });
+  if (!model) {
+    return res.status(404).json({ error: "Modelo nao encontrada." });
+  }
+  const hasAreaAccess = modelHasPaidAreaAccess({
+    trialEndsAt: model.trialEndsAt,
+    planExpiresAt: model.planExpiresAt,
+  });
+  if (!hasAreaAccess) {
+    return respondModelTrialExpired(res, model);
   }
 
   const { city, color, count, days } = req.body;
@@ -66,6 +97,26 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
   const user = res.locals.user as { id: string; role: string };
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const model = await prisma.model.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      planTier: true,
+      trialEndsAt: true,
+      planExpiresAt: true,
+    },
+  });
+  if (!model) {
+    return res.status(404).json({ error: "Modelo nao encontrada." });
+  }
+  const hasAreaAccess = modelHasPaidAreaAccess({
+    trialEndsAt: model.trialEndsAt,
+    planExpiresAt: model.planExpiresAt,
+  });
+  if (!hasAreaAccess) {
+    return respondModelTrialExpired(res, model);
   }
   const { city } = req.query;
   if (!city || typeof city !== "string") {

@@ -6,6 +6,7 @@ import { getUserFromRequest, requireAdmin, requireAuth } from "../lib/auth";
 import { deleteFromBunny, uploadToBunny, validateBunnyConnection } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
 import { getModelMediaLimits } from "../lib/model-plan";
+import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 
 const router = Router();
 
@@ -32,6 +33,16 @@ const mapMediaType = (mime: string) =>
   mime.startsWith("video/") ? "VIDEO" : "IMAGE";
 
 const normalizeStoredUrl = (value: string) => value.trim();
+
+const respondModelTrialExpired = (
+  res: Response,
+  model: {
+    id: string;
+    planTier?: "BASIC" | "PRO" | null;
+    trialEndsAt?: Date | string | null;
+    planExpiresAt?: Date | string | null;
+  }
+) => res.status(402).json(buildModelTrialExpiredResponse(model));
 
 const getAgeTokenSecret = () => {
   const secret = process.env.OTP_HASH_SECRET || "";
@@ -102,6 +113,14 @@ router.post(
 
     if (!model) {
       return res.status(404).json({ error: "Modelo nao encontrada" });
+    }
+
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
     }
 
     const uploads = [];
@@ -208,6 +227,14 @@ router.post(
       return res.status(403).json({ error: "Modelo nao aprovada" });
     }
 
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
+    }
+
     const limits = getModelMediaLimits(model);
 
     const [existingImages, existingVideos] = await Promise.all([
@@ -309,7 +336,13 @@ router.post(
 
     const model = await prisma.model.findUnique({
       where: { id: user.id },
-      select: { id: true, isVerified: true },
+      select: {
+        id: true,
+        isVerified: true,
+        planTier: true,
+        trialEndsAt: true,
+        planExpiresAt: true,
+      },
     });
 
     if (!model) {
@@ -318,6 +351,14 @@ router.post(
 
     if (!model.isVerified) {
       return res.status(403).json({ error: "Modelo nao aprovada" });
+    }
+
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
     }
 
     const result = await uploadToBunny(
@@ -334,6 +375,28 @@ router.get("/self", requireAuth, asyncHandler(async (req: Request, res: Response
   const user = res.locals.user as { id: string; role: string };
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const model = await prisma.model.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      planTier: true,
+      trialEndsAt: true,
+      planExpiresAt: true,
+    },
+  });
+
+  if (!model) {
+    return res.status(404).json({ error: "Modelo nao encontrada" });
+  }
+
+  const hasAreaAccess = modelHasPaidAreaAccess({
+    trialEndsAt: model.trialEndsAt,
+    planExpiresAt: model.planExpiresAt,
+  });
+  if (!hasAreaAccess) {
+    return respondModelTrialExpired(res, model);
   }
 
   const media = await prisma.media.findMany({
@@ -542,6 +605,28 @@ router.delete("/:id", requireAuth, asyncHandler(async (req: Request, res: Respon
 
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
+  }
+
+  const model = await prisma.model.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      planTier: true,
+      trialEndsAt: true,
+      planExpiresAt: true,
+    },
+  });
+
+  if (!model) {
+    return res.status(404).json({ error: "Modelo nao encontrada" });
+  }
+
+  const hasAreaAccess = modelHasPaidAreaAccess({
+    trialEndsAt: model.trialEndsAt,
+    planExpiresAt: model.planExpiresAt,
+  });
+  if (!hasAreaAccess) {
+    return respondModelTrialExpired(res, model);
   }
 
   const media = await prisma.media.findUnique({ where: { id } });
