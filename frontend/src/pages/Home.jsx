@@ -94,8 +94,46 @@ function HomeFeaturedModelCard({ model }) {
   );
 }
 
+const FEATURED_GENDER_FILTERS = [
+  { id: "ALL", label: "Todos" },
+  { id: "WOMEN", label: "Mulheres" },
+  { id: "MEN", label: "Homens" },
+  { id: "TRAVESTIS", label: "Travestis" },
+];
+
+const normalizeGenderCategory = (genderIdentity) => {
+  const normalized = String(genderIdentity || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  if (!normalized) {
+    return "UNKNOWN";
+  }
+
+  if (
+    normalized.includes("travesti") ||
+    normalized.includes("mulher trans") ||
+    normalized.includes("transfemin")
+  ) {
+    return "TRAVESTIS";
+  }
+
+  if (normalized.includes("homem")) {
+    return "MEN";
+  }
+
+  if (normalized.includes("mulher")) {
+    return "WOMEN";
+  }
+
+  return "UNKNOWN";
+};
+
 export default function Home() {
   const [models, setModels] = useState([]);
+  const [featuredGenderFilter, setFeaturedGenderFilter] = useState("ALL");
   const [citySearch, setCitySearch] = useState("");
   const [isComposing, setIsComposing] = useState(false);
   const [citySuggestions, setCitySuggestions] = useState([]);
@@ -153,8 +191,16 @@ export default function Home() {
     }
   });
   const normalizePlanTier = (value) => String(value || "").trim().toUpperCase();
-  const proModels = models.filter((model) => normalizePlanTier(model.planTier) === "PRO");
-  const basicModels = models.filter(
+  const genderFilteredModels =
+    featuredGenderFilter === "ALL"
+      ? models
+      : models.filter(
+          (model) => normalizeGenderCategory(model.genderIdentity) === featuredGenderFilter
+        );
+  const proModels = genderFilteredModels.filter(
+    (model) => normalizePlanTier(model.planTier) === "PRO"
+  );
+  const basicModels = genderFilteredModels.filter(
     (model) => normalizePlanTier(model.planTier) !== "PRO"
   );
   const featuredProModels = proModels.slice(0, 10);
@@ -448,6 +494,23 @@ export default function Home() {
         <p className="muted" style={{ marginTop: 10 }}>
           Uma vitrine com os perfis mais acessados da semana.
         </p>
+        <div className="home-gender-filter">
+          <span className="home-gender-filter-label">Ver por categoria:</span>
+          <div className="home-gender-filter-actions">
+            {FEATURED_GENDER_FILTERS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`home-gender-filter-btn ${
+                  featuredGenderFilter === option.id ? "active" : ""
+                }`}
+                onClick={() => setFeaturedGenderFilter(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="models-grid home-models-grid">
           {featuredModels.length === 0 ? (
             <Link to="/seja-modelo" className="model-card home-model-card">

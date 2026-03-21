@@ -1252,6 +1252,7 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
       city: true,
       avatarUrl: true,
       coverUrl: true,
+      genderIdentity: true,
       priceHour: true,
       price30Min: true,
       price15Min: true,

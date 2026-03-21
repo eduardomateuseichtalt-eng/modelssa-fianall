@@ -809,6 +809,43 @@ select {
   max-width: 280px;
 }
 
+.home-gender-filter {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.home-gender-filter-label {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-gender-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-gender-filter-btn {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.home-gender-filter-btn.active {
+  color: var(--text);
+  border-color: rgba(199, 162, 107, 0.45);
+  background: rgba(199, 162, 107, 0.14);
+}
+
 .home-model-photo-frame {
   position: relative;
   overflow: hidden;
@@ -3818,6 +3855,11 @@ select {
 
   .home-model-card {
     max-width: 100%;
+  }
+
+  .home-gender-filter-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .model-register-photo-source-row {
