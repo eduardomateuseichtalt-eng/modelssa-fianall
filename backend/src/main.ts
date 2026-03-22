@@ -31,6 +31,7 @@ import modelReviewsRoutes from "./routes/model-reviews.routes";
 // ========================
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
+app.set("trust proxy", 1);
 
 const normalizeOrigin = (value: string) =>
   value.trim().replace(/\/+$/, "");
@@ -77,6 +78,23 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-DNS-Prefetch-Control", "off");
+  res.setHeader("X-Download-Options", "noopen");
+  res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+  if (isProduction) {
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    );
+  }
+  return next();
+});
+
 app.use(express.json());
 
 app.get("/api/health/redis", async (_req, res) => {
@@ -134,6 +152,11 @@ function normalizeIp(value: string) {
 }
 
 function getClientIp(req: Request) {
+  const fromReqIp = normalizeIp(req.ip || "");
+  if (fromReqIp) {
+    return fromReqIp;
+  }
+
   const forwarded = req.headers["x-forwarded-for"];
   if (typeof forwarded === "string") {
     return normalizeIp(forwarded.split(",")[0].trim());

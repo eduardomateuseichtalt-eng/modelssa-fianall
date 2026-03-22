@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { requireAuth } from "../lib/auth";
 import { asyncHandler } from "../lib/async-handler";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
+import { createIpRateLimiter } from "../lib/rate-limit";
 
 type Message = {
   id: string;
@@ -21,6 +22,16 @@ type MessageStore = {
 
 const messageStore = new Map<string, MessageStore>();
 const MAX_MESSAGES = 50;
+const MAX_MESSAGE_TEXT = 500;
+const MAX_SENDER_NAME = 80;
+const MAX_SENDER_PHONE = 30;
+
+const publicMessageLimiter = createIpRateLimiter({
+  prefix: "public-message",
+  limit: 30,
+  ttlSeconds: 60 * 60,
+  errorMessage: "Muitas mensagens enviadas. Tente novamente mais tarde.",
+});
 
 const respondModelTrialExpired = (
   res: Response,
@@ -46,6 +57,7 @@ const router = Router();
 
 router.post(
   "/:modelId",
+  publicMessageLimiter,
   asyncHandler(async (req: Request, res: Response) => {
     const { modelId } = req.params;
     const text = String(req.body?.text || "").trim();
@@ -54,6 +66,15 @@ router.post(
 
     if (!modelId || !text) {
       return res.status(400).json({ error: "Mensagem obrigatoria." });
+    }
+    if (text.length > MAX_MESSAGE_TEXT) {
+      return res.status(400).json({ error: "Mensagem muito longa." });
+    }
+    if (fromNameRaw.length > MAX_SENDER_NAME) {
+      return res.status(400).json({ error: "Nome muito longo." });
+    }
+    if (fromPhoneRaw.length > MAX_SENDER_PHONE) {
+      return res.status(400).json({ error: "Telefone invalido." });
     }
 
     const model = await prisma.model.findFirst({
