@@ -115,12 +115,14 @@ router.post(
       return res.status(404).json({ error: "Modelo nao encontrada" });
     }
 
-    const hasAreaAccess = modelHasPaidAreaAccess({
-      trialEndsAt: model.trialEndsAt,
-      planExpiresAt: model.planExpiresAt,
-    });
-    if (!hasAreaAccess) {
-      return respondModelTrialExpired(res, model);
+    if (user.role !== "ADMIN" && model.isVerified) {
+      const hasAreaAccess = modelHasPaidAreaAccess({
+        trialEndsAt: model.trialEndsAt,
+        planExpiresAt: model.planExpiresAt,
+      });
+      if (!hasAreaAccess) {
+        return respondModelTrialExpired(res, model);
+      }
     }
 
     const uploads = [];

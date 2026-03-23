@@ -779,13 +779,15 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
     return res.status(401).json({ error: "Credenciais invalidas" });
   }
 
-  const hasAreaAccess = modelHasPaidAreaAccess({
-    trialEndsAt: model.trialEndsAt,
-    planExpiresAt: model.planExpiresAt,
-  });
+  if (model.isVerified) {
+    const hasAreaAccess = modelHasPaidAreaAccess({
+      trialEndsAt: model.trialEndsAt,
+      planExpiresAt: model.planExpiresAt,
+    });
 
-  if (!hasAreaAccess) {
-    return respondModelTrialExpired(res, model);
+    if (!hasAreaAccess) {
+      return respondModelTrialExpired(res, model);
+    }
   }
 
   const accessToken = jwt.sign(
