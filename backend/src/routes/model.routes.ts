@@ -779,14 +779,32 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
     return res.status(401).json({ error: "Credenciais invalidas" });
   }
 
+  let effectiveTrialEndsAt = model.trialEndsAt;
+  const effectivePlanExpiresAt = model.planExpiresAt;
+
+  // Compatibilidade com contas antigas: conta aprovada sem datas de acesso.
+  if (model.isVerified && !effectiveTrialEndsAt && !effectivePlanExpiresAt) {
+    const repairedTrialEndsAt = getModelTrialEndDate(30);
+    await prisma.model.update({
+      where: { id: model.id },
+      data: { trialEndsAt: repairedTrialEndsAt },
+    });
+    effectiveTrialEndsAt = repairedTrialEndsAt;
+  }
+
   if (model.isVerified) {
     const hasAreaAccess = modelHasPaidAreaAccess({
-      trialEndsAt: model.trialEndsAt,
-      planExpiresAt: model.planExpiresAt,
+      trialEndsAt: effectiveTrialEndsAt,
+      planExpiresAt: effectivePlanExpiresAt,
     });
 
     if (!hasAreaAccess) {
-      return respondModelTrialExpired(res, model);
+      return respondModelTrialExpired(res, {
+        id: model.id,
+        planTier: model.planTier,
+        trialEndsAt: effectiveTrialEndsAt,
+        planExpiresAt: effectivePlanExpiresAt,
+      });
     }
   }
 
@@ -1628,9 +1646,10 @@ router.patch("/:id/approve", requireAdmin, asyncHandler(async (req: Request, res
     where: { id },
     data: {
       isVerified: true,
-      trialEndsAt: model.isVerified
-        ? model.trialEndsAt
-        : getModelTrialEndDate(30),
+      trialEndsAt:
+        (!model.isVerified || (!model.trialEndsAt && !model.planExpiresAt))
+          ? getModelTrialEndDate(30)
+          : model.trialEndsAt,
     },
     select: {
       id: true,
