@@ -94,11 +94,11 @@ function HomeFeaturedModelCard({ model }) {
   );
 }
 
-const FEATURED_GENDER_FILTERS = [
-  { id: "ALL", label: "Todos" },
-  { id: "WOMEN", label: "Mulheres" },
+const FEATURED_PRIMARY_FILTER = { id: "WOMEN", label: "Mulheres" };
+const FEATURED_OTHER_GENDER_FILTERS = [
   { id: "MEN", label: "Homens" },
   { id: "TRAVESTIS", label: "Travestis" },
+  { id: "UNKNOWN", label: "Outros perfis" },
 ];
 
 const normalizeGenderCategory = (genderIdentity) => {
@@ -133,7 +133,10 @@ const normalizeGenderCategory = (genderIdentity) => {
 
 export default function Home() {
   const [models, setModels] = useState([]);
-  const [featuredGenderFilter, setFeaturedGenderFilter] = useState("ALL");
+  const [featuredGenderFilter, setFeaturedGenderFilter] = useState(
+    FEATURED_PRIMARY_FILTER.id
+  );
+  const [showOtherGenderFilters, setShowOtherGenderFilters] = useState(false);
   const [citySearch, setCitySearch] = useState("");
   const [isComposing, setIsComposing] = useState(false);
   const [citySuggestions, setCitySuggestions] = useState([]);
@@ -143,6 +146,7 @@ export default function Home() {
   const abortRef = useRef(null);
   const debounceRef = useRef(null);
   const navigate = useNavigate();
+  const otherFiltersRef = useRef(null);
 
   useEffect(() => {
     apiFetch("/api/models?page=1&limit=60")
@@ -155,6 +159,22 @@ export default function Home() {
         setModels(items);
       })
       .catch(() => setModels([]));
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (!otherFiltersRef.current) {
+        return;
+      }
+      if (!otherFiltersRef.current.contains(event.target)) {
+        setShowOtherGenderFilters(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
   }, []);
 
   const normalizeText = (value) =>
@@ -191,12 +211,13 @@ export default function Home() {
     }
   });
   const normalizePlanTier = (value) => String(value || "").trim().toUpperCase();
-  const genderFilteredModels =
-    featuredGenderFilter === "ALL"
-      ? models
-      : models.filter(
-          (model) => normalizeGenderCategory(model.genderIdentity) === featuredGenderFilter
-        );
+  const genderFilteredModels = models.filter((model) => {
+    const category = normalizeGenderCategory(model.genderIdentity);
+    if (featuredGenderFilter === "UNKNOWN") {
+      return category === "UNKNOWN";
+    }
+    return category === featuredGenderFilter;
+  });
   const proModels = genderFilteredModels.filter(
     (model) => normalizePlanTier(model.planTier) === "PRO"
   );
@@ -497,18 +518,50 @@ export default function Home() {
         <div className="home-gender-filter">
           <span className="home-gender-filter-label">Ver por categoria:</span>
           <div className="home-gender-filter-actions">
-            {FEATURED_GENDER_FILTERS.map((option) => (
+            <button
+              type="button"
+              className={`home-gender-filter-btn ${
+                featuredGenderFilter === FEATURED_PRIMARY_FILTER.id ? "active" : ""
+              }`}
+              onClick={() => {
+                setFeaturedGenderFilter(FEATURED_PRIMARY_FILTER.id);
+                setShowOtherGenderFilters(false);
+              }}
+            >
+              {FEATURED_PRIMARY_FILTER.label}
+            </button>
+            <div className="home-gender-filter-dropdown" ref={otherFiltersRef}>
               <button
-                key={option.id}
                 type="button"
                 className={`home-gender-filter-btn ${
-                  featuredGenderFilter === option.id ? "active" : ""
+                  featuredGenderFilter !== FEATURED_PRIMARY_FILTER.id ? "active" : ""
                 }`}
-                onClick={() => setFeaturedGenderFilter(option.id)}
+                onClick={() =>
+                  setShowOtherGenderFilters((current) => !current)
+                }
               >
-                {option.label}
+                Outros
               </button>
-            ))}
+              {showOtherGenderFilters ? (
+                <div className="home-gender-filter-menu">
+                  {FEATURED_OTHER_GENDER_FILTERS.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`home-gender-filter-menu-item ${
+                        featuredGenderFilter === option.id ? "active" : ""
+                      }`}
+                      onClick={() => {
+                        setFeaturedGenderFilter(option.id);
+                        setShowOtherGenderFilters(false);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
         <div className="models-grid home-models-grid">

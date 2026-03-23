@@ -828,6 +828,10 @@ select {
   gap: 8px;
 }
 
+.home-gender-filter-dropdown {
+  position: relative;
+}
+
 .home-gender-filter-btn {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.02);
@@ -841,6 +845,40 @@ select {
 }
 
 .home-gender-filter-btn.active {
+  color: var(--text);
+  border-color: rgba(199, 162, 107, 0.45);
+  background: rgba(199, 162, 107, 0.14);
+}
+
+.home-gender-filter-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 180px;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(9, 10, 18, 0.96);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  z-index: 8;
+}
+
+.home-gender-filter-menu-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-gender-filter-menu-item.active {
   color: var(--text);
   border-color: rgba(199, 162, 107, 0.45);
   background: rgba(199, 162, 107, 0.14);
@@ -3858,8 +3896,14 @@ select {
   }
 
   .home-gender-filter-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    align-items: center;
+  }
+
+  .home-gender-filter-menu {
+    min-width: 165px;
+    left: auto;
+    right: 0;
   }
 
   .model-register-photo-source-row {
