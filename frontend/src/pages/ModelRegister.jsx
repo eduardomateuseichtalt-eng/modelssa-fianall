@@ -437,7 +437,7 @@ export default function ModelRegister() {
 
     const hasVideo = mediaFiles.some((file) => file.type.startsWith("video/"));
     if (!hasVideo) {
-      setMediaError("Envie pelo menos 1 video de verificacao.");
+      setMediaError("Envie pelo menos 1 vídeo de verificação.");
       return false;
     }
 
@@ -1319,22 +1319,22 @@ export default function ModelRegister() {
           <div className="media-uploader">
             <div className="media-uploader-head">
               <div>
-                <h4>Video de verificacao</h4>
+                <h4>Vídeo de verificação</h4>
                 <p className="muted">
-                  aqui vc ir\u00e1 realizar um video de verifica\u00e7\u00e3o
+                  Aqui você irá gravar um vídeo de verificação.
                 </p>
               </div>
               <span className="media-count">{mediaPreviews.length}/{MAX_FILES}</span>
             </div>
 
             <div className="media-actions">
-              <button
-                className="btn btn-outline"
-                type="button"
-                onClick={() => videoInputRef.current?.click()}
-              >
-                Gravar video
-              </button>
+                <button
+                  className="btn btn-outline"
+                  type="button"
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  Gravar vídeo
+                </button>
             </div>
 
             <input
@@ -1357,7 +1357,7 @@ export default function ModelRegister() {
                     )}
                     <div className="media-meta">
                       <div>
-                        <strong>{item.type.startsWith("video/") ? "Video" : "Foto"}</strong>
+                        <strong>{item.type.startsWith("video/") ? "Vídeo" : "Foto"}</strong>
                         <span>{formatSize(item.size)}</span>
                         {item.duration ? (
                           <span>{Math.round(item.duration)}s</span>
@@ -1739,4 +1739,3 @@ export default function ModelRegister() {
     </div>
   );
 }
-
