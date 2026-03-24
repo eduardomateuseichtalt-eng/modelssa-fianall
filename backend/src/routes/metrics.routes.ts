@@ -5,6 +5,22 @@ import { requireAdmin } from "../lib/auth";
 import { asyncHandler } from "../lib/async-handler";
 
 const router = Router();
+const METRICS_TIMEZONE = process.env.METRICS_TIMEZONE || "America/Sao_Paulo";
+
+function getDayKeyInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value || "0000";
+  const month = parts.find((part) => part.type === "month")?.value || "01";
+  const day = parts.find((part) => part.type === "day")?.value || "01";
+
+  return `${year}-${month}-${day}`;
+}
 
 const getMetricsSecret = () => {
   const secret = process.env.OTP_HASH_SECRET || "";
@@ -28,7 +44,7 @@ router.post("/visit", asyncHandler(async (req: Request, res: Response) => {
   }
 
   const now = new Date();
-  const dayKey = now.toISOString().slice(0, 10);
+  const dayKey = getDayKeyInTimeZone(now, METRICS_TIMEZONE);
   const fingerprint = getClientFingerprint(req);
   const fingerprintHash = crypto.createHmac("sha256", secret).update(fingerprint).digest("hex");
 
@@ -50,21 +66,38 @@ router.post("/visit", asyncHandler(async (req: Request, res: Response) => {
 
 router.get("/summary", requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
   const now = new Date();
-  const dayStart = new Date(now);
-  dayStart.setDate(now.getDate() - 1);
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - 7);
-  const monthStart = new Date(now);
-  monthStart.setDate(now.getDate() - 30);
+  const todayKey = getDayKeyInTimeZone(now, METRICS_TIMEZONE);
+
+  const weekStartDate = new Date(now);
+  weekStartDate.setDate(now.getDate() - 6);
+  const weekStartKey = getDayKeyInTimeZone(weekStartDate, METRICS_TIMEZONE);
+
+  const monthStartDate = new Date(now);
+  monthStartDate.setDate(now.getDate() - 29);
+  const monthStartKey = getDayKeyInTimeZone(monthStartDate, METRICS_TIMEZONE);
 
   const [day, week, month, total] = await Promise.all([
-    prisma.siteAccess.count({ where: { createdAt: { gte: dayStart } } }),
-    prisma.siteAccess.count({ where: { createdAt: { gte: weekStart } } }),
-    prisma.siteAccess.count({ where: { createdAt: { gte: monthStart } } }),
+    prisma.siteAccess.count({ where: { dayKey: todayKey } }),
+    prisma.siteAccess.count({
+      where: {
+        dayKey: {
+          gte: weekStartKey,
+          lte: todayKey,
+        },
+      },
+    }),
+    prisma.siteAccess.count({
+      where: {
+        dayKey: {
+          gte: monthStartKey,
+          lte: todayKey,
+        },
+      },
+    }),
     prisma.siteAccess.count(),
   ]);
 
-  return res.json({ day, week, month, total });
+  return res.json({ day, week, month, total, dayKey: todayKey, timezone: METRICS_TIMEZONE });
 }));
 
 export default router;
