@@ -800,13 +800,13 @@ select {
 }
 
 .home-models-grid {
-  grid-template-columns: minmax(220px, 280px);
+  grid-template-columns: minmax(240px, 310px);
   justify-content: start;
   gap: 16px;
 }
 
 .home-model-card {
-  max-width: 280px;
+  max-width: 310px;
 }
 
 .home-gender-filter {
@@ -891,7 +891,7 @@ select {
 }
 
 .home-model-photo {
-  height: 250px;
+  height: 280px;
 }
 
 .home-model-photo-dots {
