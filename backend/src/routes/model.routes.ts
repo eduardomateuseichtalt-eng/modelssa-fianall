@@ -1626,6 +1626,9 @@ router.get("/admin/search", requireAdmin, asyncHandler(async (req: Request, res:
       email: true,
       city: true,
       isVerified: true,
+      planTier: true,
+      trialEndsAt: true,
+      planExpiresAt: true,
       createdAt: true,
     },
   });

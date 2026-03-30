@@ -4,6 +4,17 @@ import { useNoIndex } from "../lib/useNoIndex";
 
 export default function AdminApprovals() {
   useNoIndex();
+  const formatDateBr = (value) => {
+    if (!value) {
+      return "-";
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return "-";
+    }
+    return parsed.toLocaleDateString("pt-BR");
+  };
+
   const [pendingModels, setPendingModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -22,6 +33,8 @@ export default function AdminApprovals() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [deleteLoadingId, setDeleteLoadingId] = useState("");
+  const [planUpdateLoadingId, setPlanUpdateLoadingId] = useState("");
+  const [planTierDrafts, setPlanTierDrafts] = useState({});
 
   useEffect(() => {
     setLoading(true);
@@ -126,14 +139,79 @@ export default function AdminApprovals() {
       const data = await apiFetch(
         `/api/models/admin/search?name=${encodeURIComponent(name)}`
       );
-      setSearchResults(Array.isArray(data) ? data : []);
-      if (!Array.isArray(data) || data.length === 0) {
+      const safeResults = Array.isArray(data) ? data : [];
+      setSearchResults(safeResults);
+      setPlanTierDrafts(() => {
+        const next = {};
+        safeResults.forEach((model) => {
+          next[model.id] = model.planTier === "PRO" ? "PRO" : "BASIC";
+        });
+        return next;
+      });
+      if (safeResults.length === 0) {
         setMessage("Nenhuma acompanhante encontrada para esse nome.");
       }
     } catch (err) {
       setError(err.message || "Erro ao buscar acompanhantes por nome.");
     } finally {
       setSearchLoading(false);
+    }
+  };
+
+  const handleReleasePlan = async (model) => {
+    const modelId = String(model?.id || "").trim();
+    if (!modelId) {
+      setError("Acompanhante invalida para liberar plano.");
+      return;
+    }
+    if (!model.isVerified) {
+      setError("A acompanhante precisa estar aprovada para liberar plano.");
+      return;
+    }
+
+    const planTier =
+      String(planTierDrafts[modelId] || model.planTier || "")
+        .trim()
+        .toUpperCase() === "PRO"
+        ? "PRO"
+        : "BASIC";
+
+    setPlanUpdateLoadingId(modelId);
+    setMessage("");
+    setError("");
+
+    try {
+      const updated = await apiFetch(`/api/models/${modelId}/plan`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planTier,
+          durationDays: 30,
+        }),
+      });
+
+      setSearchResults((current) =>
+        current.map((item) =>
+          item.id === modelId
+            ? {
+                ...item,
+                planTier: updated?.planTier || planTier,
+                planExpiresAt: updated?.planExpiresAt || null,
+              }
+            : item
+        )
+      );
+      setPlanTierDrafts((current) => ({
+        ...current,
+        [modelId]: updated?.planTier || planTier,
+      }));
+      setMessage(
+        `Plano ${updated?.planTier || planTier} liberado por 30 dias para ${model.name}.`
+      );
+    } catch (err) {
+      setError(err.message || "Erro ao liberar plano.");
+    } finally {
+      setPlanUpdateLoadingId("");
     }
   };
 
@@ -376,7 +454,7 @@ export default function AdminApprovals() {
           Gestao de <span>acompanhantes</span>
         </h2>
         <p className="muted" style={{ marginTop: 10 }}>
-          Busque por nome e exclua a acompanhante com remocao completa de cadastro, midias e dados relacionados.
+          Busque por nome para excluir cadastros ou liberar renovacao manual de plano por 30 dias apos pagamento.
         </p>
 
         <div className="card" style={{ marginTop: 16 }}>
@@ -410,11 +488,46 @@ export default function AdminApprovals() {
                   <p className="muted">
                     Status: {model.isVerified ? "Aprovada" : "Pendente"}
                   </p>
+                  <p className="muted">
+                    Plano: {model.planTier === "PRO" ? "PRO" : "BASICO"}
+                  </p>
+                  <p className="muted">
+                    Gratuidade ate: {formatDateBr(model.trialEndsAt)}
+                  </p>
+                  <p className="muted">
+                    Plano pago ate: {formatDateBr(model.planExpiresAt)}
+                  </p>
+                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                    <select
+                      className="input"
+                      value={planTierDrafts[model.id] || (model.planTier === "PRO" ? "PRO" : "BASIC")}
+                      onChange={(event) =>
+                        setPlanTierDrafts((current) => ({
+                          ...current,
+                          [model.id]: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="BASIC">BASICO</option>
+                      <option value="PRO">PRO</option>
+                    </select>
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => handleReleasePlan(model)}
+                      disabled={!model.isVerified || planUpdateLoadingId === model.id}
+                    >
+                      {planUpdateLoadingId === model.id
+                        ? "Liberando..."
+                        : "Liberar plano por 30 dias"}
+                    </button>
+                  </div>
                   <button
                     className="btn btn-outline"
                     type="button"
                     onClick={() => handleDeleteFoundModel(model)}
                     disabled={deleteLoadingId === model.id}
+                    style={{ marginTop: 10 }}
                   >
                     {deleteLoadingId === model.id ? "Excluindo..." : "Excluir acompanhante"}
                   </button>
