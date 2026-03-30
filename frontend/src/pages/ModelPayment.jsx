@@ -11,11 +11,11 @@ const PLANS = [
     priceText: "R$ 49,90/mes",
     priceCents: 4990,
     benefits: [
-      "Anuncio normal",
-      "Galeria com fotos e videos limitados",
+      "Anúncio normal",
+      "Galeria com fotos e vídeos limitados",
       "Banner de perfil",
-      "Atendimento prioritario",
-      "Publicacao de story",
+      "Atendimento prioritário",
+      "Publicação de story",
     ],
   },
   {
@@ -24,12 +24,12 @@ const PLANS = [
     priceText: "R$ 69,90/mes",
     priceCents: 6990,
     benefits: [
-      "Anuncio normal",
+      "Anúncio normal",
       "Galeria com fotos ilimitadas",
-      "Ate 12 videos curtos (25s cada)",
+      "Até 12 vídeos curtos (25s cada)",
       "Banner de perfil",
-      "Atendimento prioritario",
-      "Publicacao de story",
+      "Atendimento prioritário",
+      "Publicação de story",
     ],
   },
 ];

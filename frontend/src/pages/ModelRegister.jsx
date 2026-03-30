@@ -1685,8 +1685,8 @@ export default function ModelRegister() {
                     onChange={(event) => setSelectedPlanTier(event.target.value)}
                   />
                   <span>
-                    Plano Basico - R$ 49,90/mes (anuncio normal, galeria limitada, banner de
-                    perfil, atendimento prioritario e story)
+                    Plano Básico - R$ 49,90/mês (anúncio normal, galeria limitada, banner de
+                    perfil, atendimento prioritário e story)
                   </span>
                 </label>
 
@@ -1699,8 +1699,8 @@ export default function ModelRegister() {
                     onChange={(event) => setSelectedPlanTier(event.target.value)}
                   />
                   <span>
-                    Plano Pro - R$ 69,90/mes (fotos ilimitadas e ate 12 videos curtos de 25s,
-                    com banner, atendimento prioritario e story)
+                    Plano Pró - R$ 69,90/mês (fotos ilimitadas e até 12 vídeos curtos de 25s,
+                    com banner, atendimento prioritário e story)
                   </span>
                 </label>
               </div>
