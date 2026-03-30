@@ -22,6 +22,19 @@ function getDayKeyInTimeZone(date: Date, timeZone: string) {
   return `${year}-${month}-${day}`;
 }
 
+function getTrailingDayKeys(days: number, timeZone: string, fromDate = new Date()) {
+  const safeDays = Number.isFinite(days) && days > 0 ? Math.floor(days) : 1;
+  const keys: string[] = [];
+
+  for (let offset = safeDays - 1; offset >= 0; offset -= 1) {
+    const date = new Date(fromDate);
+    date.setDate(fromDate.getDate() - offset);
+    keys.push(getDayKeyInTimeZone(date, timeZone));
+  }
+
+  return keys;
+}
+
 const getMetricsSecret = () => {
   const secret = process.env.OTP_HASH_SECRET || "";
   if (!secret && process.env.NODE_ENV === "production") {
@@ -66,36 +79,27 @@ router.post("/visit", asyncHandler(async (req: Request, res: Response) => {
 
 router.get("/summary", requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
   const now = new Date();
-  const todayKey = getDayKeyInTimeZone(now, METRICS_TIMEZONE);
+  const monthKeys = getTrailingDayKeys(30, METRICS_TIMEZONE, now);
+  const weekKeys = monthKeys.slice(-7);
+  const todayKey = monthKeys[monthKeys.length - 1];
 
-  const weekStartDate = new Date(now);
-  weekStartDate.setDate(now.getDate() - 6);
-  const weekStartKey = getDayKeyInTimeZone(weekStartDate, METRICS_TIMEZONE);
-
-  const monthStartDate = new Date(now);
-  monthStartDate.setDate(now.getDate() - 29);
-  const monthStartKey = getDayKeyInTimeZone(monthStartDate, METRICS_TIMEZONE);
-
-  const [day, week, month, total] = await Promise.all([
-    prisma.siteAccess.count({ where: { dayKey: todayKey } }),
-    prisma.siteAccess.count({
-      where: {
-        dayKey: {
-          gte: weekStartKey,
-          lte: todayKey,
-        },
-      },
-    }),
-    prisma.siteAccess.count({
-      where: {
-        dayKey: {
-          gte: monthStartKey,
-          lte: todayKey,
-        },
-      },
+  const [rows, total] = await Promise.all([
+    prisma.siteAccess.groupBy({
+      by: ["dayKey"],
+      where: { dayKey: { in: monthKeys } },
+      _count: { _all: true },
     }),
     prisma.siteAccess.count(),
   ]);
+
+  const countByDayKey = new Map<string, number>();
+  rows.forEach((row) => {
+    countByDayKey.set(row.dayKey, row._count._all || 0);
+  });
+
+  const day = countByDayKey.get(todayKey) || 0;
+  const week = weekKeys.reduce((sum, key) => sum + (countByDayKey.get(key) || 0), 0);
+  const month = monthKeys.reduce((sum, key) => sum + (countByDayKey.get(key) || 0), 0);
 
   return res.json({ day, week, month, total, dayKey: todayKey, timezone: METRICS_TIMEZONE });
 }));
