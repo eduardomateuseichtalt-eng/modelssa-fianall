@@ -33,8 +33,14 @@ const app = express();
 const isProduction = process.env.NODE_ENV === "production";
 app.set("trust proxy", 1);
 
-const normalizeOrigin = (value: string) =>
-  value.trim().replace(/\/+$/, "");
+const normalizeOrigin = (value: string) => {
+  const trimmed = value.trim().replace(/\/+$/, "");
+  // Remove default ports to avoid mismatches like :443 or :80
+  return trimmed
+    .replace(/:443$/i, "")
+    .replace(/:80$/i, "")
+    .toLowerCase();
+};
 
 const parseCsv = (value: string) =>
   value
