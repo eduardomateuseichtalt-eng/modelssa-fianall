@@ -12,6 +12,11 @@ function HomeFeaturedModelCard({ model }) {
   const touchStartXRef = useRef(0);
   const touchDeltaXRef = useRef(0);
   const blockNextClickRef = useRef(false);
+  const hasWebcam = Array.isArray(model.offeredServices)
+    ? model.offeredServices.some((service) =>
+        String(service || "").toLowerCase().includes("webcam")
+      )
+    : false;
 
   const handleTouchStart = (event) => {
     if (photos.length <= 1 || !event.touches?.length) {
@@ -75,6 +80,9 @@ function HomeFeaturedModelCard({ model }) {
           alt={model.name}
           loading="lazy"
         />
+        {hasWebcam ? (
+          <span className="model-badge model-badge-webcam">Webcam</span>
+        ) : null}
         {photos.length > 1 ? (
           <div className="home-model-photo-dots" aria-hidden="true">
             {photos.map((_, index) => (

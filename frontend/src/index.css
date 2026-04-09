@@ -760,11 +760,38 @@ select {
   box-shadow: var(--shadow);
 }
 
+.model-photo-frame {
+  position: relative;
+  overflow: hidden;
+}
+
 .model-photo {
   width: 100%;
   height: 310px;
   object-fit: cover;
   background: linear-gradient(135deg, #2a1c22, #111015);
+}
+
+.model-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  border: 1px solid rgba(199, 162, 107, 0.6);
+  background: rgba(12, 11, 16, 0.72);
+  color: #f3d699;
+  backdrop-filter: blur(6px);
+}
+
+.model-badge-webcam {
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #fecaca;
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.18);
 }
 
 .shot-placeholder {

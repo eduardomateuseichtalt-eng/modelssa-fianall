@@ -227,12 +227,20 @@ export default function Modelos() {
               key={model.id}
               className="model-card public-model-card"
             >
-              <img
-                className="model-photo public-model-photo"
-                src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
-                alt={model.name}
-                loading="lazy"
-              />
+              <div className="model-photo-frame">
+                <img
+                  className="model-photo public-model-photo"
+                  src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
+                  alt={model.name}
+                  loading="lazy"
+                />
+                {Array.isArray(model.offeredServices) &&
+                model.offeredServices.some((service) =>
+                  String(service || "").toLowerCase().includes("webcam")
+                ) ? (
+                  <span className="model-badge model-badge-webcam">Webcam</span>
+                ) : null}
+              </div>
               <div className="model-info">
                 <h3>{model.name}</h3>
                 <p>{model.city || "Brasil"}</p>
