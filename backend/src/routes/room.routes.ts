@@ -22,18 +22,18 @@ router.get("/", async (req: Request, res: Response) => {
     const city =
       typeof req.query.city === "string" ? req.query.city.trim() : "";
 
-    const where: Prisma.RoomListingWhereInput | undefined = city
-      ? {
-          city: {
-            equals: city,
-            mode: Prisma.QueryMode.insensitive,
-          },
-          active: true,
-        }
-      : { active: true };
+    const where: Prisma.RoomListingWhereInput | undefined =
+      typeof city === "string" && city.trim()
+        ? {
+            city: {
+              equals: city.trim(),
+              mode: Prisma.QueryMode.insensitive,
+            },
+          }
+        : undefined;
 
     const rooms = await prisma.roomListing.findMany({
-      where,
+      where: where ? { ...where, active: true } : { active: true },
       orderBy: { createdAt: "desc" },
     });
 
