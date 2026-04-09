@@ -31,6 +31,7 @@ const SERVICE_OPTIONS = [
   { name: "Sexo anal com preservativo", featured: false },
   { name: "Massagem tantrica", featured: false },
   { name: "Sexo virtual", featured: false },
+  { name: "Atendimento online (webcam)", featured: false },
   { name: "Dupla penetracao", featured: false },
   { name: "Tripla penetracao", featured: false },
   { name: "Dominacao", featured: false },

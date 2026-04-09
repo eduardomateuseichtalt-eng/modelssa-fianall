@@ -205,6 +205,7 @@ type PublicModelBase = {
   price30Min: number | null;
   price15Min: number | null;
   planTier: PlanTier;
+  offeredServices: string[];
   galleryPreviewPhotos: string[];
 };
 
@@ -219,6 +220,7 @@ const PUBLIC_MODEL_SELECT: Prisma.ModelSelect = {
   price30Min: true,
   price15Min: true,
   planTier: true,
+  offeredServices: true,
   media: {
     where: {
       status: "APPROVED",
@@ -242,6 +244,7 @@ async function getPublicModelsBase(): Promise<PublicModelBase[]> {
 
   return modelsRaw.map(({ media, ...model }) => ({
     ...model,
+    offeredServices: Array.isArray(model.offeredServices) ? model.offeredServices : [],
     galleryPreviewPhotos: media.map((item) => item.url).filter(Boolean),
   }));
 }
@@ -1412,6 +1415,8 @@ router.patch("/:id/plan", requireAdmin, asyncHandler(async (req: Request, res: R
 router.get("/", asyncHandler(async (req: Request, res: Response) => {
   const rawCity = String(req.query.city || req.query.cidade || "");
   const city = normalizeCity(rawCity);
+  const rawService = String(req.query.service || req.query.atendimento || "");
+  const serviceFilter = rawService.trim().toLowerCase();
 
   const rawPage = Number.parseInt(String(req.query.page || "1"), 10);
   const rawLimit = Number.parseInt(String(req.query.limit || "24"), 10);
@@ -1425,12 +1430,29 @@ router.get("/", asyncHandler(async (req: Request, res: Response) => {
   const cityFilteredModels = city
     ? models.filter((model) => normalizeCity(model.city) === city)
     : models;
+  const filteredModels = serviceFilter
+    ? cityFilteredModels.filter((model) =>
+        (Array.isArray(model.offeredServices) ? model.offeredServices : []).some(
+          (service) => {
+            const normalized = String(service || "").trim().toLowerCase();
+            if (!normalized) return false;
+            if (serviceFilter === "online") {
+              return normalized.includes("webcam");
+            }
+            if (serviceFilter === "webcam") {
+              return normalized.includes("webcam");
+            }
+            return normalized === serviceFilter;
+          }
+        )
+      )
+    : cityFilteredModels;
 
   const rotationWindowHours = 6;
   const seed = rotationSeed(rotationWindowHours);
   const seedKey = city ? `${seed}|${city}` : seed;
 
-  const ranked = cityFilteredModels
+  const ranked = filteredModels
     .map((model) => ({
       ...model,
       _score: stableHash01(`${model.id}|${seedKey}`),

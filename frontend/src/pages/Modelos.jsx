@@ -56,14 +56,21 @@ export default function Modelos() {
 
     const params = new URLSearchParams(location.search);
     const cityParam = (params.get("cidade") || params.get("city") || "").trim();
+    const attendanceParam = (params.get("atendimento") || "").trim().toLowerCase();
+    const serviceParam = attendanceParam === "online" ? "webcam" : attendanceParam;
     setCityFilter(cityParam);
     setLoading(true);
 
-    if (cityParam) {
+    if (cityParam || serviceParam) {
       const query = new URLSearchParams();
       query.set("page", "1");
       query.set("limit", "24");
-      query.set("city", cityParam);
+      if (cityParam) {
+        query.set("city", cityParam);
+      }
+      if (serviceParam) {
+        query.set("service", serviceParam);
+      }
 
       apiFetch(`/api/models?${query.toString()}`)
         .then((data) => {
