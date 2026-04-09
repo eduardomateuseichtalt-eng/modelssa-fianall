@@ -193,6 +193,24 @@ model AgeVerificationSession {
   @@index([expiresAt])
 }
 
+model RoomListing {
+  id        String   @id @default(uuid())
+  city      String
+  title     String
+  address   String?
+  priceText String?
+  contact   String?
+  link      String?
+  notes     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([city])
+  @@index([active])
+  @@index([createdAt])
+}
+
 enum MediaType {
   IMAGE
   VIDEO

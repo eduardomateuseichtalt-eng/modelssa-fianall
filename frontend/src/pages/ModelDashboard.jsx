@@ -301,6 +301,9 @@ export default function ModelDashboard() {
   const [profileAttendanceSchedule, setProfileAttendanceSchedule] = useState(
     createDefaultAttendanceSchedule()
   );
+  const [roomListings, setRoomListings] = useState([]);
+  const [roomLoading, setRoomLoading] = useState(false);
+  const [roomError, setRoomError] = useState("");
   const [profileAvatarUrl, setProfileAvatarUrl] = useState("");
   const [profileCoverUrl, setProfileCoverUrl] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -571,6 +574,29 @@ export default function ModelDashboard() {
     loadPresenceStatus();
     loadProfileClicks();
   }, []);
+
+  useEffect(() => {
+    const city = String(profileCity || "").trim();
+    if (!city) {
+      setRoomListings([]);
+      setRoomError("");
+      return;
+    }
+
+    setRoomLoading(true);
+    setRoomError("");
+    apiFetch(`/api/rooms?city=${encodeURIComponent(city)}`)
+      .then((data) => {
+        setRoomListings(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        setRoomError(err.message || "Nao foi possivel carregar os quartos.");
+        setRoomListings([]);
+      })
+      .finally(() => {
+        setRoomLoading(false);
+      });
+  }, [profileCity]);
 
   useEffect(() => {
     if (!presenceOnline || presenceMode !== "manual") {
@@ -1965,6 +1991,87 @@ export default function ModelDashboard() {
                         );
                       })}
                     </div>
+                  </div>
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      padding: 12,
+                      background: "var(--panel-2)",
+                    }}
+                  >
+                    <h4 style={{ margin: 0 }}>Quartos para locacao</h4>
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      Sugestoes baseadas na cidade informada no seu cadastro.
+                    </p>
+                    {roomLoading ? (
+                      <p className="muted" style={{ marginTop: 8 }}>
+                        Carregando quartos...
+                      </p>
+                    ) : roomError ? (
+                      <div className="notice" style={{ marginTop: 8 }}>
+                        {roomError}
+                      </div>
+                    ) : roomListings.length === 0 ? (
+                      <p className="muted" style={{ marginTop: 8 }}>
+                        Nenhum quarto cadastrado para {profileCity || "sua cidade"}.
+                      </p>
+                    ) : (
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 12,
+                          marginTop: 12,
+                        }}
+                      >
+                        {roomListings.map((room) => (
+                          <div
+                            key={room.id}
+                            style={{
+                              border: "1px solid var(--border)",
+                              borderRadius: 12,
+                              padding: 12,
+                              background: "rgba(255, 255, 255, 0.02)",
+                            }}
+                          >
+                            <strong>{room.title}</strong>
+                            {room.address ? (
+                              <div className="muted" style={{ marginTop: 6 }}>
+                                {room.address}
+                              </div>
+                            ) : null}
+                            {room.priceText ? (
+                              <div style={{ marginTop: 6 }}>
+                                <strong>{room.priceText}</strong>
+                              </div>
+                            ) : null}
+                            {room.contact ? (
+                              <div className="muted" style={{ marginTop: 6 }}>
+                                Contato: {room.contact}
+                              </div>
+                            ) : null}
+                            {room.link ? (
+                              <div style={{ marginTop: 6 }}>
+                                <a
+                                  href={room.link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="btn btn-outline"
+                                >
+                                  Ver detalhes
+                                </a>
+                              </div>
+                            ) : null}
+                            {room.notes ? (
+                              <div className="muted" style={{ marginTop: 6 }}>
+                                {room.notes}
+                              </div>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="form-actions" style={{ marginTop: 4 }}>

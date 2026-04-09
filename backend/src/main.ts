@@ -25,6 +25,7 @@ import cacheImageRoutes from "./routes/cache-image.routes";
 import messagesRoutes from "./routes/messages.routes";
 import faqReportsRoutes from "./routes/faq-reports.routes";
 import modelReviewsRoutes from "./routes/model-reviews.routes";
+import roomRoutes from "./routes/room.routes";
 
 // ========================
 // APP
@@ -447,6 +448,7 @@ app.use("/api/city-stats", cityStatsRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api/faq-reports", faqReportsRoutes);
 app.use("/api/model-reviews", modelReviewsRoutes);
+app.use("/api/rooms", roomRoutes);
 app.use("/api", cacheImageRoutes);
 
 // ========================

@@ -35,6 +35,21 @@ export default function AdminApprovals() {
   const [deleteLoadingId, setDeleteLoadingId] = useState("");
   const [planUpdateLoadingId, setPlanUpdateLoadingId] = useState("");
   const [planTierDrafts, setPlanTierDrafts] = useState({});
+  const [roomListings, setRoomListings] = useState([]);
+  const [roomLoading, setRoomLoading] = useState(false);
+  const [roomError, setRoomError] = useState("");
+  const [roomSaving, setRoomSaving] = useState(false);
+  const [roomEditingId, setRoomEditingId] = useState("");
+  const [roomForm, setRoomForm] = useState({
+    city: "",
+    title: "",
+    address: "",
+    priceText: "",
+    contact: "",
+    link: "",
+    notes: "",
+    active: true,
+  });
 
   useEffect(() => {
     setLoading(true);
@@ -75,6 +90,17 @@ export default function AdminApprovals() {
         setFaqReportsError(err.message || "Erro ao carregar relatos FAQ.")
       )
       .finally(() => setFaqReportsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    setRoomLoading(true);
+    setRoomError("");
+    apiFetch("/api/rooms/admin")
+      .then((data) => setRoomListings(Array.isArray(data) ? data : []))
+      .catch((err) =>
+        setRoomError(err.message || "Erro ao carregar quartos.")
+      )
+      .finally(() => setRoomLoading(false));
   }, []);
 
   const handleApprove = async (modelId) => {
@@ -212,6 +238,104 @@ export default function AdminApprovals() {
       setError(err.message || "Erro ao liberar plano.");
     } finally {
       setPlanUpdateLoadingId("");
+    }
+  };
+
+  const resetRoomForm = () => {
+    setRoomForm({
+      city: "",
+      title: "",
+      address: "",
+      priceText: "",
+      contact: "",
+      link: "",
+      notes: "",
+      active: true,
+    });
+    setRoomEditingId("");
+  };
+
+  const handleRoomSubmit = async () => {
+    const city = String(roomForm.city || "").trim();
+    const title = String(roomForm.title || "").trim();
+
+    if (city.length < 2) {
+      setRoomError("Informe a cidade do quarto.");
+      return;
+    }
+    if (title.length < 2) {
+      setRoomError("Informe o titulo do quarto.");
+      return;
+    }
+
+    setRoomSaving(true);
+    setRoomError("");
+    try {
+      const payload = {
+        city,
+        title,
+        address: roomForm.address,
+        priceText: roomForm.priceText,
+        contact: roomForm.contact,
+        link: roomForm.link,
+        notes: roomForm.notes,
+        active: roomForm.active,
+      };
+
+      if (roomEditingId) {
+        const updated = await apiFetch(`/api/rooms/admin/${roomEditingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        setRoomListings((current) =>
+          current.map((room) => (room.id === updated.id ? updated : room))
+        );
+        setMessage("Quarto atualizado com sucesso.");
+      } else {
+        const created = await apiFetch("/api/rooms/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        setRoomListings((current) => [created, ...current]);
+        setMessage("Quarto cadastrado com sucesso.");
+      }
+
+      resetRoomForm();
+    } catch (err) {
+      setRoomError(err.message || "Erro ao salvar quarto.");
+    } finally {
+      setRoomSaving(false);
+    }
+  };
+
+  const handleEditRoom = (room) => {
+    setRoomEditingId(room.id);
+    setRoomForm({
+      city: room.city || "",
+      title: room.title || "",
+      address: room.address || "",
+      priceText: room.priceText || "",
+      contact: room.contact || "",
+      link: room.link || "",
+      notes: room.notes || "",
+      active: room.active !== false,
+    });
+  };
+
+  const handleToggleRoom = async (room) => {
+    try {
+      const updated = await apiFetch(`/api/rooms/admin/${room.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !room.active }),
+      });
+      setRoomListings((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item))
+      );
+    } catch (err) {
+      setRoomError(err.message || "Erro ao atualizar status do quarto.");
     }
   };
 
@@ -611,6 +735,163 @@ export default function AdminApprovals() {
                     {report.respondedBy ? ` por ${report.respondedBy}` : ""}
                   </p>
                 ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="section" style={{ marginTop: 32 }}>
+        <h2 className="section-title">
+          Quartos para <span>locacao</span>
+        </h2>
+        <p className="muted" style={{ marginTop: 10 }}>
+          Cadastre quartos por cidade para aparecer na area da acompanhante.
+        </p>
+        {roomError ? <div className="notice">{roomError}</div> : null}
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="form-grid">
+            <input
+              className="input"
+              type="text"
+              placeholder="Cidade"
+              value={roomForm.city}
+              onChange={(event) =>
+                setRoomForm((current) => ({ ...current, city: event.target.value }))
+              }
+            />
+            <input
+              className="input"
+              type="text"
+              placeholder="Titulo do quarto"
+              value={roomForm.title}
+              onChange={(event) =>
+                setRoomForm((current) => ({ ...current, title: event.target.value }))
+              }
+            />
+            <input
+              className="input"
+              type="text"
+              placeholder="Endereco (opcional)"
+              value={roomForm.address}
+              onChange={(event) =>
+                setRoomForm((current) => ({ ...current, address: event.target.value }))
+              }
+            />
+            <input
+              className="input"
+              type="text"
+              placeholder="Preco/diaria (ex: R$ 120)"
+              value={roomForm.priceText}
+              onChange={(event) =>
+                setRoomForm((current) => ({ ...current, priceText: event.target.value }))
+              }
+            />
+            <input
+              className="input"
+              type="text"
+              placeholder="Contato (WhatsApp/telefone)"
+              value={roomForm.contact}
+              onChange={(event) =>
+                setRoomForm((current) => ({ ...current, contact: event.target.value }))
+              }
+            />
+            <input
+              className="input"
+              type="text"
+              placeholder="Link externo (opcional)"
+              value={roomForm.link}
+              onChange={(event) =>
+                setRoomForm((current) => ({ ...current, link: event.target.value }))
+              }
+            />
+            <textarea
+              className="textarea"
+              rows={3}
+              placeholder="Observacoes"
+              value={roomForm.notes}
+              onChange={(event) =>
+                setRoomForm((current) => ({ ...current, notes: event.target.value }))
+              }
+            />
+            <label className="model-register-check" style={{ alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={roomForm.active}
+                onChange={(event) =>
+                  setRoomForm((current) => ({
+                    ...current,
+                    active: event.target.checked,
+                  }))
+                }
+              />
+              <span>Ativo (aparece para acompanhantes)</span>
+            </label>
+          </div>
+          <div className="form-actions" style={{ marginTop: 12 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={handleRoomSubmit}
+              disabled={roomSaving}
+            >
+              {roomSaving
+                ? "Salvando..."
+                : roomEditingId
+                ? "Atualizar quarto"
+                : "Cadastrar quarto"}
+            </button>
+            {roomEditingId ? (
+              <button
+                className="btn btn-outline"
+                type="button"
+                onClick={resetRoomForm}
+                disabled={roomSaving}
+              >
+                Cancelar edicao
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {roomLoading ? (
+          <p style={{ marginTop: 16 }}>Carregando quartos...</p>
+        ) : roomListings.length === 0 ? (
+          <p className="muted" style={{ marginTop: 16 }}>
+            Nenhum quarto cadastrado ainda.
+          </p>
+        ) : (
+          <div className="cards" style={{ marginTop: 16 }}>
+            {roomListings.map((room) => (
+              <div className="card" key={room.id}>
+                <h4>{room.title}</h4>
+                <p className="muted">Cidade: {room.city}</p>
+                {room.address ? <p className="muted">{room.address}</p> : null}
+                {room.priceText ? (
+                  <p className="muted">Preco: {room.priceText}</p>
+                ) : null}
+                {room.contact ? (
+                  <p className="muted">Contato: {room.contact}</p>
+                ) : null}
+                {room.link ? (
+                  <p className="muted">Link: {room.link}</p>
+                ) : null}
+                {room.notes ? <p className="muted">{room.notes}</p> : null}
+                <div className="form-actions" style={{ marginTop: 10 }}>
+                  <button
+                    className="btn btn-outline"
+                    type="button"
+                    onClick={() => handleEditRoom(room)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => handleToggleRoom(room)}
+                  >
+                    {room.active ? "Desativar" : "Ativar"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
