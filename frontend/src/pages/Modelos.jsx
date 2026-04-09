@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
 export default function Modelos() {
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cityFilter, setCityFilter] = useState("");
+  const [attendanceFilter, setAttendanceFilter] = useState("");
   const [detectedCity, setDetectedCity] = useState("");
   const [usedNearbyFallback, setUsedNearbyFallback] = useState(false);
   const [usedDeviceLocation, setUsedDeviceLocation] = useState(false);
   const [nearbyRadiusKm, setNearbyRadiusKm] = useState(50);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let canceled = false;
@@ -59,6 +61,7 @@ export default function Modelos() {
     const attendanceParam = (params.get("atendimento") || "").trim().toLowerCase();
     const serviceParam = attendanceParam === "online" ? "webcam" : attendanceParam;
     setCityFilter(cityParam);
+    setAttendanceFilter(attendanceParam);
     setLoading(true);
 
     if (cityParam || serviceParam) {
@@ -178,6 +181,42 @@ export default function Modelos() {
       <p className="muted" style={{ marginTop: 10 }}>
         Perfis verificados e organizados por cidade.
       </p>
+      <div className="home-gender-filter" style={{ marginTop: 12 }}>
+        <span className="home-gender-filter-label">Ver por atendimento:</span>
+        <div className="home-gender-filter-actions">
+          <button
+            type="button"
+            className={`home-gender-filter-btn ${
+              !attendanceFilter ? "active" : ""
+            }`}
+            onClick={() => {
+              const query = new URLSearchParams();
+              if (cityFilter) {
+                query.set("cidade", cityFilter);
+              }
+              navigate(`/modelos${query.toString() ? `?${query.toString()}` : ""}`);
+            }}
+          >
+            Todos
+          </button>
+          <button
+            type="button"
+            className={`home-gender-filter-btn ${
+              attendanceFilter === "online" ? "active" : ""
+            }`}
+            onClick={() => {
+              const query = new URLSearchParams();
+              if (cityFilter) {
+                query.set("cidade", cityFilter);
+              }
+              query.set("atendimento", "online");
+              navigate(`/modelos?${query.toString()}`);
+            }}
+          >
+            Webcam
+          </button>
+        </div>
+      </div>
       {!cityFilter && usedDeviceLocation && detectedCity ? (
         <p className="muted" style={{ marginTop: 8 }}>
           {usedNearbyFallback
