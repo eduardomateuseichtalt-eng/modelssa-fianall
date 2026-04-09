@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../lib/auth";
@@ -10,38 +11,38 @@ const MAX_CITY_LEN = 80;
 const MAX_TEXT_LEN = 240;
 const MAX_NOTES_LEN = 600;
 
-const normalizeCity = (value: string) => value.trim().toLowerCase();
-
 const sanitizeText = (value: unknown, maxLen: number) => {
   const text = String(value ?? "").trim();
   if (!text) return null;
   return text.slice(0, maxLen);
 };
 
-router.get(
-  "/",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cityRaw = String(req.query.city || req.query.cidade || "").trim();
-    if (!cityRaw) {
-      return res.json([]);
-    }
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const city =
+      typeof req.query.city === "string" ? req.query.city.trim() : "";
 
-    const city = normalizeCity(cityRaw);
+    const where: Prisma.RoomListingWhereInput | undefined = city
+      ? {
+          city: {
+            equals: city,
+            mode: Prisma.QueryMode.insensitive,
+          },
+          active: true,
+        }
+      : { active: true };
+
     const rooms = await prisma.roomListing.findMany({
-      where: {
-        active: true,
-        city: {
-          equals: city,
-          mode: "insensitive",
-        },
-      },
-      orderBy: [{ createdAt: "desc" }],
-      take: 50,
+      where,
+      orderBy: { createdAt: "desc" },
     });
 
     return res.json(rooms);
-  })
-);
+  } catch (error) {
+    console.error("Erro ao buscar quartos:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
 
 router.get(
   "/admin",
