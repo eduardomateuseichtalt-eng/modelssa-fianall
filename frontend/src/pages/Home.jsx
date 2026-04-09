@@ -439,6 +439,11 @@ export default function Home() {
                   <span>Models Shots</span>
                   <span className="popular-chevron" aria-hidden="true" />
                 </Link>
+                <Link to="/modelos?atendimento=online" className="popular-item">
+                  <span className="popular-icon" aria-hidden="true" />
+                  <span>Atendimento online (webcam)</span>
+                  <span className="popular-chevron" aria-hidden="true" />
+                </Link>
                 <Link to={modelosLink} className="popular-item">
                   <span className="popular-icon" aria-hidden="true" />
                   <span>Ver acompanhantes</span>
