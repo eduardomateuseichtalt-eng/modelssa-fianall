@@ -337,6 +337,7 @@ export default function ModelDashboard() {
   const [presenceMode, setPresenceMode] = useState("offline");
   const [presenceRemainingSeconds, setPresenceRemainingSeconds] = useState(0);
   const [presenceUntil, setPresenceUntil] = useState("");
+  const [roomPanelOpen, setRoomPanelOpen] = useState(false);
   const [selectedPresenceMinutes, setSelectedPresenceMinutes] = useState(60);
   const [profileClicksLoading, setProfileClicksLoading] = useState(false);
   const [profileClicksError, setProfileClicksError] = useState("");
@@ -351,6 +352,7 @@ export default function ModelDashboard() {
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
   const presenceControlRef = useRef(null);
+  const roomPanelRef = useRef(null);
 
   const applyProfilePlanData = (data) => {
     const limits = data?.mediaLimits || {};
@@ -674,6 +676,21 @@ export default function ModelDashboard() {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, [presencePanelOpen]);
+
+  useEffect(() => {
+    if (!roomPanelOpen) {
+      return;
+    }
+    const handleOutsideClick = (event) => {
+      if (roomPanelRef.current && !roomPanelRef.current.contains(event.target)) {
+        setRoomPanelOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [roomPanelOpen]);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -1386,6 +1403,81 @@ export default function ModelDashboard() {
               </div>
             ) : null}
           </div>
+          <div className="model-presence-control" ref={roomPanelRef}>
+            <button
+              type="button"
+              className="model-presence-toggle offline"
+              onClick={() => setRoomPanelOpen((current) => !current)}
+              aria-expanded={roomPanelOpen}
+              aria-label="Abrir lista de quartos para locacao"
+            >
+              Quartos
+            </button>
+            {roomPanelOpen ? (
+              <div className="model-presence-panel">
+                <h4>Quartos para locacao</h4>
+                <p className="muted" style={{ marginTop: 6 }}>
+                  Sugestoes baseadas na cidade informada no cadastro.
+                </p>
+                {roomLoading ? (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Carregando quartos...
+                  </p>
+                ) : roomError ? (
+                  <div className="notice" style={{ marginTop: 8 }}>
+                    {roomError}
+                  </div>
+                ) : roomListings.length === 0 ? (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Nenhum quarto cadastrado para {profileCity || "sua cidade"}.
+                  </p>
+                ) : (
+                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                    {roomListings.map((room) => (
+                      <div
+                        key={room.id}
+                        style={{
+                          border: "1px solid var(--border)",
+                          borderRadius: 12,
+                          padding: 10,
+                          background: "rgba(255, 255, 255, 0.02)",
+                        }}
+                      >
+                        <strong>{room.title}</strong>
+                        {room.address ? (
+                          <div className="muted" style={{ marginTop: 6 }}>
+                            {room.address}
+                          </div>
+                        ) : null}
+                        {room.priceText ? (
+                          <div style={{ marginTop: 6 }}>
+                            <strong>{room.priceText}</strong>
+                          </div>
+                        ) : null}
+                        {room.contact ? (
+                          <div className="muted" style={{ marginTop: 6 }}>
+                            Contato: {room.contact}
+                          </div>
+                        ) : null}
+                        {room.link ? (
+                          <div style={{ marginTop: 6 }}>
+                            <a
+                              href={room.link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-outline"
+                            >
+                              Ver detalhes
+                            </a>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
 
           <button
             type="button"
@@ -1991,87 +2083,6 @@ export default function ModelDashboard() {
                         );
                       })}
                     </div>
-                  </div>
-                  <div
-                    style={{
-                      gridColumn: "1 / -1",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: 12,
-                      background: "var(--panel-2)",
-                    }}
-                  >
-                    <h4 style={{ margin: 0 }}>Quartos para locacao</h4>
-                    <p className="muted" style={{ marginTop: 6 }}>
-                      Sugestoes baseadas na cidade informada no seu cadastro.
-                    </p>
-                    {roomLoading ? (
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        Carregando quartos...
-                      </p>
-                    ) : roomError ? (
-                      <div className="notice" style={{ marginTop: 8 }}>
-                        {roomError}
-                      </div>
-                    ) : roomListings.length === 0 ? (
-                      <p className="muted" style={{ marginTop: 8 }}>
-                        Nenhum quarto cadastrado para {profileCity || "sua cidade"}.
-                      </p>
-                    ) : (
-                      <div
-                        style={{
-                          display: "grid",
-                          gap: 12,
-                          marginTop: 12,
-                        }}
-                      >
-                        {roomListings.map((room) => (
-                          <div
-                            key={room.id}
-                            style={{
-                              border: "1px solid var(--border)",
-                              borderRadius: 12,
-                              padding: 12,
-                              background: "rgba(255, 255, 255, 0.02)",
-                            }}
-                          >
-                            <strong>{room.title}</strong>
-                            {room.address ? (
-                              <div className="muted" style={{ marginTop: 6 }}>
-                                {room.address}
-                              </div>
-                            ) : null}
-                            {room.priceText ? (
-                              <div style={{ marginTop: 6 }}>
-                                <strong>{room.priceText}</strong>
-                              </div>
-                            ) : null}
-                            {room.contact ? (
-                              <div className="muted" style={{ marginTop: 6 }}>
-                                Contato: {room.contact}
-                              </div>
-                            ) : null}
-                            {room.link ? (
-                              <div style={{ marginTop: 6 }}>
-                                <a
-                                  href={room.link}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="btn btn-outline"
-                                >
-                                  Ver detalhes
-                                </a>
-                              </div>
-                            ) : null}
-                            {room.notes ? (
-                              <div className="muted" style={{ marginTop: 6 }}>
-                                {room.notes}
-                              </div>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
                 <div className="form-actions" style={{ marginTop: 4 }}>
