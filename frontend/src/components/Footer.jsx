@@ -12,7 +12,7 @@ export default function Footer() {
             </span>
           </div>
           <p className="muted" style={{ marginTop: 12 }}>
-            Plataforma Premium para Anunciantes de Alto Padrão
+            PLATAFORMA PREMIUM PARA ACOMPANHANTES
           </p>
         </div>
 
