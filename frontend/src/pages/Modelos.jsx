@@ -213,7 +213,7 @@ export default function Modelos() {
               navigate(`/modelos?${query.toString()}`);
             }}
           >
-            Webcam
+            Virtual
           </button>
         </div>
       </div>
@@ -277,7 +277,7 @@ export default function Modelos() {
                 model.offeredServices.some((service) =>
                   String(service || "").toLowerCase().includes("webcam")
                 ) ? (
-                  <span className="model-badge model-badge-webcam">Webcam</span>
+                  <span className="model-badge model-badge-webcam">Virtual</span>
                 ) : null}
               </div>
               <div className="model-info">

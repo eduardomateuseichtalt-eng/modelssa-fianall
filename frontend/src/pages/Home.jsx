@@ -81,7 +81,7 @@ function HomeFeaturedModelCard({ model }) {
           loading="lazy"
         />
         {hasWebcam ? (
-          <span className="model-badge model-badge-webcam">Webcam</span>
+          <span className="model-badge model-badge-webcam">Virtual</span>
         ) : null}
         {photos.length > 1 ? (
           <div className="home-model-photo-dots" aria-hidden="true">
