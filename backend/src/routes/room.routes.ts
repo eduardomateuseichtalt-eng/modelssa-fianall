@@ -49,9 +49,13 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cityRaw = String(req.query.city || "").trim();
     const city = cityRaw ? cityRaw.trim() : "";
-    const where = city
-      ? { city: { equals: city, mode: "insensitive" } }
-      : undefined;
+    const where: Prisma.RoomListingWhereInput = {};
+    if (city) {
+      where.city = {
+        equals: city,
+        mode: Prisma.QueryMode.insensitive,
+      };
+    }
     const rooms = await prisma.roomListing.findMany({
       where,
       orderBy: [{ createdAt: "desc" }],
