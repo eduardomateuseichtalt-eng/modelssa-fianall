@@ -119,7 +119,6 @@ export default function ModelProfile() {
   const location = useLocation();
   const [model, setModel] = useState(null);
   const [media, setMedia] = useState([]);
-  const [comparisonMedia, setComparisonMedia] = useState([]);
   const [mediaSummary, setMediaSummary] = useState({
     photos: 0,
     videos: 0,
@@ -180,27 +179,6 @@ export default function ModelProfile() {
     apiFetch(`/api/media/model/${id}${query}`)
       .then((data) => setMedia(Array.isArray(data) ? data : []))
       .catch(() => setMedia([]));
-  }, [id, ageToken]);
-
-  useEffect(() => {
-    let active = true;
-    const token = ageToken ? encodeURIComponent(ageToken) : "";
-    const query = token ? `?ageToken=${token}` : "";
-    apiFetch(`/api/media/model/${id}/comparison${query}`)
-      .then((data) => {
-        if (active) {
-          setComparisonMedia(Array.isArray(data) ? data : []);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setComparisonMedia([]);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
   }, [id, ageToken]);
 
   useEffect(() => {
@@ -489,35 +467,6 @@ export default function ModelProfile() {
     !["@instagram", "instagram", "@insta", "insta"].includes(
       instagramDisplay.toLowerCase()
     );
-  const comparisonVideo = comparisonMedia.find((item) => item.type === "VIDEO") || null;
-  const comparisonMediaCandidate =
-    comparisonVideo ||
-    [...mediaVideos].sort((a, b) => {
-      const timeA = new Date(a.createdAt || 0).getTime();
-      const timeB = new Date(b.createdAt || 0).getTime();
-      return timeA - timeB;
-    })[0] ||
-    null;
-  const comparisonVerifiedLabel = comparisonMediaCandidate?.createdAt
-    ? (() => {
-        const date = new Date(comparisonMediaCandidate.createdAt);
-        const monthNames = [
-          "Jan",
-          "Fev",
-          "Mar",
-          "Abr",
-          "Mai",
-          "Jun",
-          "Jul",
-          "Ago",
-          "Set",
-          "Out",
-          "Nov",
-          "Dez",
-        ];
-        return `${monthNames[date.getMonth()]}/${date.getFullYear()}`;
-      })()
-    : "";
   const offeredServices = Array.isArray(model.offeredServices)
     ? model.offeredServices
     : [];
@@ -1045,63 +994,6 @@ export default function ModelProfile() {
                   </p>
                 </div>
               )}
-
-              <div className="profile-public-comparison">
-                <div className="profile-public-section-head profile-public-comparison-head">
-                  <span className="profile-public-comparison-head-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M3 7.5A2.5 2.5 0 0 1 5.5 5H8l1.2-1.6A1.5 1.5 0 0 1 10.4 3h3.2a1.5 1.5 0 0 1 1.2.4L16 5h2.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                      />
-                      <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
-                    </svg>
-                  </span>
-                  <h2>Midia de comparacao</h2>
-                </div>
-
-                {shouldShowAgeGate && !comparisonMediaCandidate ? (
-                  <div className="profile-public-comparison-video is-locked">
-                    <Link to={ageGateLink} className="profile-public-media-lock">
-                      <div className="profile-public-media-lock-text">
-                        <span>CONTE&Uacute;DO</span>
-                        <strong>+18</strong>
-                        <span className="profile-public-media-lock-action">Visualizar</span>
-                      </div>
-                    </Link>
-                  </div>
-                ) : comparisonMediaCandidate ? (
-                  <div className="profile-public-comparison-video">
-                    <img
-                      src="/perfil-verificado-ms.svg"
-                      alt="Selo de perfil verificado"
-                      className="profile-public-comparison-badge"
-                      loading="lazy"
-                    />
-                    <video
-                      className="profile-public-comparison-player"
-                      src={comparisonMediaCandidate.url}
-                      controls
-                      preload="metadata"
-                      playsInline
-                    />
-                  </div>
-                ) : (
-                  <div className="card">
-                    <h4>Sem video de comparacao visivel</h4>
-                    <p className="muted">
-                      O video de comparacao ainda nao foi aprovado ou nao esta
-                      disponivel no momento.
-                    </p>
-                  </div>
-                )}
-                {comparisonVerifiedLabel ? (
-                  <p className="profile-public-comparison-verified">
-                    Verificada em {comparisonVerifiedLabel}
-                  </p>
-                ) : null}
-              </div>
 
               <div className="profile-public-services">
                 <div className="profile-public-services-title">Servi&ccedil;os oferecidos</div>
