@@ -25,7 +25,6 @@ const allowedTypes = new Set([
 ]);
 const allowedImageTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
 
-const allowedAgePhotoTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
 const AGE_TOKEN_TTL_DAYS = Number(process.env.AGE_VERIFY_TTL_DAYS || 30);
 const AGE_TOKEN_HEADER = "x-age-token";
 
@@ -428,7 +427,8 @@ router.post(
       return res.status(400).json({ error: "Foto obrigatoria para verificacao" });
     }
 
-    if (!allowedAgePhotoTypes.has(file.mimetype)) {
+    const mimeType = String(file.mimetype || "").toLowerCase();
+    if (!mimeType.startsWith("image/")) {
       return res.status(400).json({ error: "Formato de foto invalido" });
     }
 
