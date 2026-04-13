@@ -3835,6 +3835,47 @@ select {
     min-height: 160px;
   }
 
+  .profile-public-media-card.is-locked {
+    min-height: 180px;
+  }
+
+  .profile-public-media-card.is-locked img,
+  .profile-public-media-card.is-locked video {
+    filter: blur(18px);
+    transform: scale(1.08);
+  }
+
+  .profile-public-media-card.is-placeholder {
+    background:
+      radial-gradient(circle at 24% 22%, rgba(255, 184, 132, 0.28), transparent 44%),
+      linear-gradient(145deg, rgba(73, 47, 41, 0.96), rgba(24, 20, 20, 0.96));
+  }
+
+  .profile-public-media-card.is-placeholder::before {
+    filter: blur(14px);
+    transform: scale(1.14);
+  }
+
+  .profile-public-media-lock {
+    background: rgba(8, 8, 10, 0.62);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+  }
+
+  .profile-public-media-lock-text {
+    gap: 4px;
+    letter-spacing: 0.06em;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .profile-public-media-lock-text strong {
+    font-size: 28px;
+  }
+
+  .profile-public-media-lock-action {
+    font-size: 12px;
+  }
+
   .profile-public-comparison-player {
     max-height: 360px;
   }
