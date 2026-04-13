@@ -431,6 +431,7 @@ export default function ModelProfile() {
   const displayMediaCount = mediaSummary.total || totalMediaCount;
   const displayMediaPhotos = mediaSummary.photos || mediaPhotos.length;
   const displayMediaVideos = mediaSummary.videos || mediaVideos.length;
+  const isNatyProfileForAgeGateTest = /naty/i.test(String(model.name || ""));
   const restrictedCount = Math.max(
     0,
     (mediaSummary.total || totalMediaCount) - totalMediaCount
@@ -924,7 +925,33 @@ export default function ModelProfile() {
                 </div>
               </div>
 
-              {shouldShowAgeGate ? (
+              {isNatyProfileForAgeGateTest && totalMediaCount > 0 ? (
+                <div className="profile-public-media-grid">
+                  {orderedGalleryMedia.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`profile-public-media-card ${
+                        item.type === "VIDEO" ? "is-video " : ""
+                      }is-locked`}
+                    >
+                      {item.type === "VIDEO" ? (
+                        <video src={item.url} preload="metadata" playsInline />
+                      ) : (
+                        <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
+                      )}
+                      <Link to={ageGateLink} className="profile-public-media-lock">
+                        <div className="profile-public-media-lock-text">
+                          <span>CONTE&Uacute;DO</span>
+                          <strong>+18</strong>
+                          <span className="profile-public-media-lock-action">
+                            Verificar para visualizar
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : shouldShowAgeGate ? (
                 <div className="profile-public-media-grid">
                   {orderedGalleryMedia.map((item) =>
                     item.type === "VIDEO" ? (
