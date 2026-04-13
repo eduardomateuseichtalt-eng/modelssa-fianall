@@ -432,6 +432,8 @@ export default function ModelProfile() {
   const displayMediaPhotos = mediaSummary.photos || mediaPhotos.length;
   const displayMediaVideos = mediaSummary.videos || mediaVideos.length;
   const isNatyProfileForAgeGateTest = /naty/i.test(String(model.name || ""));
+  const shouldForceNatyAgeGateTest =
+    isNatyProfileForAgeGateTest && String(ageToken || "").trim().length === 0;
   const restrictedCount = Math.max(
     0,
     (mediaSummary.total || totalMediaCount) - totalMediaCount
@@ -925,7 +927,7 @@ export default function ModelProfile() {
                 </div>
               </div>
 
-              {isNatyProfileForAgeGateTest && totalMediaCount > 0 ? (
+              {shouldForceNatyAgeGateTest && totalMediaCount > 0 ? (
                 <div className="profile-public-media-grid">
                   {orderedGalleryMedia.map((item) => (
                     <div
