@@ -1413,6 +1413,7 @@ select {
   border: 1px solid #e6e3df;
   padding: 32px;
   box-shadow: 0 14px 40px rgba(15, 12, 10, 0.12);
+  color: #1f1f1f;
 }
 
 .age-verify-header {
@@ -1438,6 +1439,11 @@ select {
 .age-verify-title h1 {
   margin: 0;
   font-size: 22px;
+  color: #181818;
+}
+
+.age-verify-card h2 {
+  color: #181818;
 }
 
 .age-verify-legal {
@@ -1462,6 +1468,7 @@ select {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: #222;
 }
 
 .age-verify-list li::before {
@@ -1474,6 +1481,7 @@ select {
   justify-content: center;
   background: #b61212;
   border-color: #b61212;
+  color: #fff;
 }
 
 .age-verify-actions {
@@ -1484,6 +1492,9 @@ select {
 .age-verify-secondary {
   width: 100%;
   justify-content: center;
+  color: #1f1f1f;
+  border-color: #d4ccc1;
+  background: #fff;
 }
 
 .profile-public-comparison {
