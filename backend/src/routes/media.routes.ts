@@ -27,6 +27,14 @@ const allowedImageTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
 
 const AGE_TOKEN_TTL_DAYS = Number(process.env.AGE_VERIFY_TTL_DAYS || 30);
 const AGE_TOKEN_HEADER = "x-age-token";
+const AGE_TOKEN_COOKIE_NAME = "modelsClubAgeToken";
+const AGE_TOKEN_COOKIE_DOMAIN = String(process.env.AGE_VERIFY_COOKIE_DOMAIN || "").trim();
+const FORCE_FULL_AGE_GATE_MODEL_IDS = new Set(
+  String(process.env.AGE_GATE_FORCE_ALL_MODEL_IDS || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+);
 
 const mapMediaType = (mime: string) =>
   mime.startsWith("video/") ? "VIDEO" : "IMAGE";
@@ -51,10 +59,37 @@ const getAgeTokenSecret = () => {
   return secret || "age_verify_dev_secret";
 };
 
+const parseCookieHeader = (value: string) => {
+  const result = new Map<string, string>();
+  value
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .forEach((part) => {
+      const separatorIndex = part.indexOf("=");
+      if (separatorIndex <= 0) {
+        return;
+      }
+      const key = part.slice(0, separatorIndex).trim();
+      const rawValue = part.slice(separatorIndex + 1).trim();
+      if (!key) {
+        return;
+      }
+      try {
+        result.set(key, decodeURIComponent(rawValue));
+      } catch {
+        result.set(key, rawValue);
+      }
+    });
+  return result;
+};
+
 const getAgeTokenFromRequest = (req: Request) => {
   const headerToken = req.headers[AGE_TOKEN_HEADER] as string | undefined;
   const queryToken = req.query.ageToken as string | undefined;
-  return String(headerToken || queryToken || "").trim();
+  const cookieHeader = String(req.headers.cookie || "");
+  const cookieToken = parseCookieHeader(cookieHeader).get(AGE_TOKEN_COOKIE_NAME) || "";
+  return String(headerToken || queryToken || cookieToken || "").trim();
 };
 
 const hashAgeToken = (token: string, secret: string) =>
@@ -443,6 +478,23 @@ router.post(
       },
     });
 
+    const secureCookieOverride = String(process.env.AGE_VERIFY_COOKIE_SECURE || "")
+      .trim()
+      .toLowerCase();
+    const shouldUseSecureCookie = secureCookieOverride
+      ? ["1", "true", "yes"].includes(secureCookieOverride)
+      : process.env.NODE_ENV === "production";
+    const cookieSameSite: "none" | "lax" = shouldUseSecureCookie ? "none" : "lax";
+    res.cookie(AGE_TOKEN_COOKIE_NAME, token, {
+      path: "/",
+      expires: expiresAt,
+      maxAge: Math.max(0, expiresAt.getTime() - Date.now()),
+      sameSite: cookieSameSite,
+      secure: shouldUseSecureCookie,
+      httpOnly: false,
+      ...(AGE_TOKEN_COOKIE_DOMAIN ? { domain: AGE_TOKEN_COOKIE_DOMAIN } : {}),
+    });
+
     return res.json({ token, expiresAt });
   })
 );
@@ -494,6 +546,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const ageVerified = await ensureAgeVerified(req, id);
+    const forceFullAgeGate = FORCE_FULL_AGE_GATE_MODEL_IDS.has(String(id || ""));
+    if (!ageVerified && forceFullAgeGate) {
+      return res.json([]);
+    }
     const media = await prisma.media.findMany({
       where: {
         modelId: id,
@@ -513,6 +569,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const ageVerified = await ensureAgeVerified(req, id);
+    const forceFullAgeGate = FORCE_FULL_AGE_GATE_MODEL_IDS.has(String(id || ""));
+    if (!ageVerified && forceFullAgeGate) {
+      return res.json([]);
+    }
     const media = await prisma.media.findMany({
       where: {
         modelId: id,
