@@ -117,6 +117,11 @@ const formatPriceBr = (value) => {
 export default function ModelProfile() {
   const { id } = useParams();
   const location = useLocation();
+  const locationSearchParams = new URLSearchParams(location.search || "");
+  const ageTokenFromQuery = String(locationSearchParams.get("ageToken") || "").trim();
+  const ageTokenExpiresAtFromQuery = String(
+    locationSearchParams.get("ageTokenExpiresAt") || ""
+  ).trim();
   const [model, setModel] = useState(null);
   const [media, setMedia] = useState([]);
   const [mediaSummary, setMediaSummary] = useState({
@@ -151,6 +156,7 @@ export default function ModelProfile() {
   const [selectedPriceOption, setSelectedPriceOption] = useState("hour");
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
   const [ageToken, setAgeToken] = useState(readAgeToken());
+  const effectiveAgeToken = ageToken || ageTokenFromQuery;
   const priceCardRef = useRef(null);
   const mediaImageRef = useRef(null);
   const pinchStartDistanceRef = useRef(0);
@@ -174,12 +180,35 @@ export default function ModelProfile() {
   }, [id]);
 
   useEffect(() => {
-    const token = ageToken ? encodeURIComponent(ageToken) : "";
+    const token = effectiveAgeToken ? encodeURIComponent(effectiveAgeToken) : "";
     const query = token ? `?ageToken=${token}` : "";
     apiFetch(`/api/media/model/${id}${query}`)
       .then((data) => setMedia(Array.isArray(data) ? data : []))
       .catch(() => setMedia([]));
-  }, [id, ageToken]);
+  }, [id, effectiveAgeToken]);
+
+  useEffect(() => {
+    if (!ageTokenFromQuery) {
+      return;
+    }
+    if (ageTokenExpiresAtFromQuery) {
+      const expiresAtMs = new Date(ageTokenExpiresAtFromQuery).getTime();
+      if (Number.isFinite(expiresAtMs) && expiresAtMs > 0 && Date.now() > expiresAtMs) {
+        return;
+      }
+    }
+    if (ageToken !== ageTokenFromQuery) {
+      setAgeToken(ageTokenFromQuery);
+    }
+    try {
+      localStorage.setItem(AGE_TOKEN_STORAGE_KEY, ageTokenFromQuery);
+      if (ageTokenExpiresAtFromQuery) {
+        localStorage.setItem(AGE_TOKEN_EXP_STORAGE_KEY, ageTokenExpiresAtFromQuery);
+      }
+    } catch {
+      // ignore localStorage errors
+    }
+  }, [ageToken, ageTokenFromQuery, ageTokenExpiresAtFromQuery]);
 
   useEffect(() => {
     let active = true;
@@ -291,7 +320,7 @@ export default function ModelProfile() {
   useEffect(() => {
     const refreshAgeGate = () => {
       const token = readAgeToken();
-      setAgeToken(token);
+      setAgeToken(token || ageTokenFromQuery);
     };
     refreshAgeGate();
     window.addEventListener("focus", refreshAgeGate);
@@ -300,7 +329,7 @@ export default function ModelProfile() {
       window.removeEventListener("focus", refreshAgeGate);
       window.removeEventListener("storage", refreshAgeGate);
     };
-  }, []);
+  }, [ageTokenFromQuery]);
 
   useEffect(() => {
     apiFetch(`/api/media/model/${id}/summary`)
@@ -433,7 +462,7 @@ export default function ModelProfile() {
   const displayMediaVideos = mediaSummary.videos || mediaVideos.length;
   const isNatyProfileForAgeGateTest = /naty/i.test(String(model.name || ""));
   const shouldForceNatyAgeGateTest =
-    isNatyProfileForAgeGateTest && String(ageToken || "").trim().length === 0;
+    isNatyProfileForAgeGateTest && String(effectiveAgeToken || "").trim().length === 0;
   const restrictedCount = Math.max(
     0,
     (mediaSummary.total || totalMediaCount) - totalMediaCount

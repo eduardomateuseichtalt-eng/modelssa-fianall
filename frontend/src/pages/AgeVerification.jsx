@@ -17,6 +17,20 @@ const getReturnPath = (search) => {
   return rawReturn;
 };
 
+const appendAgeTokenToReturnPath = (path, token, expiresAt) => {
+  const rawPath = String(path || "/modelos");
+  const [withoutHash, hashPart] = rawPath.split("#");
+  const [pathnamePart, searchPart] = withoutHash.split("?");
+  const params = new URLSearchParams(searchPart || "");
+  params.set("ageToken", token);
+  if (expiresAt) {
+    params.set("ageTokenExpiresAt", String(expiresAt));
+  }
+  const query = params.toString();
+  const hash = hashPart ? `#${hashPart}` : "";
+  return `${pathnamePart || "/modelos"}${query ? `?${query}` : ""}${hash}`;
+};
+
 export default function AgeVerification() {
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -24,7 +38,15 @@ export default function AgeVerification() {
   const [step, setStep] = useState("intro");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [verifiedToken, setVerifiedToken] = useState("");
+  const [verifiedTokenExpiresAt, setVerifiedTokenExpiresAt] = useState("");
   const fileInputRef = useRef(null);
+  const verifiedReturnPath = useMemo(() => {
+    if (!verifiedToken) {
+      return returnPath;
+    }
+    return appendAgeTokenToReturnPath(returnPath, verifiedToken, verifiedTokenExpiresAt);
+  }, [returnPath, verifiedToken, verifiedTokenExpiresAt]);
 
   const handleConfirmAge = () => {
     setErrorMessage("");
@@ -69,6 +91,8 @@ export default function AgeVerification() {
         // ignore localStorage errors
       }
 
+      setVerifiedToken(String(data.token));
+      setVerifiedTokenExpiresAt(String(data.expiresAt || ""));
       setStep("done");
     } catch (err) {
       setErrorMessage(err?.message || "Nao foi possivel confirmar a idade.");
@@ -150,7 +174,11 @@ export default function AgeVerification() {
             <p className="age-verify-description">
               Tudo certo. Agora voce pode acessar as fotos e videos.
             </p>
-            <button type="button" className="btn age-verify-button" onClick={() => navigate(returnPath)}>
+            <button
+              type="button"
+              className="btn age-verify-button"
+              onClick={() => navigate(verifiedReturnPath)}
+            >
               Voltar ao perfil
             </button>
           </>
