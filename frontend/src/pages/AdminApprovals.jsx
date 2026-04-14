@@ -516,7 +516,7 @@ export default function AdminApprovals() {
           </div>
           <div className="card" style={{ marginTop: 12 }}>
             <h4>Visualizacoes totais desde 25/02/2026</h4>
-            <p className="muted">72.398 visualizacoes</p>
+            <p className="muted">148.783 visualizacoes</p>
           </div>
           <div
             className="card"
