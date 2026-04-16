@@ -84,6 +84,12 @@ const WEEKDAY_BY_JS_INDEX = [
   "FRIDAY",
   "SATURDAY",
 ];
+const FORCE_AGE_GATE_MODEL_IDS = new Set(
+  String(import.meta.env.VITE_AGE_GATE_FORCE_ALL_MODEL_IDS || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+);
 const AGE_TOKEN_STORAGE_KEY = "modelsClubAgeToken";
 const AGE_TOKEN_EXP_STORAGE_KEY = "modelsClubAgeTokenExpiresAt";
 
@@ -465,6 +471,14 @@ export default function ModelProfile() {
     (mediaSummary.total || totalMediaCount) - totalMediaCount
   );
   const shouldShowAgeGate = restrictedCount > 0;
+  const currentModelId = String(id || "").trim().toLowerCase();
+  const hasForcedAgeGateIds = FORCE_AGE_GATE_MODEL_IDS.size > 0;
+  const isForcedById = hasForcedAgeGateIds && FORCE_AGE_GATE_MODEL_IDS.has(currentModelId);
+  const isNatyFallbackByName =
+    !hasForcedAgeGateIds && /naty/i.test(String(model.name || ""));
+  const isForceBlurTarget = isForcedById || isNatyFallbackByName;
+  const shouldForceProfileVerification =
+    isForceBlurTarget && String(effectiveAgeToken || "").trim().length === 0;
   const hasShots = modelShots.length > 0;
   const hasHalfHourPrice = Number(model.price30Min || 0) > 0;
   const priceOptions = [
@@ -953,7 +967,33 @@ export default function ModelProfile() {
                 </div>
               </div>
 
-              {shouldShowAgeGate ? (
+              {shouldForceProfileVerification && totalMediaCount > 0 ? (
+                <div className="profile-public-media-grid">
+                  {orderedGalleryMedia.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`profile-public-media-card ${
+                        item.type === "VIDEO" ? "is-video " : ""
+                      }is-locked`}
+                    >
+                      {item.type === "VIDEO" ? (
+                        <video src={item.url} preload="metadata" playsInline />
+                      ) : (
+                        <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
+                      )}
+                      <Link to={ageGateLink} className="profile-public-media-lock">
+                        <div className="profile-public-media-lock-text">
+                          <span>CONTE&Uacute;DO</span>
+                          <strong>+18</strong>
+                          <span className="profile-public-media-lock-action">
+                            Verificar para visualizar
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : shouldShowAgeGate ? (
                 <div className="profile-public-media-grid">
                   {orderedGalleryMedia.map((item) =>
                     item.type === "VIDEO" ? (
