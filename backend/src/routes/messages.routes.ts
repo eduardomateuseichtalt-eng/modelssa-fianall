@@ -118,6 +118,7 @@ router.get(
       where: { id: user.id },
       select: {
         id: true,
+        name: true,
         planTier: true,
         trialEndsAt: true,
         planExpiresAt: true,
@@ -127,9 +128,11 @@ router.get(
       return res.status(404).json({ error: "Modelo nao encontrada." });
     }
     const hasAreaAccess = modelHasPaidAreaAccess({
+      id: model.id,
+      name: model.name,
       trialEndsAt: model.trialEndsAt,
       planExpiresAt: model.planExpiresAt,
-    });
+      });
     if (!hasAreaAccess) {
       return respondModelTrialExpired(res, model);
     }
@@ -159,6 +162,7 @@ router.post(
       where: { id: user.id },
       select: {
         id: true,
+        name: true,
         planTier: true,
         trialEndsAt: true,
         planExpiresAt: true,
@@ -168,9 +172,11 @@ router.post(
       return res.status(404).json({ error: "Modelo nao encontrada." });
     }
     const hasAreaAccess = modelHasPaidAreaAccess({
+      id: model.id,
+      name: model.name,
       trialEndsAt: model.trialEndsAt,
       planExpiresAt: model.planExpiresAt,
-    });
+      });
     if (!hasAreaAccess) {
       return respondModelTrialExpired(res, model);
     }
@@ -183,3 +189,5 @@ router.post(
 );
 
 export default router;
+
+

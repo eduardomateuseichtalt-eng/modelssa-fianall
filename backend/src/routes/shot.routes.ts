@@ -390,9 +390,11 @@ router.post(
     }
 
     const hasAreaAccess = modelHasPaidAreaAccess({
+      id: model.id,
+      name: model.name,
       trialEndsAt: model.trialEndsAt,
       planExpiresAt: model.planExpiresAt,
-    });
+      });
     if (!hasAreaAccess) {
       return respondModelTrialExpired(res, model);
     }
@@ -518,3 +520,5 @@ router.post("/:id/like-guest", asyncHandler(async (req: Request, res: Response) 
 }));
 
 export default router;
+
+

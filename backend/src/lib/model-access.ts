@@ -2,6 +2,7 @@ import { PlanTier } from "@prisma/client";
 
 export type ModelPaidAccessSnapshot = {
   id: string;
+  name?: string | null;
   planTier?: PlanTier | null;
   trialEndsAt?: Date | string | null;
   planExpiresAt?: Date | string | null;
@@ -62,6 +63,15 @@ const MODEL_PAYMENT_PIX_KEY_PRO = normalizePixKey(
   process.env.MODEL_PAYMENT_PIX_KEY_PRO || MODEL_PAYMENT_PIX_KEY
 );
 
+const parseList = (value?: string | null) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+const FREE_MODEL_IDS = new Set(parseList(process.env.MODEL_FREE_ACCESS_IDS));
+const FREE_MODEL_NAMES = parseList(process.env.MODEL_FREE_ACCESS_NAMES || "naty");
+
 const toDate = (value?: Date | string | null) => {
   if (!value) {
     return null;
@@ -75,9 +85,20 @@ export function getNormalizedPlanTier(planTier?: PlanTier | null): PlanTier {
 }
 
 export function modelHasPaidAreaAccess(snapshot: {
+  id?: string | null;
+  name?: string | null;
   trialEndsAt?: Date | string | null;
   planExpiresAt?: Date | string | null;
 }) {
+  const modelId = String(snapshot.id || "").trim().toLowerCase();
+  const modelName = String(snapshot.name || "").trim().toLowerCase();
+  const isFreeByName =
+    modelName.length > 0 &&
+    FREE_MODEL_NAMES.some((allowedName) => modelName.includes(allowedName));
+  if ((modelId && FREE_MODEL_IDS.has(modelId)) || isFreeByName) {
+    return true;
+  }
+
   const now = Date.now();
   const trialEndsAt = toDate(snapshot.trialEndsAt);
   const planExpiresAt = toDate(snapshot.planExpiresAt);

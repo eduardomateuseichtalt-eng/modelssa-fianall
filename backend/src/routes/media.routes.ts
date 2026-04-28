@@ -151,9 +151,11 @@ router.post(
 
     if (user.role !== "ADMIN" && model.isVerified) {
       const hasAreaAccess = modelHasPaidAreaAccess({
+        id: model.id,
+        name: model.name,
         trialEndsAt: model.trialEndsAt,
         planExpiresAt: model.planExpiresAt,
-      });
+        });
       if (!hasAreaAccess) {
         return respondModelTrialExpired(res, model);
       }
@@ -247,6 +249,7 @@ router.post(
       where: { id: modelId },
       select: {
         id: true,
+        name: true,
         isVerified: true,
         coverUrl: true,
         avatarUrl: true,
@@ -264,9 +267,11 @@ router.post(
     }
 
     const hasAreaAccess = modelHasPaidAreaAccess({
+      id: model.id,
+      name: model.name,
       trialEndsAt: model.trialEndsAt,
       planExpiresAt: model.planExpiresAt,
-    });
+      });
     if (!hasAreaAccess) {
       return respondModelTrialExpired(res, model);
     }
@@ -374,6 +379,7 @@ router.post(
       where: { id: user.id },
       select: {
         id: true,
+        name: true,
         isVerified: true,
         planTier: true,
         trialEndsAt: true,
@@ -390,9 +396,11 @@ router.post(
     }
 
     const hasAreaAccess = modelHasPaidAreaAccess({
+      id: model.id,
+      name: model.name,
       trialEndsAt: model.trialEndsAt,
       planExpiresAt: model.planExpiresAt,
-    });
+      });
     if (!hasAreaAccess) {
       return respondModelTrialExpired(res, model);
     }
@@ -417,6 +425,7 @@ router.get("/self", requireAuth, asyncHandler(async (req: Request, res: Response
     where: { id: user.id },
     select: {
       id: true,
+      name: true,
       planTier: true,
       trialEndsAt: true,
       planExpiresAt: true,
@@ -428,9 +437,11 @@ router.get("/self", requireAuth, asyncHandler(async (req: Request, res: Response
   }
 
   const hasAreaAccess = modelHasPaidAreaAccess({
+    id: model.id,
+    name: model.name,
     trialEndsAt: model.trialEndsAt,
     planExpiresAt: model.planExpiresAt,
-  });
+    });
   if (!hasAreaAccess) {
     return respondModelTrialExpired(res, model);
   }
@@ -673,6 +684,7 @@ router.delete("/:id", requireAuth, asyncHandler(async (req: Request, res: Respon
     where: { id: user.id },
     select: {
       id: true,
+      name: true,
       planTier: true,
       trialEndsAt: true,
       planExpiresAt: true,
@@ -684,9 +696,11 @@ router.delete("/:id", requireAuth, asyncHandler(async (req: Request, res: Respon
   }
 
   const hasAreaAccess = modelHasPaidAreaAccess({
+    id: model.id,
+    name: model.name,
     trialEndsAt: model.trialEndsAt,
     planExpiresAt: model.planExpiresAt,
-  });
+    });
   if (!hasAreaAccess) {
     return respondModelTrialExpired(res, model);
   }
@@ -707,3 +721,5 @@ router.delete("/:id", requireAuth, asyncHandler(async (req: Request, res: Respon
 }));
 
 export default router;
+
+

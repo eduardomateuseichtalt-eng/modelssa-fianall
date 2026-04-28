@@ -402,6 +402,7 @@ async function ensureModelPaidAreaAccessOrRespond(res: Response, modelId: string
     where: { id: modelId },
     select: {
       id: true,
+      name: true,
       planTier: true,
       trialEndsAt: true,
       planExpiresAt: true,
@@ -414,9 +415,11 @@ async function ensureModelPaidAreaAccessOrRespond(res: Response, modelId: string
   }
 
   const hasAreaAccess = modelHasPaidAreaAccess({
+    id: model.id,
+    name: model.name,
     trialEndsAt: model.trialEndsAt,
     planExpiresAt: model.planExpiresAt,
-  });
+    });
 
   if (!hasAreaAccess) {
     respondModelTrialExpired(res, model);
@@ -797,6 +800,8 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
 
   if (model.isVerified) {
     const hasAreaAccess = modelHasPaidAreaAccess({
+      id: model.id,
+      name: model.name,
       trialEndsAt: effectiveTrialEndsAt,
       planExpiresAt: effectivePlanExpiresAt,
     });
@@ -1060,6 +1065,7 @@ router.post("/change-password", requireAuth, asyncHandler(async (req: Request, r
     where: { id: user.id },
     select: {
       id: true,
+      name: true,
       password: true,
       planTier: true,
       trialEndsAt: true,
@@ -1072,9 +1078,11 @@ router.post("/change-password", requireAuth, asyncHandler(async (req: Request, r
   }
 
   const hasAreaAccess = modelHasPaidAreaAccess({
+    id: model.id,
+    name: model.name,
     trialEndsAt: model.trialEndsAt,
     planExpiresAt: model.planExpiresAt,
-  });
+    });
   if (!hasAreaAccess) {
     return respondModelTrialExpired(res, model);
   }
@@ -1150,9 +1158,11 @@ router.get("/self/profile", requireAuth, asyncHandler(async (_req: Request, res:
   }
 
   const hasAreaAccess = modelHasPaidAreaAccess({
+    id: model.id,
+    name: model.name,
     trialEndsAt: model.trialEndsAt,
     planExpiresAt: model.planExpiresAt,
-  });
+    });
   if (!hasAreaAccess) {
     return respondModelTrialExpired(res, model);
   }
@@ -1858,3 +1868,5 @@ router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 export default router;
+
+
