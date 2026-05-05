@@ -627,7 +627,7 @@ export default function ModelRegister() {
               Informe seu e-mail para receber o codigo de confirmacao e continuar seu cadastro.
             </p>
             <p className="muted">
-              Apos a aprovacao do perfil pelo admin, a acompanhante recebe 30 dias gratis no plano escolhido.
+              Apos a aprovacao do perfil, a acompanhante recebe 30 dias gratis no plano escolhido.
             </p>
 
             {introError && <div className="notice">{introError}</div>}
@@ -1672,7 +1672,7 @@ export default function ModelRegister() {
             >
               <h4>Escolha o plano antes de enviar</h4>
               <p className="muted" style={{ marginTop: 8 }}>
-                Toda nova acompanhante recebe 30 dias gratis no plano escolhido, a contar da aprovacao do perfil pelo admin.
+                Toda nova acompanhante recebe 30 dias gratis no plano escolhido, a contar da aprovacao do perfil.
               </p>
 
               <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
