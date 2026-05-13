@@ -211,6 +211,23 @@ model RoomListing {
   @@index([createdAt])
 }
 
+model MotelPartner {
+  id           String   @id @default(uuid())
+  name         String
+  address      String?
+  city         String?
+  photoUrl     String?
+  mapUrl       String?
+  displayOrder Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active])
+  @@index([displayOrder])
+  @@index([createdAt])
+}
+
 enum MediaType {
   IMAGE
   VIDEO

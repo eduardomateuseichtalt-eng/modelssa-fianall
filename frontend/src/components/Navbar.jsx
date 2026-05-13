@@ -66,7 +66,10 @@ export default function Navbar() {
             <>
               <span className="pill">Ola, {user.displayName || "Usuario"}</span>
               {user.role === "ADMIN" ? (
-                <NavLink to="/admin/aprovacoes">Admin</NavLink>
+                <>
+                  <NavLink to="/admin/aprovacoes">Aprovacoes</NavLink>
+                  <NavLink to="/admin/parceiros">Parceiros</NavLink>
+                </>
               ) : null}
               {user.role === "MODEL" ? (
                 <>
@@ -118,12 +121,20 @@ export default function Navbar() {
             <>
               <span className="pill">Ola, {user.displayName || "Usuario"}</span>
               {user.role === "ADMIN" ? (
-                <NavLink
-                  to="/admin/aprovacoes"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Admin
-                </NavLink>
+                <>
+                  <NavLink
+                    to="/admin/aprovacoes"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Aprovacoes
+                  </NavLink>
+                  <NavLink
+                    to="/admin/parceiros"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Parceiros
+                  </NavLink>
+                </>
               ) : null}
               {user.role === "MODEL" ? (
                 <>

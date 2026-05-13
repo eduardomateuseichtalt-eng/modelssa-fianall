@@ -1,10 +1,12 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { apiFetch } from "../lib/api";
 
-const PARTNER_MOTEIS = [
+const PARTNER_MOTEIS_TESTE = [
   {
     id: "motel-parceiro-teste",
     name: "Motel Parceiro (Teste)",
-    address: "Endereço em validação comercial",
+    address: "Endereco em validacao comercial",
     city: "Curitiba - PR",
     mapUrl: "https://maps.google.com",
     logoUrl: "",
@@ -12,6 +14,39 @@ const PARTNER_MOTEIS = [
 ];
 
 export default function Footer() {
+  const [partners, setPartners] = useState(PARTNER_MOTEIS_TESTE);
+
+  useEffect(() => {
+    let mounted = true;
+    apiFetch("/api/motel-partners")
+      .then((data) => {
+        if (!mounted) return;
+        const safeData = Array.isArray(data) ? data : [];
+        if (safeData.length === 0) {
+          setPartners(PARTNER_MOTEIS_TESTE);
+          return;
+        }
+        setPartners(
+          safeData.map((partner) => ({
+            id: partner.id,
+            name: partner.name,
+            address: partner.address || "",
+            city: partner.city || "",
+            mapUrl: partner.mapUrl || "",
+            logoUrl: partner.photoUrl || "",
+          }))
+        );
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPartners(PARTNER_MOTEIS_TESTE);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <footer className="footer">
       <div className="footer-grid">
@@ -54,12 +89,12 @@ export default function Footer() {
         </div>
       </div>
       <div className="footer-partners">
-        <h4 className="pill">Motéis Parceiros</h4>
+        <h4 className="pill">Moteis Parceiros</h4>
         <p className="muted footer-partners-note">
-          Espaço de teste para exibir logo e endereço dos parceiros.
+          Logos e enderecos de parceiros comerciais.
         </p>
         <div className="footer-partners-grid">
-          {PARTNER_MOTEIS.map((partner) => (
+          {partners.map((partner) => (
             <article key={partner.id} className="footer-partner-card">
               <div className="footer-partner-logo-shell">
                 {partner.logoUrl ? (
@@ -81,14 +116,16 @@ export default function Footer() {
                 <br />
                 {partner.city}
               </p>
-              <a
-                href={partner.mapUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="footer-partner-link"
-              >
-                Ver no mapa
-              </a>
+              {partner.mapUrl ? (
+                <a
+                  href={partner.mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="footer-partner-link"
+                >
+                  Ver no mapa
+                </a>
+              ) : null}
             </article>
           ))}
         </div>

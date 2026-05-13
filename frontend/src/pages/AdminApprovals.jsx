@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { useNoIndex } from "../lib/useNoIndex";
 
@@ -492,6 +493,11 @@ export default function AdminApprovals() {
       <p className="muted" style={{ marginTop: 10 }}>
         Aprove cadastros pendentes para publica-los na vitrine.
       </p>
+      <div className="form-actions" style={{ marginTop: 12 }}>
+        <Link to="/admin/parceiros" className="btn btn-outline">
+          Gerenciar moteis parceiros
+        </Link>
+      </div>
 
       {metricsError && <div className="notice">{metricsError}</div>}
       {metrics ? (

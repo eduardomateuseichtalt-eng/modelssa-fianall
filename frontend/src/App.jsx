@@ -23,6 +23,7 @@ import Privacy from "./pages/Privacy";
 import Shots from "./pages/Shots";
 import NotFound from "./pages/NotFound";
 import AdminApprovals from "./pages/AdminApprovals";
+import AdminPartners from "./pages/AdminPartners";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminRoute from "./components/AdminRoute";
 import AdminLogin from "./pages/AdminLogin";
@@ -86,6 +87,14 @@ export default function App() {
           element={
             <AdminRoute>
               <AdminApprovals />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/parceiros"
+          element={
+            <AdminRoute>
+              <AdminPartners />
             </AdminRoute>
           }
         />
