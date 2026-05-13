@@ -7,10 +7,35 @@ const INITIAL_FORM = {
   name: "",
   address: "",
   city: "",
+  zipCode: "",
   photoUrl: "",
   mapUrl: "",
   displayOrder: "0",
   active: true,
+};
+
+const normalizeZipCode = (value) => String(value || "").replace(/\D/g, "").slice(0, 8);
+const buildMapUrlFromZipCode = (zipCode) => {
+  const normalized = normalizeZipCode(zipCode);
+  if (normalized.length !== 8) {
+    return "";
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(normalized)}`;
+};
+
+const extractZipCodeFromMapUrl = (mapUrlValue) => {
+  const raw = String(mapUrlValue || "").trim();
+  if (!raw) {
+    return "";
+  }
+  try {
+    const parsed = new URL(raw);
+    const query = parsed.searchParams.get("query") || "";
+    const digits = normalizeZipCode(query);
+    return digits.length === 8 ? digits : "";
+  } catch {
+    return "";
+  }
 };
 
 export default function AdminPartners() {
@@ -109,7 +134,9 @@ export default function AdminPartners() {
       address: form.address,
       city: form.city,
       photoUrl: form.photoUrl,
-      mapUrl: form.mapUrl,
+      mapUrl:
+        buildMapUrlFromZipCode(form.zipCode) ||
+        String(form.mapUrl || "").trim(),
       displayOrder,
       active: form.active,
     };
@@ -162,6 +189,7 @@ export default function AdminPartners() {
       name: partner.name || "",
       address: partner.address || "",
       city: partner.city || "",
+      zipCode: extractZipCodeFromMapUrl(partner.mapUrl || ""),
       photoUrl: partner.photoUrl || "",
       mapUrl: partner.mapUrl || "",
       displayOrder: String(partner.displayOrder ?? 0),
@@ -238,6 +266,19 @@ export default function AdminPartners() {
             />
             <input
               className="input"
+              type="text"
+              inputMode="numeric"
+              placeholder="CEP (somente numeros, opcional)"
+              value={form.zipCode}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  zipCode: normalizeZipCode(event.target.value),
+                }))
+              }
+            />
+            <input
+              className="input"
               type="url"
               placeholder="URL da foto/logo (https://...)"
               value={form.photoUrl}
@@ -268,7 +309,7 @@ export default function AdminPartners() {
             <input
               className="input"
               type="url"
-              placeholder="URL do mapa (Google Maps)"
+              placeholder="URL do mapa (Google Maps). Se vazio, usa o CEP."
               value={form.mapUrl}
               onChange={(event) =>
                 setForm((current) => ({ ...current, mapUrl: event.target.value }))
