@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
@@ -13,8 +13,111 @@ const PARTNER_MOTEIS_TESTE = [
   },
 ];
 
+const normalizeText = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const extractCityName = (value) => {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (text.includes("-")) {
+    return text.split("-")[0].trim();
+  }
+  if (text.includes(",")) {
+    return text.split(",")[0].trim();
+  }
+  return text;
+};
+
+const isPartnerFromCity = (partnerCity, detectedCity) => {
+  const partnerCityNorm = normalizeText(extractCityName(partnerCity));
+  const detectedCityNorm = normalizeText(detectedCity);
+  if (!partnerCityNorm || !detectedCityNorm) {
+    return false;
+  }
+  return (
+    partnerCityNorm.includes(detectedCityNorm) ||
+    detectedCityNorm.includes(partnerCityNorm)
+  );
+};
+
 export default function Footer() {
   const [partners, setPartners] = useState(PARTNER_MOTEIS_TESTE);
+  const [locationStatus, setLocationStatus] = useState("idle");
+  const [detectedCity, setDetectedCity] = useState("");
+  const [locationError, setLocationError] = useState("");
+
+  const detectLocationAndFilter = () => {
+    if (!navigator?.geolocation) {
+      setDetectedCity("");
+      setLocationStatus("unsupported");
+      setLocationError("Geolocalizacao nao suportada neste navegador.");
+      return;
+    }
+
+    setDetectedCity("");
+    setLocationStatus("locating");
+    setLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const lat = Number(position.coords.latitude);
+          const lon = Number(position.coords.longitude);
+          const params = new URLSearchParams({
+            format: "jsonv2",
+            lat: String(lat),
+            lon: String(lon),
+            zoom: "10",
+            addressdetails: "1",
+          });
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?${params.toString()}`
+          );
+          if (!response.ok) {
+            throw new Error("Falha ao detectar cidade.");
+          }
+          const data = await response.json();
+          const address = data?.address || {};
+          const city =
+            address.city ||
+            address.town ||
+            address.municipality ||
+            address.village ||
+            address.county ||
+            "";
+
+          if (!city) {
+            throw new Error("Cidade nao identificada.");
+          }
+
+          setDetectedCity(String(city));
+          setLocationStatus("ready");
+        } catch (error) {
+          setDetectedCity("");
+          setLocationStatus("error");
+          setLocationError(error?.message || "Nao foi possivel detectar a cidade.");
+        }
+      },
+      (error) => {
+        setDetectedCity("");
+        setLocationStatus("denied");
+        setLocationError(
+          error?.code === 1
+            ? "Permissao de localizacao negada."
+            : "Nao foi possivel obter a localizacao."
+        );
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 9000,
+        maximumAge: 5 * 60 * 1000,
+      }
+    );
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -46,6 +149,33 @@ export default function Footer() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    detectLocationAndFilter();
+  }, []);
+
+  const locationResult = useMemo(() => {
+    if (!detectedCity) {
+      return {
+        partnersToShow: partners,
+        matchCount: partners.length,
+      };
+    }
+
+    const matched = partners.filter((partner) =>
+      isPartnerFromCity(partner.city, detectedCity)
+    );
+    if (matched.length === 0) {
+      return {
+        partnersToShow: partners,
+        matchCount: 0,
+      };
+    }
+    return {
+      partnersToShow: matched,
+      matchCount: matched.length,
+    };
+  }, [partners, detectedCity]);
 
   return (
     <footer className="footer">
@@ -93,8 +223,32 @@ export default function Footer() {
         <p className="muted footer-partners-note">
           Logos e enderecos de parceiros comerciais.
         </p>
+        <div className="form-actions" style={{ marginTop: 10, marginBottom: 4 }}>
+          <button
+            className="btn btn-outline"
+            type="button"
+            onClick={detectLocationAndFilter}
+            style={{ padding: "8px 14px", fontSize: 12 }}
+          >
+            Usar minha localizacao
+          </button>
+        </div>
+        {locationStatus === "locating" ? (
+          <p className="muted footer-partners-note">Localizando parceiros proximos...</p>
+        ) : null}
+        {locationStatus === "ready" && detectedCity ? (
+          <p className="muted footer-partners-note">
+            Cidade detectada: {detectedCity}
+            {locationResult.matchCount > 0
+              ? ` | exibindo ${locationResult.matchCount} parceiro(s) da sua regiao.`
+              : " | sem parceiros na cidade detectada, exibindo lista geral."}
+          </p>
+        ) : null}
+        {locationError ? (
+          <p className="muted footer-partners-note">{locationError}</p>
+        ) : null}
         <div className="footer-partners-grid">
-          {partners.map((partner) => (
+          {locationResult.partnersToShow.map((partner) => (
             <article key={partner.id} className="footer-partner-card">
               <div className="footer-partner-logo-shell">
                 {partner.logoUrl ? (

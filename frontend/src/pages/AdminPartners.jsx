@@ -15,12 +15,28 @@ const INITIAL_FORM = {
 };
 
 const normalizeZipCode = (value) => String(value || "").replace(/\D/g, "").slice(0, 8);
-const buildMapUrlFromZipCode = (zipCode) => {
+const formatZipCode = (value) => {
+  const zip = normalizeZipCode(value);
+  if (zip.length !== 8) {
+    return "";
+  }
+  return `${zip.slice(0, 5)}-${zip.slice(5)}`;
+};
+
+const buildMapUrlFromZipCode = (zipCode, address = "", city = "") => {
   const normalized = normalizeZipCode(zipCode);
   if (normalized.length !== 8) {
     return "";
   }
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(normalized)}`;
+  const query = [
+    formatZipCode(normalized),
+    String(address || "").trim(),
+    String(city || "").trim(),
+    "Brasil",
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return `https://maps.google.com/?q=${encodeURIComponent(query)}`;
 };
 
 const extractZipCodeFromMapUrl = (mapUrlValue) => {
@@ -30,7 +46,10 @@ const extractZipCodeFromMapUrl = (mapUrlValue) => {
   }
   try {
     const parsed = new URL(raw);
-    const query = parsed.searchParams.get("query") || "";
+    const query =
+      parsed.searchParams.get("query") ||
+      parsed.searchParams.get("q") ||
+      "";
     const digits = normalizeZipCode(query);
     return digits.length === 8 ? digits : "";
   } catch {
@@ -135,7 +154,7 @@ export default function AdminPartners() {
       city: form.city,
       photoUrl: form.photoUrl,
       mapUrl:
-        buildMapUrlFromZipCode(form.zipCode) ||
+        buildMapUrlFromZipCode(form.zipCode, form.address, form.city) ||
         String(form.mapUrl || "").trim(),
       displayOrder,
       active: form.active,
