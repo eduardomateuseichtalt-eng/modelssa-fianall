@@ -29,11 +29,17 @@ const sanitizeUrl = (value: unknown) => {
   const text = sanitizeText(value, MAX_URL_LEN);
   if (!text) return null;
 
-  const lower = text.toLowerCase();
-  if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+  const normalized = /^https?:\/\//i.test(text) ? text : `https://${text}`;
+
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
     return null;
   }
-  return text;
 };
 
 router.get(
