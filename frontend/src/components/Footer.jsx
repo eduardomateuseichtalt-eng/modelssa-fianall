@@ -249,7 +249,11 @@ export default function Footer() {
         ) : null}
         <div className="footer-partners-grid">
           {locationResult.partnersToShow.map((partner) => (
-            <article key={partner.id} className="footer-partner-card">
+            <article
+              key={partner.id}
+              className="footer-partner-card"
+              title={`${partner.name}${partner.address ? ` | ${partner.address}` : ""}${partner.city ? ` | ${partner.city}` : ""}`}
+            >
               <div className="footer-partner-logo-shell">
                 {partner.logoUrl ? (
                   <img
@@ -265,11 +269,7 @@ export default function Footer() {
                 )}
               </div>
               <strong>{partner.name}</strong>
-              <p className="muted">
-                {partner.address}
-                <br />
-                {partner.city}
-              </p>
+              <p className="muted footer-partner-meta">{partner.city || partner.address}</p>
               {partner.mapUrl ? (
                 <a
                   href={partner.mapUrl}
@@ -277,7 +277,7 @@ export default function Footer() {
                   rel="noreferrer"
                   className="footer-partner-link"
                 >
-                  Ver no mapa
+                  Mapa
                 </a>
               ) : null}
             </article>
