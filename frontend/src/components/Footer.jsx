@@ -223,18 +223,13 @@ export default function Footer() {
         <p className="muted footer-partners-note">
           Logos e enderecos de parceiros comerciais.
         </p>
-        <div className="form-actions" style={{ marginTop: 10, marginBottom: 4 }}>
-          <button
-            className="btn btn-outline"
-            type="button"
-            onClick={detectLocationAndFilter}
-            style={{ padding: "8px 14px", fontSize: 12 }}
-          >
-            Usar minha localizacao
-          </button>
-        </div>
         {locationStatus === "locating" ? (
           <p className="muted footer-partners-note">Localizando parceiros proximos...</p>
+        ) : null}
+        {locationStatus === "unsupported" ? (
+          <p className="muted footer-partners-note">
+            Seu navegador nao suporta geolocalizacao.
+          </p>
         ) : null}
         {locationStatus === "ready" && detectedCity ? (
           <p className="muted footer-partners-note">
@@ -244,7 +239,13 @@ export default function Footer() {
               : " | sem parceiros na cidade detectada, exibindo lista geral."}
           </p>
         ) : null}
-        {locationError ? (
+        {locationStatus === "denied" ? (
+          <p className="muted footer-partners-note">
+            Permissao de localizacao bloqueada. Para ver parceiros proximos, habilite a
+            localizacao no navegador.
+          </p>
+        ) : null}
+        {locationError && locationStatus !== "denied" && locationStatus !== "unsupported" ? (
           <p className="muted footer-partners-note">{locationError}</p>
         ) : null}
         <div className="footer-partners-grid">
