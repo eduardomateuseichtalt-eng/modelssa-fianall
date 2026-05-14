@@ -3592,7 +3592,10 @@ select {
 }
 
 .footer-partners-note {
-  margin-top: 10px;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.82;
 }
 
 .footer-partners-grid {

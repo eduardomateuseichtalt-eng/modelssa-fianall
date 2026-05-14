@@ -220,29 +220,23 @@ export default function Footer() {
       </div>
       <div className="footer-partners">
         <h4 className="pill">Moteis Parceiros</h4>
-        <p className="muted footer-partners-note">
-          Logos e enderecos de parceiros comerciais.
-        </p>
         {locationStatus === "locating" ? (
-          <p className="muted footer-partners-note">Localizando parceiros proximos...</p>
+          <p className="muted footer-partners-note">Buscando parceiros proximos...</p>
         ) : null}
         {locationStatus === "unsupported" ? (
-          <p className="muted footer-partners-note">
-            Seu navegador nao suporta geolocalizacao.
-          </p>
+          <p className="muted footer-partners-note">Geolocalizacao indisponivel neste navegador.</p>
         ) : null}
         {locationStatus === "ready" && detectedCity ? (
           <p className="muted footer-partners-note">
-            Cidade detectada: {detectedCity}
+            Cidade: {detectedCity}
             {locationResult.matchCount > 0
-              ? ` | exibindo ${locationResult.matchCount} parceiro(s) da sua regiao.`
-              : " | sem parceiros na cidade detectada, exibindo lista geral."}
+              ? ` | ${locationResult.matchCount} parceiro(s) proximo(s).`
+              : " | sem parceiros na cidade, exibindo lista geral."}
           </p>
         ) : null}
         {locationStatus === "denied" ? (
           <p className="muted footer-partners-note">
-            Permissao de localizacao bloqueada. Para ver parceiros proximos, habilite a
-            localizacao no navegador.
+            Localizacao bloqueada no navegador.
           </p>
         ) : null}
         {locationError && locationStatus !== "denied" && locationStatus !== "unsupported" ? (
