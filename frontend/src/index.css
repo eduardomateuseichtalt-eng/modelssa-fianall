@@ -569,6 +569,12 @@ select {
   color: var(--accent);
 }
 
+.contact-whatsapp-btn {
+  margin-top: 14px;
+  display: inline-flex;
+  text-decoration: none;
+}
+
 .hero-panel {
   background: linear-gradient(160deg, rgba(20, 18, 23, 0.92), rgba(10, 9, 12, 0.92));
   border-radius: var(--radius-lg);
