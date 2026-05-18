@@ -12,9 +12,6 @@ export default function Contact() {
       <p className="muted" style={{ marginTop: 12 }}>
         atendimento aprimorado para anunciantes e acompanhantes.
       </p>
-      <p className="muted" style={{ marginTop: 8 }}>
-        WhatsApp: (47) 99148-1477
-      </p>
       <a className="btn contact-whatsapp-btn" href={whatsappUrl} target="_blank" rel="noreferrer">
         Chamar no WhatsApp
       </a>
