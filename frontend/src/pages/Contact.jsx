@@ -1,4 +1,8 @@
 export default function Contact() {
+  const whatsappNumber = "5547991481477";
+  const whatsappMessage = encodeURIComponent("Ola! Vim pela pagina de contato e gostaria de mais informacoes.");
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+
   return (
     <div className="page">
       <p className="pill">Contato</p>
@@ -8,6 +12,12 @@ export default function Contact() {
       <p className="muted" style={{ marginTop: 12 }}>
         atendimento aprimorado para anunciantes e acompanhantes.
       </p>
+      <p className="muted" style={{ marginTop: 8 }}>
+        WhatsApp: (47) 99148-1477
+      </p>
+      <a className="btn" href={whatsappUrl} target="_blank" rel="noreferrer" style={{ marginTop: 14 }}>
+        Chamar no WhatsApp
+      </a>
 
       <div className="section">
         <div className="form-shell">
