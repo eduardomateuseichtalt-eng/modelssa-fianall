@@ -1,6 +1,8 @@
 export default function Contact() {
   const whatsappNumber = "5547991481477";
-  const whatsappMessage = encodeURIComponent("Ola! Vim pela pagina de contato e gostaria de mais informacoes.");
+  const whatsappMessage = encodeURIComponent(
+    "Ola! Seja bem-vindo(a) ao Whats da Models-Club. Por aqui voce consegue solucionar qualquer problema relacionado a nossa plataforma. Como podemos ajuda-lo hoje?"
+  );
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
