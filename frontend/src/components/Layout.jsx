@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import AgeConsentModal from "./AgeConsentModal";
+import ScrollToTop from "./ScrollToTop";
 import { apiFetch } from "../lib/api";
 
 const METRICS_TIMEZONE = "America/Sao_Paulo";
@@ -38,6 +39,7 @@ export default function Layout() {
 
   return (
     <div className="app">
+      <ScrollToTop />
       <AgeConsentModal />
       <header className="topbar">
         <Navbar />
