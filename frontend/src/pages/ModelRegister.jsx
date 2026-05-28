@@ -39,6 +39,7 @@ const GENDER_IDENTITY_LABELS = {
 const MAX_FILES = 6;
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_VIDEO_SECONDS = 30;
+const ENABLE_PLAN_SELECTION_ON_REGISTER = false;
 
 const formatSize = (value) => {
   if (!value && value !== 0) {
@@ -484,14 +485,19 @@ export default function ModelRegister() {
       return;
     }
 
-    setShowPlanSelection(true);
+    if (ENABLE_PLAN_SELECTION_ON_REGISTER) {
+      setShowPlanSelection(true);
+      return;
+    }
+
+    handleConfirmPlanAndSubmit();
   };
 
   const handleConfirmPlanAndSubmit = async () => {
     setPlanSelectionError("");
     setMessage("");
 
-    if (!selectedPlanTier) {
+    if (ENABLE_PLAN_SELECTION_ON_REGISTER && !selectedPlanTier) {
       setPlanSelectionError("Selecione o plano para concluir o envio.");
       return;
     }
@@ -523,7 +529,7 @@ export default function ModelRegister() {
           price15Min: pricingValues.price15Min
             ? Number(pricingValues.price15Min)
             : null,
-          planTier: selectedPlanTier,
+          ...(selectedPlanTier ? { planTier: selectedPlanTier } : {}),
           emailVerificationToken: emailOtpVerifiedToken,
         }),
       });
@@ -1662,7 +1668,7 @@ export default function ModelRegister() {
               Limpar
             </button>
           </div>
-          {showPlanSelection ? (
+          {ENABLE_PLAN_SELECTION_ON_REGISTER && showPlanSelection ? (
             <div
               className="card"
               style={{
