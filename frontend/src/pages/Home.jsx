@@ -323,9 +323,12 @@ export default function Home() {
         .trim();
       if (transcript) {
         setCitySearch(transcript);
-        // navegar para resultados imediatamente
-        const cityParam = encodeURIComponent(stripUfSuffix(transcript));
-        navigate(`/modelos?cidade=${cityParam}`);
+        setCitySuggestions([]);
+        setActiveSuggestion(-1);
+        try {
+          inputRef?.current?.focus();
+        } catch (e) {}
+        // preenche o campo; usuário clica em Buscar para navegar
       }
     };
 
