@@ -146,6 +146,8 @@ export default function Home() {
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const debounceRef = useRef(null);
@@ -302,6 +304,47 @@ export default function Home() {
     };
   }, [normalizedCitySearch]);
 
+  // Inicializa reconhecimento de voz para busca por cidade
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.language = "pt-BR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((r) => r[0].transcript)
+        .join("")
+        .trim();
+      if (transcript) {
+        setCitySearch(transcript);
+        // navegar para resultados imediatamente
+        const cityParam = encodeURIComponent(stripUfSuffix(transcript));
+        navigate(`/modelos?cidade=${cityParam}`);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      try {
+        recognition.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    };
+  }, [navigate]);
+
   return (
     <div className="page">
       <section className="hero">
@@ -322,7 +365,7 @@ export default function Home() {
                 Cadastrar como cliente
               </Link>
             </div>
-            <div className="hero-search">
+              <div className="hero-search" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="text"
                 className="hero-search-input"
@@ -387,7 +430,33 @@ export default function Home() {
                     handleSearch();
                   }
                 }}
+                style={{ flex: 1 }}
               />
+              {window.SpeechRecognition || window.webkitSpeechRecognition ? (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    if (recognitionRef.current) {
+                      if (isListening) {
+                        recognitionRef.current.stop();
+                        setIsListening(false);
+                      } else {
+                        setIsListening(false);
+                        try {
+                          recognitionRef.current.start();
+                        } catch (e) {
+                          // ignore
+                        }
+                      }
+                    }
+                  }}
+                  title={isListening ? "Clique para parar" : "Clique para falar"}
+                  style={{ padding: '8px 12px' }}
+                >
+                  {isListening ? '🛑' : '🎤'}
+                </button>
+              ) : null}
               <button
                 className="hero-search-button"
                 type="button"
@@ -396,6 +465,12 @@ export default function Home() {
                 Buscar
               </button>
             </div>
+            {isListening && (
+              <p className="muted" style={{ marginTop: 8, textAlign: "center", fontSize: 13 }}>
+                🎤 Ouvindo...
+              </p>
+            )}
+
             {citySuggestions.length > 0 ? (
               <div
                 className="hero-search-suggestions"
