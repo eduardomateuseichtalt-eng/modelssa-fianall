@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
@@ -57,6 +57,8 @@ export default function ModelCityStats() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
 
   const colorMap = useMemo(() => {
     return colorOptions.reduce((acc, item) => {
@@ -64,6 +66,51 @@ export default function ModelCityStats() {
       return acc;
     }, {});
   }, []);
+
+  // Inicializa reconhecimento de voz
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.language = "pt-BR";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0].transcript)
+          .join("");
+        setSearchCity(transcript.trim());
+      };
+
+      recognition.onerror = () => {
+        setError("Erro ao reconhecer voz. Tente novamente.");
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleVoiceSearch = () => {
+    if (recognitionRef.current) {
+      if (isListening) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+      } else {
+        setError("");
+        recognitionRef.current.start();
+      }
+    }
+  };
 
   const segments = useMemo(() => {
     if (!stats || !stats.breakdown || stats.breakdown.length === 0) {
@@ -202,12 +249,34 @@ export default function ModelCityStats() {
 
         <div className="card stats-card">
           <h3>Preferencias na cidade</h3>
-          <input
-            className="input"
-            placeholder="Digite a cidade para consultar"
-            value={searchCity}
-            onChange={(event) => setSearchCity(event.target.value)}
-          />
+          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+            <input
+              className="input"
+              placeholder="Digite a cidade para consultar"
+              value={searchCity}
+              onChange={(event) => setSearchCity(event.target.value)}
+              style={{ flex: 1 }}
+            />
+            {window.SpeechRecognition || window.webkitSpeechRecognition ? (
+              <button
+                type="button"
+                className="btn"
+                onClick={toggleVoiceSearch}
+                style={{
+                  background: isListening ? "#ff6b6b" : undefined,
+                  padding: "10px 15px",
+                }}
+                title={isListening ? "Clique para parar" : "Clique para falar"}
+              >
+                {isListening ? "🛑" : "🎤"}
+              </button>
+            ) : null}
+          </div>
+          {isListening && (
+            <p className="muted" style={{ marginBottom: "12px", textAlign: "center", fontSize: "12px" }}>
+              🎤 Ouvindo...
+            </p>
+          )}
           {stats && stats.total > 0 ? (
             <div className="stats-chart">
               <svg viewBox="0 0 120 120" className="donut">
