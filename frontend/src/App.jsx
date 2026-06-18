@@ -21,6 +21,7 @@ import Faq from "./pages/Faq";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Shots from "./pages/Shots";
+import Reviews from "./pages/Reviews";
 import NotFound from "./pages/NotFound";
 import AdminApprovals from "./pages/AdminApprovals";
 import AdminPartners from "./pages/AdminPartners";
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/anuncie" element={<Pricing />} />
         <Route path="/faq" element={<Faq />} />
         <Route path="/shots" element={<Shots />} />
+        <Route path="/avaliacoes" element={<Reviews />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
           path="/admin"

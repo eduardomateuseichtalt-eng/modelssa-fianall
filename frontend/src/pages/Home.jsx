@@ -512,7 +512,7 @@ export default function Home() {
             <div className="popular-links">
               <h3 className="popular-title">Links populares</h3>
               <div className="popular-list">
-                <Link to="/modelos#avaliacoes" className="popular-item">
+                <Link to="/avaliacoes" className="popular-item">
                   <span className="popular-icon" aria-hidden="true" />
                   <span>Ler avaliacoes</span>
                   <span className="popular-chevron" aria-hidden="true" />

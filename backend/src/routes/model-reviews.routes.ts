@@ -86,6 +86,112 @@ async function ensureReviewTable() {
   reviewTableReady = true;
 }
 
+router.get("/top-models", asyncHandler(async (req: Request, res: Response) => {
+  const rawLimit = Number.parseInt(String(req.query.limit || "40"), 10);
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 40;
+
+  const groups = await prisma.modelReview.groupBy({
+    by: ["modelId"],
+    where: { model: { isVerified: true } },
+    _avg: {
+      ratingLocal: true,
+      ratingService: true,
+      ratingBody: true,
+    },
+    _count: {
+      id: true,
+    },
+  });
+
+  const ratedModels = groups
+    .map((group) => {
+      const localAvg = Number(group._avg?.ratingLocal || 0);
+      const serviceAvg = Number(group._avg?.ratingService || 0);
+      const bodyAvg = Number(group._avg?.ratingBody || 0);
+      const averageRating = (localAvg + serviceAvg + bodyAvg) / 3;
+      return {
+        id: group.modelId,
+        reviewCount: group._count.id,
+        averageRating,
+      };
+    })
+    .filter((group) => group.reviewCount > 0)
+    .sort((a, b) => {
+      if (b.averageRating !== a.averageRating) {
+        return b.averageRating - a.averageRating;
+      }
+      return b.reviewCount - a.reviewCount;
+    })
+    .slice(0, limit);
+
+  const modelIds = ratedModels.map((group) => group.id);
+  const models = await prisma.model.findMany({
+    where: {
+      id: { in: modelIds },
+      isVerified: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      city: true,
+      avatarUrl: true,
+      coverUrl: true,
+      genderIdentity: true,
+      priceHour: true,
+      price30Min: true,
+      price15Min: true,
+      planTier: true,
+      offeredServices: true,
+      media: {
+        where: {
+          status: "APPROVED",
+          purpose: "GALLERY",
+          type: "IMAGE",
+        },
+        orderBy: { createdAt: "asc" },
+        take: 3,
+        select: { url: true },
+      },
+    },
+  });
+
+  const modelMap = new Map(models.map((model) => [model.id, model]));
+  const items = ratedModels
+    .map((group) => {
+      const model = modelMap.get(group.id);
+      if (!model) {
+        return null;
+      }
+      return {
+        id: model.id,
+        name: model.name,
+        city: model.city,
+        avatarUrl: model.avatarUrl,
+        coverUrl: model.coverUrl,
+        genderIdentity: model.genderIdentity,
+        priceHour: model.priceHour,
+        price30Min: model.price30Min,
+        price15Min: model.price15Min,
+        planTier: model.planTier,
+        offeredServices: Array.isArray(model.offeredServices)
+          ? model.offeredServices
+          : [],
+        galleryPreviewPhotos: Array.isArray(model.media)
+          ? model.media.map((item) => item.url).filter(Boolean)
+          : [],
+        averageRating: Number(group.averageRating.toFixed(1)),
+        reviewCount: group.reviewCount,
+      };
+    })
+    .filter(Boolean);
+
+  return res.json({
+    items,
+    total: items.length,
+    limit,
+  });
+}));
+
 router.get("/:modelId", asyncHandler(async (req: Request, res: Response) => {
   const modelId = String(req.params.modelId || "").trim();
   if (!modelId) {
