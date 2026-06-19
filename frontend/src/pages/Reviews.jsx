@@ -40,39 +40,65 @@ export default function Reviews() {
           <p className="muted">Ainda nao existem avaliacoes publicas.</p>
         </div>
       ) : (
-        <div className="models-grid home-models-grid" style={{ marginTop: 18 }}>
-          {models.map((model) => (
-            <Link
-              key={model.id}
-              to={`/modelos/${model.id}`}
-              className="model-card home-model-card"
-            >
-              <div className="home-model-photo-frame">
-                <img
-                  className="model-photo home-model-photo"
-                  src={
-                    (model.galleryPreviewPhotos && model.galleryPreviewPhotos[0]) ||
-                    model.coverUrl ||
-                    model.avatarUrl ||
-                    "/model-placeholder.svg"
-                  }
-                  alt={model.name}
-                  loading="lazy"
-                />
-              </div>
-              <div className="model-info">
-                <h3>{model.name}</h3>
-                <p>{model.city || "Brasil"}</p>
-                <p className="muted" style={{ marginTop: 6 }}>
-                  {formatStars(model.averageRating)} {model.averageRating.toFixed(1)}/5
-                </p>
-                <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                  {model.reviewCount} avaliacoes
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <>
+          <p className="muted" style={{ marginTop: 18 }}>
+            Deslize para cima ou para baixo para ver outras avaliacoes.
+          </p>
+          <div
+            className="review-snap-container"
+            style={{
+              marginTop: 18,
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              maxHeight: "calc(100vh - 220px)",
+              overflowY: "auto",
+              scrollSnapType: "y mandatory",
+              paddingRight: 8,
+            }}
+          >
+            {models.map((model) => (
+              <Link
+                key={model.id}
+                to={`/modelos/${model.id}`}
+                className="model-card home-model-card"
+                style={{
+                  scrollSnapAlign: "start",
+                  minHeight: 320,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div>
+                  <div className="home-model-photo-frame">
+                    <img
+                      className="model-photo home-model-photo"
+                      src={
+                        (model.galleryPreviewPhotos && model.galleryPreviewPhotos[0]) ||
+                        model.coverUrl ||
+                        model.avatarUrl ||
+                        "/model-placeholder.svg"
+                      }
+                      alt={model.name}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="model-info" style={{ marginTop: 12 }}>
+                    <h3>{model.name}</h3>
+                    <p>{model.city || "Brasil"}</p>
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      {formatStars(model.averageRating)} {model.averageRating.toFixed(1)}/5
+                    </p>
+                    <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                      {model.reviewCount} avaliacoes
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
