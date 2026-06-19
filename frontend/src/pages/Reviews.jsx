@@ -30,9 +30,6 @@ export default function Reviews() {
       <h1 className="section-title">
         Avaliacoes <span>dos clientes</span>
       </h1>
-      <p className="muted" style={{ marginTop: 10 }}>
-        As acompanhantes com as melhores notas aparecem primeiro.
-      </p>
 
       {loading ? (
         <p style={{ marginTop: 24 }}>Carregando avaliacoes...</p>
