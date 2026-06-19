@@ -733,7 +733,7 @@ select {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   padding: 22px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
 }
 
 .card h4 {
@@ -2571,9 +2571,15 @@ select {
   padding: 12px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: #0f0e12;
-  color: var(--text);
+  background: #ffffff;
+  color: #111111;
   font-size: 15px;
+}
+
+.input::placeholder,
+.textarea::placeholder,
+.select::placeholder {
+  color: #7a746e;
 }
 
 .textarea {
@@ -2794,21 +2800,21 @@ select {
 }
 
 .media-uploader {
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border: 1px dashed rgba(17, 17, 17, 0.12);
   border-radius: 18px;
   padding: 18px;
   display: grid;
   gap: 16px;
-  background: rgba(15, 14, 18, 0.6);
+  background: #f8f7f4;
 }
 
 .profile-uploader {
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border: 1px dashed rgba(17, 17, 17, 0.12);
   border-radius: 18px;
   padding: 18px;
   display: grid;
   gap: 16px;
-  background: rgba(15, 14, 18, 0.6);
+  background: #f8f7f4;
 }
 
 .profile-preview {
@@ -2870,7 +2876,7 @@ select {
 }
 
 .media-card {
-  background: var(--panel-2);
+  background: #ffffff;
   border-radius: 16px;
   border: 1px solid var(--border);
   overflow: hidden;
