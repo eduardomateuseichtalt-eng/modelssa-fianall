@@ -5,17 +5,17 @@
 }
 
 :root {
-  color-scheme: dark;
-  --bg: #0b0a0c;
-  --bg-deep: #050507;
-  --panel: #141217;
-  --panel-2: #1c1921;
+  color-scheme: light;
+  --bg: #f7f5f2;
+  --bg-deep: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #f8f7f4;
   --accent: #d31a22;
   --gold: #c7a26b;
-  --text: #f5f2ee;
-  --muted: #b1a7a0;
-  --border: rgba(255, 255, 255, 0.08);
-  --shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+  --text: #111111;
+  --muted: #5d5a56;
+  --border: rgba(17, 17, 17, 0.08);
+  --shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
   --radius-lg: 18px;
   --radius-md: 12px;
   --radius-sm: 8px;
@@ -23,9 +23,7 @@
 
 body {
   font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
-  background: radial-gradient(circle at 10% 10%, #1c141a, transparent 50%),
-    radial-gradient(circle at 85% 15%, #1b120f, transparent 45%),
-    linear-gradient(160deg, var(--bg) 0%, var(--bg-deep) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f7f5f2 100%);
   color: var(--text);
   min-height: 100vh;
 }
