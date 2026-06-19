@@ -108,8 +108,8 @@ select {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(5, 5, 7, 0.92);
-  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
   backdrop-filter: blur(8px);
 }
 
@@ -131,17 +131,17 @@ select {
 }
 
 .topbar .brand {
-  color: var(--gold);
+  color: #111111;
 }
 
 .brand-mark {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 1px solid var(--gold);
+  border: 1px solid #111111;
   display: grid;
   place-items: center;
-  color: var(--gold);
+  color: #111111;
   font-weight: 700;
 }
 
@@ -152,6 +152,7 @@ select {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.15em;
+  color: #111111;
 }
 
 .nav-cta {
@@ -167,8 +168,8 @@ select {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  border: 1px solid var(--border);
-  background: rgba(15, 14, 18, 0.9);
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  background: #ffffff;
   display: none;
   align-content: center;
   justify-items: center;
@@ -179,7 +180,7 @@ select {
 .nav-hamburger span {
   width: 18px;
   height: 2px;
-  background: var(--gold);
+  background: #111111;
 }
 
 .mobile-nav {
