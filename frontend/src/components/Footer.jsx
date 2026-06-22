@@ -263,8 +263,8 @@ export default function Footer() {
                   </div>
                 )}
               </div>
-              <strong>{partner.name}</strong>
-              <p className="muted footer-partner-meta">{partner.city || partner.address}</p>
+              <strong style={{ color: "#ffffff" }}>{partner.name}</strong>
+              <p className="muted footer-partner-meta" style={{ color: "rgba(255,255,255,0.85)" }}>{partner.city || partner.address}</p>
               {partner.mapUrl ? (
                 <a
                   href={partner.mapUrl}

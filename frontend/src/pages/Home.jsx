@@ -615,8 +615,8 @@ export default function Home() {
                         className="model-card"
                         style={{ minWidth: 220, padding: 12, display: "block" }}
                       >
-                        <strong>{m.name}</strong>
-                        <p className="muted" style={{ marginTop: 6 }}>{m.city}</p>
+                        <strong style={{ color: "#ffffff" }}>{m.name}</strong>
+                        <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.city}</p>
                       </a>
                     ))}
                   </div>
