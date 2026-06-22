@@ -49,8 +49,6 @@ export default function Footer() {
   const [locationStatus, setLocationStatus] = useState("idle");
   const [detectedCity, setDetectedCity] = useState("");
   const [locationError, setLocationError] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [userSearchCity, setUserSearchCity] = useState("");
 
   const detectLocationAndFilter = () => {
     if (!navigator?.geolocation) {
@@ -157,10 +155,7 @@ export default function Footer() {
   }, []);
 
   const locationResult = useMemo(() => {
-    // Prioridade: cidade digitada > GPS detectada
-    const searchCity = userSearchCity || detectedCity;
-
-    if (!searchCity) {
+    if (!detectedCity) {
       return {
         partnersToShow: partners,
         matchCount: partners.length,
@@ -168,7 +163,7 @@ export default function Footer() {
     }
 
     const matched = partners.filter((partner) =>
-      isPartnerFromCity(partner.city, searchCity)
+      isPartnerFromCity(partner.city, detectedCity)
     );
     if (matched.length === 0) {
       return {
@@ -180,7 +175,7 @@ export default function Footer() {
       partnersToShow: matched,
       matchCount: matched.length,
     };
-  }, [partners, detectedCity, userSearchCity]);
+  }, [partners, detectedCity]);
 
   return (
     <footer className="footer">
@@ -225,55 +220,27 @@ export default function Footer() {
       </div>
       <div className="footer-partners">
         <h4 className="pill">Moteis Parceiros</h4>
-        <div style={{ marginTop: 12, marginBottom: 12 }}>
-          <input
-            type="text"
-            placeholder="Buscar moteis por cidade..."
-            value={searchInput}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSearchInput(val);
-              setUserSearchCity(val);
-            }}
-            style={{
-              width: "100%",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "1px solid #ccc",
-              fontSize: "14px",
-              fontFamily: "inherit",
-            }}
-          />
-        </div>
         {locationStatus === "locating" ? (
-          <p className="muted footer-partners-note">Buscando sua localização...</p>
+          <p className="muted footer-partners-note">Buscando parceiros proximos...</p>
         ) : null}
         {locationStatus === "unsupported" ? (
-          <p className="muted footer-partners-note">Digite uma cidade para buscar parceiros.</p>
+          <p className="muted footer-partners-note">Geolocalizacao indisponivel neste navegador.</p>
         ) : null}
-        {locationStatus === "ready" && detectedCity && !userSearchCity ? (
+        {locationStatus === "ready" && detectedCity ? (
           <p className="muted footer-partners-note">
-            Localização detectada: {detectedCity}
+            Cidade: {detectedCity}
             {locationResult.matchCount > 0
-              ? ` | ${locationResult.matchCount} parceiro(s) encontrado(s).`
-              : " | sem parceiros na cidade."}
-          </p>
-        ) : null}
-        {userSearchCity && locationStatus === "ready" ? (
-          <p className="muted footer-partners-note">
-            Buscando moteis em: {userSearchCity}
-            {locationResult.matchCount > 0
-              ? ` | ${locationResult.matchCount} parceiro(s) encontrado(s).`
-              : " | sem parceiros nesta cidade."}
+              ? ` | ${locationResult.matchCount} parceiro(s) proximo(s).`
+              : " | sem parceiros na cidade, exibindo lista geral."}
           </p>
         ) : null}
         {locationStatus === "denied" ? (
           <p className="muted footer-partners-note">
-            Localização bloqueada. Digite uma cidade para buscar.
+            Localizacao bloqueada no navegador.
           </p>
         ) : null}
-        {locationError && locationStatus !== "denied" && locationStatus !== "unsupported" && !detectedCity ? (
-          <p className="muted footer-partners-note">{locationError} Digite uma cidade acima.</p>
+        {locationError && locationStatus !== "denied" && locationStatus !== "unsupported" ? (
+          <p className="muted footer-partners-note">{locationError}</p>
         ) : null}
         <div className="footer-partners-grid">
           {locationResult.partnersToShow.map((partner) => (

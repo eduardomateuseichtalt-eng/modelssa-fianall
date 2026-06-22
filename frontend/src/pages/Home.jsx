@@ -143,6 +143,8 @@ export default function Home() {
   const [featuredGenderFilter, setFeaturedGenderFilter] = useState("WOMEN");
   const [citySearch, setCitySearch] = useState("");
   const [isComposing, setIsComposing] = useState(false);
+  const [motelPartners, setMotelPartners] = useState([]);
+  const [detectedMotelCity, setDetectedMotelCity] = useState("");
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -175,6 +177,22 @@ export default function Home() {
       .trim();
   const stripUfSuffix = (value) =>
     value.replace(/\s*-\s*[A-Za-z]{2}$/, "").trim();
+  const extractCityNameFromPartner = (value) => {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    if (text.includes("-")) return text.split("-")[0].trim();
+    if (text.includes(",")) return text.split(",")[0].trim();
+    return text;
+  };
+  const isPartnerFromCity = (partnerCity, detectedCity) => {
+    const partnerCityNorm = normalizeText(extractCityNameFromPartner(partnerCity));
+    const detectedCityNorm = normalizeText(detectedCity || "");
+    if (!partnerCityNorm || !detectedCityNorm) return false;
+    return (
+      partnerCityNorm.includes(detectedCityNorm) ||
+      detectedCityNorm.includes(partnerCityNorm)
+    );
+  };
   const formatCitySuggestion = (city) =>
     city.uf ? `${city.name} - ${city.uf}` : city.name;
   const selectSuggestion = (suggestion) => {
@@ -303,6 +321,75 @@ export default function Home() {
       }
     };
   }, [normalizedCitySearch]);
+
+  // Fetch motel partners once
+  useEffect(() => {
+    let mounted = true;
+    apiFetch("/api/motel-partners")
+      .then((data) => {
+        if (!mounted) return;
+        const safeData = Array.isArray(data) ? data : [];
+        setMotelPartners(
+          safeData.map((p) => ({
+            id: p.id,
+            name: p.name,
+            city: p.city || "",
+            mapUrl: p.mapUrl || "",
+            logoUrl: p.photoUrl || "",
+          }))
+        );
+      })
+      .catch(() => setMotelPartners([]));
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Detect geolocation to get city for motels (fallback if user doesn't search)
+  useEffect(() => {
+    if (!navigator?.geolocation) {
+      setDetectedMotelCity("");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const lat = Number(position.coords.latitude);
+          const lon = Number(position.coords.longitude);
+          const params = new URLSearchParams({
+            format: "jsonv2",
+            lat: String(lat),
+            lon: String(lon),
+            zoom: "10",
+            addressdetails: "1",
+          });
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?${params.toString()}`
+          );
+          if (!response.ok) {
+            return setDetectedMotelCity("");
+          }
+          const data = await response.json();
+          const address = data?.address || {};
+          const city =
+            address.city ||
+            address.town ||
+            address.municipality ||
+            address.village ||
+            address.county ||
+            "";
+          if (city) setDetectedMotelCity(String(city));
+        } catch (e) {
+          setDetectedMotelCity("");
+        }
+      },
+      () => {
+        setDetectedMotelCity("");
+      },
+      { enableHighAccuracy: false, timeout: 9000, maximumAge: 5 * 60 * 1000 }
+    );
+  }, []);
 
   // Inicializa reconhecimento de voz para busca por cidade
   useEffect(() => {
@@ -508,6 +595,34 @@ export default function Home() {
                 ))}
               </div>
             ) : null}
+
+            {/* Motels matching the searched/detected city (shows under search) */}
+            {(() => {
+              const searchCity = stripUfSuffix((citySearch || "").trim()) || detectedMotelCity;
+              if (!searchCity) return null;
+              const matched = motelPartners.filter((p) => isPartnerFromCity(p.city, searchCity));
+              if (!matched || matched.length === 0) return null;
+              return (
+                <div style={{ marginTop: 12, marginBottom: 12 }}>
+                  <h4 className="pill">Moteis nesta cidade</h4>
+                  <div style={{ display: "flex", gap: 12, marginTop: 8, overflowX: "auto" }}>
+                    {matched.map((m) => (
+                      <a
+                        key={m.id}
+                        href={m.mapUrl || "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="model-card"
+                        style={{ minWidth: 220, padding: 12, display: "block" }}
+                      >
+                        <strong>{m.name}</strong>
+                        <p className="muted" style={{ marginTop: 6 }}>{m.city}</p>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="popular-links">
               <h3 className="popular-title">Links populares</h3>
