@@ -551,24 +551,6 @@ export default function Home() {
 
         </div>
 
-        <div className="hero-visual">
-          <div className="hero-image">
-            <img
-              src="/models-club-favicon.png"
-              alt="Models-club"
-              className="hero-logo"
-            />
-          </div>
-          <div className="hero-panel">
-            <h3>Por que models-club</h3>
-            <ul>
-              <li>Selecao curada e perfis completos.</li>
-              <li>Contato direto e seguro.</li>
-              <li>Experiencia premium para anunciantes.</li>
-              <li>Ambiente 18+ com consentimento ativo.</li>
-            </ul>
-          </div>
-        </div>
       </section>
 
       <section className="section">
