@@ -26,6 +26,7 @@ export default function AgeConsentModal() {
     if (!navigator?.geolocation) {
       setLocationStatus("unsupported");
       setLocationMessage("Seu navegador não suporta geolocalização.");
+      setShowLocationBar(false);
       return;
     }
 
@@ -71,6 +72,7 @@ export default function AgeConsentModal() {
           setDetectedCity(cityName);
           setLocationStatus("ready");
           setLocationMessage(`Localização atualizada para ${cityName}.`);
+          setShowLocationBar(false);
 
           try {
             localStorage.setItem(DETECTED_CITY_STORAGE_KEY, cityName);
@@ -90,6 +92,7 @@ export default function AgeConsentModal() {
             : "Não foi possível obter sua localização.";
         setLocationStatus("denied");
         setLocationMessage(message);
+        setShowLocationBar(false);
       },
       {
         enableHighAccuracy: true,
@@ -107,6 +110,7 @@ export default function AgeConsentModal() {
 
   function dismissLocationPrompt() {
     setShowLocationBar(false);
+    setLocationMessage("Localização não autorizada.");
   }
 
   if (!visible && !showLocationBar) return null;

@@ -3780,9 +3780,9 @@ select {
 }
 
 .age-button-secondary {
-  background: transparent;
+  background: #fff;
   border: 1px solid rgba(43, 43, 43, 0.18);
-  color: #2b2b2b;
+  color: #111;
   text-align: center;
   text-decoration: none;
   box-shadow: none;
