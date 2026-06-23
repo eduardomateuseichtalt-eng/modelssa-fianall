@@ -12,14 +12,30 @@ export default function AgeConsentModal() {
   const [detectedCity, setDetectedCity] = useState("");
 
   useEffect(() => {
-    try {
-      const storedCity = localStorage.getItem(DETECTED_CITY_STORAGE_KEY);
-      if (storedCity) {
-        setDetectedCity(storedCity);
+    const resetPromptState = () => {
+      setVisible(true);
+      setShowLocationBar(false);
+      setLocationStatus("idle");
+      setLocationMessage("");
+
+      try {
+        const storedCity = localStorage.getItem(DETECTED_CITY_STORAGE_KEY);
+        if (storedCity) {
+          setDetectedCity(storedCity);
+        } else {
+          setDetectedCity("");
+        }
+      } catch {
+        setDetectedCity("");
       }
-    } catch {
-      // ignore storage issues
-    }
+    };
+
+    resetPromptState();
+    window.addEventListener("pageshow", resetPromptState);
+
+    return () => {
+      window.removeEventListener("pageshow", resetPromptState);
+    };
   }, []);
 
   async function requestLocation() {
@@ -102,15 +118,22 @@ export default function AgeConsentModal() {
     );
   }
 
-  function accept() {
-    setVisible(false);
+  function startLocationPrompt() {
+    setLocationStatus("idle");
+    setLocationMessage("Usaremos o GPS para descobrir a sua cidade e atualizar a busca automaticamente.");
     setShowLocationBar(true);
     void requestLocation();
   }
 
+  function accept() {
+    setVisible(false);
+    startLocationPrompt();
+  }
+
   function dismissLocationPrompt() {
     setShowLocationBar(false);
-    setLocationMessage("Localização não autorizada.");
+    setLocationStatus("idle");
+    setLocationMessage("");
   }
 
   if (!visible && !showLocationBar) return null;
