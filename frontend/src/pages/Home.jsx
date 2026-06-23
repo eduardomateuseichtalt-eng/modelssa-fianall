@@ -601,34 +601,6 @@ export default function Home() {
               </div>
             ) : null}
 
-            {/* Motels matching the searched/detected city (shows under search) */}
-            {(() => {
-              const searchCity = stripUfSuffix((citySearch || "").trim()) || detectedMotelCity;
-              if (!searchCity) return null;
-              const matched = motelPartners.filter((p) => isPartnerFromCity(p.city, searchCity));
-              if (!matched || matched.length === 0) return null;
-              return (
-                <div style={{ marginTop: 12, marginBottom: 12 }}>
-                  <h4 className="pill">Moteis nesta cidade</h4>
-                  <div style={{ display: "flex", gap: 12, marginTop: 8, overflowX: "auto" }}>
-                    {matched.map((m) => (
-                      <a
-                        key={m.id}
-                        href={m.mapUrl || "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="model-card"
-                        style={{ minWidth: 220, padding: 12, display: "block" }}
-                      >
-                        <strong style={{ color: "#ffffff" }}>{m.name}</strong>
-                        <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.city}</p>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
             <div className="popular-links">
               <h3 className="popular-title">Links populares</h3>
               <div className="popular-list">
@@ -667,6 +639,33 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {(() => {
+              const searchCity = stripUfSuffix((citySearch || "").trim()) || detectedMotelCity;
+              if (!searchCity) return null;
+              const matched = motelPartners.filter((p) => isPartnerFromCity(p.city, searchCity));
+              if (!matched || matched.length === 0) return null;
+              return (
+                <div style={{ marginTop: 24, marginBottom: 12 }}>
+                  <h4 className="pill">Moteis nesta cidade</h4>
+                  <div style={{ display: "flex", gap: 12, marginTop: 8, overflowX: "auto" }}>
+                    {matched.map((m) => (
+                      <a
+                        key={m.id}
+                        href={m.mapUrl || "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="model-card"
+                        style={{ minWidth: 220, padding: 12, display: "block" }}
+                      >
+                        <strong style={{ color: "#ffffff" }}>{m.name}</strong>
+                        <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.city}</p>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
         </div>
