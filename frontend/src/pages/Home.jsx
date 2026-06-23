@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
-import { getRotationStrategy, formatRotationTime } from "../lib/rotation";
+import { getRotationStrategy } from "../lib/rotation";
 
 function HomeFeaturedModelCard({ model }) {
   const fallbackPhoto = model.coverUrl || model.avatarUrl || "/model-placeholder.svg";
@@ -736,17 +736,7 @@ export default function Home() {
         {/* Modelo rotacionado em destaque */}
         {rotatedPrimaryModel && (
           <div style={{ marginBottom: 24 }}>
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between", 
-              alignItems: "center", 
-              marginBottom: 8 
-            }}>
-              <h3 className="pill" style={{ margin: 0 }}>🎯 Em Destaque Agora</h3>
-              <span className="muted" style={{ fontSize: 12 }}>
-                ⏱️ ~{formatRotationTime(rotationTimeMs)}
-              </span>
-            </div>
+            <h3 className="pill" style={{ margin: 0, marginBottom: 8 }}>🎯 Em Destaque Agora</h3>
             <div style={{ maxWidth: 280 }}>
               <HomeFeaturedModelCard model={rotatedPrimaryModel} />
             </div>
