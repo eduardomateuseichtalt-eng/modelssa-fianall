@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
 const PARTNER_MOTEIS_TESTE = [
@@ -32,6 +32,8 @@ const extractCityName = (value) => {
   return text;
 };
 
+const stripUfSuffix = (value) => String(value || "").replace(/\s*-\s*[A-Za-z]{2}$/, "").trim();
+
 const isPartnerFromCity = (partnerCity, detectedCity) => {
   const partnerCityNorm = normalizeText(extractCityName(partnerCity));
   const detectedCityNorm = normalizeText(detectedCity);
@@ -45,10 +47,15 @@ const isPartnerFromCity = (partnerCity, detectedCity) => {
 };
 
 export default function Footer() {
+  const location = useLocation();
   const [partners, setPartners] = useState(PARTNER_MOTEIS_TESTE);
   const [locationStatus, setLocationStatus] = useState("idle");
   const [detectedCity, setDetectedCity] = useState("");
   const [locationError, setLocationError] = useState("");
+
+  const query = new URLSearchParams(location.search);
+  const cityQuery = String(query.get("cidade") || query.get("city") || "").trim();
+  const searchCity = stripUfSuffix(cityQuery) || detectedCity;
 
   const detectLocationAndFilter = () => {
     if (!navigator?.geolocation) {
@@ -94,7 +101,10 @@ export default function Footer() {
             throw new Error("Cidade nao identificada.");
           }
 
-          setDetectedCity(String(city));
+          const cityName = String(city);
+          if (!cityQuery) {
+            setDetectedCity(cityName);
+          }
           setLocationStatus("ready");
         } catch (error) {
           setDetectedCity("");
@@ -155,7 +165,7 @@ export default function Footer() {
   }, []);
 
   const locationResult = useMemo(() => {
-    if (!detectedCity) {
+    if (!searchCity) {
       return {
         partnersToShow: partners,
         matchCount: partners.length,
@@ -163,7 +173,7 @@ export default function Footer() {
     }
 
     const matched = partners.filter((partner) =>
-      isPartnerFromCity(partner.city, detectedCity)
+      isPartnerFromCity(partner.city, searchCity)
     );
     if (matched.length === 0) {
       return {
@@ -175,7 +185,7 @@ export default function Footer() {
       partnersToShow: matched,
       matchCount: matched.length,
     };
-  }, [partners, detectedCity]);
+  }, [partners, detectedCity, searchCity]);
 
   return (
     <footer className="footer">
@@ -226,11 +236,11 @@ export default function Footer() {
         {locationStatus === "unsupported" ? (
           <p className="muted footer-partners-note">Geolocalizacao indisponivel neste navegador.</p>
         ) : null}
-        {locationStatus === "ready" && detectedCity ? (
+        {locationStatus === "ready" && searchCity ? (
           <p className="muted footer-partners-note">
-            Cidade: {detectedCity}
+            Cidade: {searchCity}
             {locationResult.matchCount > 0
-              ? ` | ${locationResult.matchCount} parceiro(s) proximo(s).`
+              ? ` | ${locationResult.matchCount} parceiro(s) nesta cidade.`
               : " | sem parceiros na cidade, exibindo lista geral."}
           </p>
         ) : null}
