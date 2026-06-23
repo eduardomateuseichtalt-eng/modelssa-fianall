@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
+import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
 
 const SERVICE_OPTIONS = [
@@ -802,7 +803,7 @@ export default function ModelProfile() {
       <section className="profile-public-shell">
         <div className="profile-public-hero">
           <div className="profile-public-cover">
-            <img
+            <ProgressiveImage
               className="model-photo"
               src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
               alt={model.name}
@@ -818,7 +819,7 @@ export default function ModelProfile() {
                 aria-label={hasShots ? "Abrir opcoes de foto e shots" : "Ver foto de perfil"}
               >
                 <span className="profile-public-avatar-ring">
-                  <img
+                  <ProgressiveImage
                     className="profile-public-avatar"
                     src={profileImageUrl}
                     alt={model.name}

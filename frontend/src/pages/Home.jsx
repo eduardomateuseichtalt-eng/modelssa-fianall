@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
 
 function HomeFeaturedModelCard({ model }) {
@@ -74,7 +75,7 @@ function HomeFeaturedModelCard({ model }) {
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
       >
-        <img
+        <ProgressiveImage
           className="model-photo home-model-photo"
           src={photos[activePhotoIndex] || fallbackPhoto}
           alt={model.name}

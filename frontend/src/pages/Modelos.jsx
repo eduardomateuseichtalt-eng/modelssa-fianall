@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
 
 export default function Modelos() {
@@ -236,7 +237,7 @@ export default function Modelos() {
           ) : null}
           <div className="models-grid public-models-grid">
             <Link to="/seja-modelo" className="model-card public-model-card">
-              <img
+              <ProgressiveImage
                 className="model-photo public-model-photo"
                 src="/foto/ChatGPT Image 9 de jan. de 2026, 15_38_16.png"
                 alt="Acompanhante em destaque"
@@ -267,7 +268,7 @@ export default function Modelos() {
               className="model-card public-model-card"
             >
               <div className="model-photo-frame">
-                <img
+                <ProgressiveImage
                   className="model-photo public-model-photo"
                   src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
                   alt={model.name}

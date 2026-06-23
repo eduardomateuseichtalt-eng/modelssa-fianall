@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
 
 const formatStars = (value) => {
@@ -72,7 +73,7 @@ export default function Reviews() {
               >
                 <div>
                   <div className="home-model-photo-frame">
-                    <img
+                    <ProgressiveImage
                       className="model-photo home-model-photo"
                       src={
                         (model.galleryPreviewPhotos && model.galleryPreviewPhotos[0]) ||
