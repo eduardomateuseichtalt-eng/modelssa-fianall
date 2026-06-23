@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
-import { getRotationStrategy } from "../lib/rotation";
 
 function HomeFeaturedModelCard({ model }) {
   const fallbackPhoto = model.coverUrl || model.avatarUrl || "/model-placeholder.svg";
@@ -150,13 +149,10 @@ export default function Home() {
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [rotationIndex, setRotationIndex] = useState(0);
-  const [rotationTimeMs, setRotationTimeMs] = useState(86400000);
   const recognitionRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const debounceRef = useRef(null);
-  const rotationIntervalRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -172,32 +168,7 @@ export default function Home() {
       .catch(() => setModels([]));
   }, []);
 
-  // Configura rotação de cards baseada na cidade com mais modelos
-  useEffect(() => {
-    if (!models || models.length === 0) {
-      setRotationIndex(0);
-      return;
-    }
-
-    const rotationStrategy = getRotationStrategy(models);
-    setRotationTimeMs(rotationStrategy.timeMs);
-
-    // Limpa intervalo anterior
-    if (rotationIntervalRef.current) {
-      clearInterval(rotationIntervalRef.current);
-    }
-
-    // Configura novo intervalo de rotação
-    rotationIntervalRef.current = setInterval(() => {
-      setRotationIndex((prevIndex) => (prevIndex + 1) % models.length);
-    }, rotationStrategy.timeMs);
-
-    return () => {
-      if (rotationIntervalRef.current) {
-        clearInterval(rotationIntervalRef.current);
-      }
-    };
-  }, [models]);
+  
 
   const normalizeText = (value) =>
     value
@@ -263,13 +234,7 @@ export default function Home() {
   const featuredBasicModels = basicModels.slice(0, remainingSlots);
   const featuredModels = [...featuredProModels, ...featuredBasicModels].slice(0, 15);
   
-  // Cria versão rotacionada dos featured models (rotaciona entre todos os modelos carregados)
-  const allGenderFilteredModels = models.filter(
-    (model) => normalizeGenderCategory(model.genderIdentity) === featuredGenderFilter
-  );
-  const rotatedPrimaryModel = allGenderFilteredModels.length > 0 
-    ? allGenderFilteredModels[rotationIndex % allGenderFilteredModels.length]
-    : null;
+  
 
   const modelosLink = cityQuery
     ? `/modelos?cidade=${encodeURIComponent(cityQuery)}`
@@ -708,62 +673,7 @@ export default function Home() {
 
       </section>
 
-      <section className="section">
-        <h2 className="section-title">
-          Acompanhantes em destaque
-        </h2>
-        <p className="muted" style={{ marginTop: 10 }}>
-          Uma vitrine com os perfis mais acessados da semana.
-        </p>
-        <div className="home-gender-filter">
-          <span className="home-gender-filter-label">Ver por categoria:</span>
-          <div className="home-gender-filter-actions">
-            {FEATURED_GENDER_FILTERS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className={`home-gender-filter-btn ${
-                  featuredGenderFilter === option.id ? "active" : ""
-                }`}
-                onClick={() => setFeaturedGenderFilter(option.id)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Modelo rotacionado em destaque */}
-        {rotatedPrimaryModel && (
-          <div style={{ marginBottom: 24 }}>
-            <h3 className="pill" style={{ margin: 0, marginBottom: 8 }}>🎯 Em Destaque Agora</h3>
-            <div style={{ maxWidth: 280 }}>
-              <HomeFeaturedModelCard model={rotatedPrimaryModel} />
-            </div>
-          </div>
-        )}
-
-        <div className="models-grid home-models-grid">
-          {featuredModels.length === 0 ? (
-            <Link to="/seja-modelo" className="model-card home-model-card">
-              <img
-                className="model-photo home-model-photo home-model-logo"
-                src="/models-club-favicon.png"
-                alt="Models-club"
-                loading="lazy"
-              />
-              <div className="model-info">
-                <h3>Acompanhante em destaque</h3>
-                <p>Seja a primeira a criar um perfil premium</p>
-              </div>
-            </Link>
-          ) : (
-            featuredModels.map((model) => (
-              <HomeFeaturedModelCard model={model} key={model.id} />
-            ))
-          )}
-        </div>
-      </section>
+      
 
       <section className="section">
         <h2 className="section-title">
