@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { getRotationStrategy, formatRotationTime } from "../lib/rotation";
 
 function HomeFeaturedModelCard({ model }) {
   const fallbackPhoto = model.coverUrl || model.avatarUrl || "/model-placeholder.svg";
@@ -149,10 +150,13 @@ export default function Home() {
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [rotationIndex, setRotationIndex] = useState(0);
+  const [rotationTimeMs, setRotationTimeMs] = useState(86400000);
   const recognitionRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const debounceRef = useRef(null);
+  const rotationIntervalRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -167,6 +171,33 @@ export default function Home() {
       })
       .catch(() => setModels([]));
   }, []);
+
+  // Configura rotação de cards baseada na cidade com mais modelos
+  useEffect(() => {
+    if (!models || models.length === 0) {
+      setRotationIndex(0);
+      return;
+    }
+
+    const rotationStrategy = getRotationStrategy(models);
+    setRotationTimeMs(rotationStrategy.timeMs);
+
+    // Limpa intervalo anterior
+    if (rotationIntervalRef.current) {
+      clearInterval(rotationIntervalRef.current);
+    }
+
+    // Configura novo intervalo de rotação
+    rotationIntervalRef.current = setInterval(() => {
+      setRotationIndex((prevIndex) => (prevIndex + 1) % models.length);
+    }, rotationStrategy.timeMs);
+
+    return () => {
+      if (rotationIntervalRef.current) {
+        clearInterval(rotationIntervalRef.current);
+      }
+    };
+  }, [models]);
 
   const normalizeText = (value) =>
     value
@@ -231,6 +262,15 @@ export default function Home() {
   const remainingSlots = Math.max(15 - featuredProModels.length, 0);
   const featuredBasicModels = basicModels.slice(0, remainingSlots);
   const featuredModels = [...featuredProModels, ...featuredBasicModels].slice(0, 15);
+  
+  // Cria versão rotacionada dos featured models (rotaciona entre todos os modelos carregados)
+  const allGenderFilteredModels = models.filter(
+    (model) => normalizeGenderCategory(model.genderIdentity) === featuredGenderFilter
+  );
+  const rotatedPrimaryModel = allGenderFilteredModels.length > 0 
+    ? allGenderFilteredModels[rotationIndex % allGenderFilteredModels.length]
+    : null;
+
   const modelosLink = cityQuery
     ? `/modelos?cidade=${encodeURIComponent(cityQuery)}`
     : "/modelos";
@@ -692,6 +732,27 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* Modelo rotacionado em destaque */}
+        {rotatedPrimaryModel && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center", 
+              marginBottom: 8 
+            }}>
+              <h3 className="pill" style={{ margin: 0 }}>🎯 Em Destaque Agora</h3>
+              <span className="muted" style={{ fontSize: 12 }}>
+                ⏱️ ~{formatRotationTime(rotationTimeMs)}
+              </span>
+            </div>
+            <div style={{ maxWidth: 280 }}>
+              <HomeFeaturedModelCard model={rotatedPrimaryModel} />
+            </div>
+          </div>
+        )}
+
         <div className="models-grid home-models-grid">
           {featuredModels.length === 0 ? (
             <Link to="/seja-modelo" className="model-card home-model-card">
