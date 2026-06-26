@@ -127,14 +127,27 @@ model Media {
 }
 
 model SiteAccess {
-  id              String   @id @default(uuid())
-  dayKey          String
-  fingerprintHash String
-  countryCode     String?
-  createdAt       DateTime @default(now())
+  id               String   @id @default(uuid())
+  dayKey           String
+  fingerprintHash  String
+  ipAddress        String?
+  countryCode      String?
+  region           String?
+  city             String?
+  userAgent        String?
+  browser          String?
+  os               String?
+  deviceType       String?
+  language         String?
+  referrer         String?
+  path             String?
+  source           String?
+  screenResolution String?
+  createdAt        DateTime @default(now())
 
   @@index([createdAt])
   @@index([dayKey])
+  @@index([source])
   @@unique([dayKey, fingerprintHash])
 }
 
