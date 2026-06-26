@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
+import ProgressiveImage from "../components/ProgressiveImage";
 
 function normalizeCityText(value) {
   return String(value || "")
@@ -344,9 +345,10 @@ export default function Shots() {
                   >
                     <div className="shots-card-thumb">
                       {shot.type === "IMAGE" && shot.imageUrl ? (
-                        <img
+                        <ProgressiveImage
                           src={shot.imageUrl}
                           alt={`Shot de ${shot.model?.name || "Acompanhante"}`}
+                          loading="lazy"
                         />
                       ) : shot.videoUrl ? (
                         <video
@@ -396,9 +398,10 @@ export default function Shots() {
             >
               <div className="shots-card-thumb">
                 {shot.type === "IMAGE" && shot.imageUrl ? (
-                  <img
+                  <ProgressiveImage
                     src={shot.imageUrl}
                     alt={`Shot de ${shot.model?.name || "Acompanhante"}`}
+                    loading="lazy"
                   />
                 ) : shot.videoUrl ? (
                   <video src={shot.videoUrl} muted loop playsInline preload="metadata" />
@@ -433,9 +436,10 @@ export default function Shots() {
                 data-reel-index={index}
               >
                 {shot.type === "IMAGE" && shot.imageUrl ? (
-                  <img
+                  <ProgressiveImage
                     src={shot.imageUrl}
                     alt={`Shot de ${shot.model?.name || "Acompanhante"}`}
+                    loading="eager"
                   />
                 ) : shot.videoUrl ? (
                   <video src={shot.videoUrl} playsInline controls preload="metadata" />

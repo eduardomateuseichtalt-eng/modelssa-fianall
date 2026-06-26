@@ -1,6 +1,8 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { buildProgressiveUploadFormData } from "../lib/progressiveUpload";
+import ProgressiveImage from "../components/ProgressiveImage";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_SHOT_VIDEO_SECONDS = 10;
@@ -906,8 +908,7 @@ export default function ModelDashboard() {
     setShotError("");
     setShotMessage("");
     try {
-      const formData = new FormData();
-      shotFiles.forEach((file) => formData.append("files", file));
+      const formData = await buildProgressiveUploadFormData(shotFiles);
       await apiFetch("/api/shots/upload", {
         method: "POST",
         body: formData,
@@ -931,8 +932,7 @@ export default function ModelDashboard() {
     setMediaError("");
     setMessage("");
     try {
-      const formData = new FormData();
-      mediaFiles.forEach((file) => formData.append("files", file));
+      const formData = await buildProgressiveUploadFormData(mediaFiles);
       await apiFetch("/api/media/upload-self", {
         method: "POST",
         body: formData,
@@ -1140,8 +1140,9 @@ export default function ModelDashboard() {
 
     setAvatarUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      const formData = await buildProgressiveUploadFormData([file], {
+        fileField: "file",
+      });
       const upload = await apiFetch("/api/media/profile-image", {
         method: "POST",
         body: formData,
@@ -1180,8 +1181,9 @@ export default function ModelDashboard() {
 
     setCoverUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      const formData = await buildProgressiveUploadFormData([file], {
+        fileField: "file",
+      });
       const upload = await apiFetch("/api/media/profile-image", {
         method: "POST",
         body: formData,
@@ -1609,7 +1611,7 @@ export default function ModelDashboard() {
                     background: "var(--panel-2)",
                   }}
                 >
-                  <img
+                  <ProgressiveImage
                     src={profileAvatarUrl || "/model-placeholder.svg"}
                     alt="Foto de perfil"
                     style={{
@@ -1659,7 +1661,7 @@ export default function ModelDashboard() {
                     background: "var(--panel-2)",
                   }}
                 >
-                  <img
+                  <ProgressiveImage
                     src={profileCoverUrl || "/model-placeholder.svg"}
                     alt="Foto de capa"
                     style={{
@@ -2665,9 +2667,10 @@ export default function ModelDashboard() {
                     style={{ width: "100%", marginTop: 12 }}
                   />
                 ) : (
-                  <img
+                  <ProgressiveImage
                     src={item.url}
                     alt="Midia enviada"
+                    loading="lazy"
                     style={{ width: "100%", marginTop: 12, borderRadius: 12 }}
                   />
                 )}

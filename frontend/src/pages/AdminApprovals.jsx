@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { useNoIndex } from "../lib/useNoIndex";
+import ProgressiveImage from "../components/ProgressiveImage";
 
 export default function AdminApprovals() {
   useNoIndex();
@@ -22,6 +23,9 @@ export default function AdminApprovals() {
   const [error, setError] = useState("");
   const [metrics, setMetrics] = useState(null);
   const [metricsError, setMetricsError] = useState("");
+  const [accessLogs, setAccessLogs] = useState([]);
+  const [accessLogsLoading, setAccessLogsLoading] = useState(false);
+  const [accessLogsError, setAccessLogsError] = useState("");
   const [pendingMedia, setPendingMedia] = useState([]);
   const [mediaError, setMediaError] = useState("");
   const [faqReports, setFaqReports] = useState([]);
@@ -72,6 +76,14 @@ export default function AdminApprovals() {
     apiFetch("/api/media/pending")
       .then((data) => setPendingMedia(data))
       .catch((err) => setMediaError(err.message || "Erro ao carregar midias."));
+  }, []);
+
+  useEffect(() => {
+    setAccessLogsLoading(true);
+    apiFetch("/api/metrics/accesses")
+      .then((data) => setAccessLogs(Array.isArray(data) ? data : []))
+      .catch((err) => setAccessLogsError(err.message || "Erro ao carregar acessos."))
+      .finally(() => setAccessLogsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -928,9 +940,10 @@ export default function AdminApprovals() {
                     style={{ width: "100%", marginTop: 12 }}
                   />
                 ) : (
-                  <img
+                  <ProgressiveImage
                     src={media.url}
                     alt="Midia enviada"
+                    loading="lazy"
                     style={{ width: "100%", marginTop: 12, borderRadius: 12 }}
                   />
                 )}

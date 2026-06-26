@@ -778,16 +778,23 @@ select {
 }
 
 .progressive-image {
-  filter: blur(12px);
-  transform: scale(1.02);
+  filter: blur(14px);
+  transform: scale(1.04);
   transition: filter 0.4s ease, transform 0.4s ease, opacity 0.4s ease;
-  opacity: 0.92;
+  opacity: 0.9;
+  will-change: filter, opacity;
 }
 
 .progressive-image--loaded {
   filter: blur(0);
   transform: scale(1);
   opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressive-image {
+    transition: none;
+  }
 }
 
 .model-badge {

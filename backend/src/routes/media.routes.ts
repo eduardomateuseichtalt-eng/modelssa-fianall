@@ -3,10 +3,19 @@ import crypto from "crypto";
 import multer from "multer";
 import { prisma } from "../lib/prisma";
 import { getUserFromRequest, requireAdmin, requireAuth } from "../lib/auth";
-import { deleteFromBunny, uploadToBunny, validateBunnyConnection } from "../lib/bunny";
+import {
+  deleteFromBunny,
+  deleteThumbnailFromBunny,
+  validateBunnyConnection,
+} from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
 import { getModelMediaLimits } from "../lib/model-plan";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
+import {
+  getProgressiveUploadFiles,
+  getProgressiveUploadThumbnails,
+  uploadProgressiveFile,
+} from "../lib/progressive-upload";
 
 const router = Router();
 
@@ -16,6 +25,15 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024,
   },
 });
+
+const progressiveMediaUpload = upload.fields([
+  { name: "files", maxCount: 15 },
+  { name: "thumbnails", maxCount: 15 },
+]);
+const progressiveProfileUpload = upload.fields([
+  { name: "file", maxCount: 1 },
+  { name: "thumbnails", maxCount: 1 },
+]);
 
 const allowedTypes = new Set([
   "image/jpeg",
@@ -122,7 +140,7 @@ const ensureAgeVerified = async (req: Request, modelId?: string) => {
 router.post(
   "/upload",
   requireAuth,
-  upload.array("files", 15),
+  progressiveMediaUpload,
   asyncHandler(async (req: Request, res: Response) => {
     const user = res.locals.user as { id: string; role: string } | undefined;
     if (!user || (user.role !== "MODEL" && user.role !== "ADMIN")) {
@@ -133,7 +151,8 @@ router.post(
       user.role === "ADMIN"
         ? String(req.body?.modelId || "").trim()
         : user.id;
-    const files = req.files as Express.Multer.File[];
+    const files = getProgressiveUploadFiles(req);
+    const thumbnails = getProgressiveUploadThumbnails(req);
 
     if (!modelId) {
       return res.status(400).json({ error: "ModelId obrigatorio" });
@@ -186,12 +205,8 @@ router.post(
       });
     }
 
-    for (const file of files) {
-      const result = await uploadToBunny(
-        file.buffer,
-        file.originalname,
-        file.mimetype
-      );
+    for (const [fileIndex, file] of files.entries()) {
+      const result = await uploadProgressiveFile(file, thumbnails.get(fileIndex));
 
       const normalizedUrl = normalizeStoredUrl(result.url);
 
@@ -231,7 +246,7 @@ router.post(
 router.post(
   "/upload-self",
   requireAuth,
-  upload.array("files", 15),
+  progressiveMediaUpload,
   asyncHandler(async (req: Request, res: Response) => {
     const user = res.locals.user as { id: string; role: string };
     if (!user || user.role !== "MODEL") {
@@ -239,7 +254,8 @@ router.post(
     }
 
     const modelId = user.id;
-    const files = req.files as Express.Multer.File[];
+    const files = getProgressiveUploadFiles(req);
+    const thumbnails = getProgressiveUploadThumbnails(req);
 
     if (!files || files.length === 0) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
@@ -314,12 +330,8 @@ router.post(
     let needsCover = !model.coverUrl;
     let needsAvatar = !model.avatarUrl;
 
-    for (const file of files) {
-      const result = await uploadToBunny(
-        file.buffer,
-        file.originalname,
-        file.mimetype
-      );
+    for (const [fileIndex, file] of files.entries()) {
+      const result = await uploadProgressiveFile(file, thumbnails.get(fileIndex));
 
       const normalizedUrl = normalizeStoredUrl(result.url);
 
@@ -359,14 +371,15 @@ router.post(
 router.post(
   "/profile-image",
   requireAuth,
-  upload.single("file"),
+  progressiveProfileUpload,
   asyncHandler(async (req: Request, res: Response) => {
     const user = res.locals.user as { id: string; role: string } | undefined;
     if (!user || user.role !== "MODEL") {
       return res.status(403).json({ error: "Acesso restrito" });
     }
 
-    const file = req.file as Express.Multer.File | undefined;
+    const file = getProgressiveUploadFiles(req, "file")[0];
+    const thumbnail = getProgressiveUploadThumbnails(req).get(0);
     if (!file) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
     }
@@ -405,11 +418,7 @@ router.post(
       return respondModelTrialExpired(res, model);
     }
 
-    const result = await uploadToBunny(
-      file.buffer,
-      file.originalname,
-      file.mimetype
-    );
+    const result = await uploadProgressiveFile(file, thumbnail);
 
     return res.json({ url: normalizeStoredUrl(result.url) });
   })
@@ -634,6 +643,9 @@ router.patch("/:id/reject", requireAdmin, asyncHandler(async (req: Request, res:
   }
 
   await deleteFromBunny(media.url);
+  if (media.type === "IMAGE") {
+    await deleteThumbnailFromBunny(media.url);
+  }
   await prisma.media.delete({ where: { id } });
 
   return res.json({ status: "deleted" });
@@ -645,7 +657,7 @@ router.delete("/purge-rejected", requireAdmin, asyncHandler(async (req: Request,
 
   const rejected = await prisma.media.findMany({
     where: { status: "REJECTED", createdAt: { lt: cutoff } },
-    select: { id: true, url: true },
+    select: { id: true, url: true, type: true },
   });
 
   const deletedIds: string[] = [];
@@ -654,6 +666,9 @@ router.delete("/purge-rejected", requireAdmin, asyncHandler(async (req: Request,
   for (const item of rejected) {
     try {
       await deleteFromBunny(item.url);
+      if (item.type === "IMAGE") {
+        await deleteThumbnailFromBunny(item.url);
+      }
       deletedIds.push(item.id);
     } catch (error) {
       errors.push(
@@ -715,6 +730,10 @@ router.delete("/:id", requireAuth, asyncHandler(async (req: Request, res: Respon
     return res.status(403).json({ error: "Acesso restrito" });
   }
 
+  await deleteFromBunny(media.url);
+  if (media.type === "IMAGE") {
+    await deleteThumbnailFromBunny(media.url);
+  }
   await prisma.media.delete({ where: { id } });
 
   return res.json({ status: "deleted" });

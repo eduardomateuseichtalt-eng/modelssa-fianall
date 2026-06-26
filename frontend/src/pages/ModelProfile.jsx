@@ -807,6 +807,8 @@ export default function ModelProfile() {
               className="model-photo"
               src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
               alt={model.name}
+              loading="eager"
+              fetchPriority="high"
             />
           </div>
 
@@ -823,6 +825,7 @@ export default function ModelProfile() {
                     className="profile-public-avatar"
                     src={profileImageUrl}
                     alt={model.name}
+                    loading="eager"
                   />
                 </span>
                 {hasShots ? <span className="profile-public-avatar-status">shots</span> : null}
@@ -980,7 +983,11 @@ export default function ModelProfile() {
                       {item.type === "VIDEO" ? (
                         <video src={item.url} preload="metadata" playsInline />
                       ) : (
-                        <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
+                        <ProgressiveImage
+                          src={item.url}
+                          alt="Midia da acompanhante"
+                          loading="lazy"
+                        />
                       )}
                       <Link to={ageGateLink} className="profile-public-media-lock">
                         <div className="profile-public-media-lock-text">
@@ -1013,7 +1020,11 @@ export default function ModelProfile() {
                         className="profile-public-media-card"
                         onClick={() => openMediaViewer(item)}
                       >
-                        <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
+                        <ProgressiveImage
+                          src={item.url}
+                          alt="Midia da acompanhante"
+                          loading="lazy"
+                        />
                       </button>
                     )
                   )}
@@ -1051,7 +1062,11 @@ export default function ModelProfile() {
                         className="profile-public-media-card"
                         onClick={() => openMediaViewer(item)}
                       >
-                        <img src={item.url} alt="Midia da acompanhante" loading="lazy" />
+                        <ProgressiveImage
+                          src={item.url}
+                          alt="Midia da acompanhante"
+                          loading="lazy"
+                        />
                       </button>
                     )
                   )}
@@ -1399,7 +1414,7 @@ export default function ModelProfile() {
               </button>
             </div>
             <div className="profile-public-viewer-media">
-              <img src={profileImageUrl} alt={model.name} />
+              <ProgressiveImage src={profileImageUrl} alt={model.name} loading="eager" />
             </div>
           </div>
         </div>
@@ -1433,7 +1448,11 @@ export default function ModelProfile() {
                         poster={shot.posterUrl || undefined}
                       />
                     ) : shot.imageUrl ? (
-                      <img src={shot.imageUrl} alt={`Shot de ${model.name}`} loading="lazy" />
+                      <ProgressiveImage
+                        src={shot.imageUrl}
+                        alt={`Shot de ${model.name}`}
+                        loading="lazy"
+                      />
                     ) : (
                       <div className="shot-placeholder">Shot indisponivel</div>
                     )}
@@ -1488,10 +1507,11 @@ export default function ModelProfile() {
               {mediaViewerItem.type === "VIDEO" ? (
                 <video src={mediaViewerItem.url} controls preload="metadata" playsInline />
               ) : (
-                <img
+                <ProgressiveImage
                   ref={mediaImageRef}
                   src={mediaViewerItem.url}
                   alt="Midia da acompanhante"
+                  loading="eager"
                   className={`profile-public-viewer-zoomable ${
                     mediaZoom > 1 ? "is-zoomed" : ""
                   } ${isMediaDragging ? "is-dragging" : ""}`}
@@ -1514,5 +1534,3 @@ export default function ModelProfile() {
     </div>
   );
 }
-
-

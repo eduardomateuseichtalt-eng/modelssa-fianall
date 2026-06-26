@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { apiFetch, API_URL } from "../lib/api";
+import { buildProgressiveUploadFormData } from "../lib/progressiveUpload";
 
 const initialForm = {
   name: "",
@@ -549,11 +550,8 @@ export default function ModelRegister() {
           throw new Error("Nao foi possivel autenticar para envio de midia.");
         }
 
-        const formData = new FormData();
-        if (profileFile) {
-          formData.append("files", profileFile);
-        }
-        mediaFiles.forEach((file) => formData.append("files", file));
+        const filesToUpload = profileFile ? [profileFile, ...mediaFiles] : mediaFiles;
+        const formData = await buildProgressiveUploadFormData(filesToUpload);
 
         await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();

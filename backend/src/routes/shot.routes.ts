@@ -2,9 +2,14 @@ import { Router, Request, Response } from "express";
 import multer from "multer";
 import { prisma } from "../lib/prisma";
 import { getUserFromRequest, requireAuth } from "../lib/auth";
-import { deleteFromBunny, uploadToBunny } from "../lib/bunny";
+import { deleteFromBunny, deleteThumbnailFromBunny } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
+import {
+  getProgressiveUploadFiles,
+  getProgressiveUploadThumbnails,
+  uploadProgressiveFile,
+} from "../lib/progressive-upload";
 
 const router = Router();
 
@@ -14,6 +19,11 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024,
   },
 });
+
+const progressiveShotUpload = upload.fields([
+  { name: "files", maxCount: 2 },
+  { name: "thumbnails", maxCount: 2 },
+]);
 
 const shotTypes = new Set([
   "image/jpeg",
@@ -154,6 +164,16 @@ async function purgeExpiredShots() {
       } catch (error) {
         deleteErrors.push(
           error instanceof Error ? error.message : "Falha ao deletar shot"
+        );
+      }
+    }
+
+    if (shot.imageUrl) {
+      try {
+        await deleteThumbnailFromBunny(shot.imageUrl);
+      } catch (error) {
+        deleteErrors.push(
+          error instanceof Error ? error.message : "Falha ao deletar miniatura do shot"
         );
       }
     }
@@ -368,7 +388,7 @@ router.get("/nearby", asyncHandler(async (req: Request, res: Response) => {
 router.post(
   "/upload",
   requireAuth,
-  upload.array("files", 2),
+  progressiveShotUpload,
   asyncHandler(async (req: Request, res: Response) => {
     await purgeExpiredShots();
     const user = res.locals.user as { id: string; role: string };
@@ -376,7 +396,8 @@ router.post(
       return res.status(403).json({ error: "Acesso restrito" });
     }
 
-    const files = req.files as Express.Multer.File[];
+    const files = getProgressiveUploadFiles(req);
+    const thumbnails = getProgressiveUploadThumbnails(req);
     if (!files || files.length === 0) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
     }
@@ -419,12 +440,8 @@ router.post(
     }
 
     const uploads = [];
-    for (const file of files) {
-      const result = await uploadToBunny(
-        file.buffer,
-        file.originalname,
-        file.mimetype
-      );
+    for (const [fileIndex, file] of files.entries()) {
+      const result = await uploadProgressiveFile(file, thumbnails.get(fileIndex));
 
       const created = await prisma.shot.create({
         data: {
