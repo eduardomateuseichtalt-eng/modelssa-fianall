@@ -58,6 +58,62 @@ const getHeaderValue = (req: Request, headerName: string) => {
   return String(value || "");
 };
 
+const cleanMetricValue = (value: unknown, maxLength: number) =>
+  String(value || "").trim().slice(0, maxLength);
+
+const getFirstHeaderValue = (req: Request, headerNames: string[]) => {
+  for (const headerName of headerNames) {
+    const value = getHeaderValue(req, headerName);
+    if (value) {
+      try {
+        return decodeURIComponent(value.replace(/\+/g, " "));
+      } catch {
+        return value;
+      }
+    }
+  }
+  return "";
+};
+
+const getApproximateLocation = (req: Request, payload: Record<string, unknown>) => {
+  const countryCode = cleanMetricValue(
+    payload.countryCode ||
+      getFirstHeaderValue(req, [
+        "x-vercel-ip-country",
+        "cf-ipcountry",
+        "cloudfront-viewer-country",
+        "x-country-code",
+      ]),
+    2
+  ).toUpperCase();
+  const region = cleanMetricValue(
+    payload.region ||
+      getFirstHeaderValue(req, [
+        "x-vercel-ip-country-region",
+        "cf-region",
+        "cloudfront-viewer-country-region-name",
+        "x-region",
+      ]),
+    120
+  );
+  const city = cleanMetricValue(
+    payload.city ||
+      getFirstHeaderValue(req, [
+        "x-vercel-ip-city",
+        "cf-ipcity",
+        "cloudfront-viewer-city",
+        "x-city",
+      ]),
+    120
+  );
+
+  return {
+    countryCode: /^[A-Z]{2}$/.test(countryCode) && countryCode !== "XX" ? countryCode : "",
+    region,
+    city,
+  };
+};
+
 const parseDeviceInfo = (userAgent: string) => {
   const normalized = userAgent.toLowerCase();
   let deviceType = "desktop";
@@ -112,14 +168,18 @@ router.post("/visit", asyncHandler(async (req: Request, res: Response) => {
   const fingerprint = getClientFingerprint(req);
   const fingerprintHash = crypto.createHmac("sha256", secret).update(fingerprint).digest("hex");
   const userAgent = String(req.headers["user-agent"] || "");
-  const payload = req.body && typeof req.body === "object" ? req.body : {};
-  const referrer = String(payload.referrer || getHeaderValue(req, "referer") || "").trim();
-  const path = String(payload.path || "").trim();
-  const countryCode = String(payload.countryCode || "").trim().toUpperCase();
-  const region = String(payload.region || "").trim();
-  const city = String(payload.city || "").trim();
-  const language = String(payload.language || "").trim();
-  const screenResolution = String(payload.screenResolution || "").trim();
+  const payload =
+    req.body && typeof req.body === "object"
+      ? (req.body as Record<string, unknown>)
+      : {};
+  const referrer = cleanMetricValue(
+    payload.referrer || getHeaderValue(req, "referer"),
+    500
+  );
+  const path = cleanMetricValue(payload.path, 300);
+  const { countryCode, region, city } = getApproximateLocation(req, payload);
+  const language = cleanMetricValue(payload.language, 40);
+  const screenResolution = cleanMetricValue(payload.screenResolution, 40);
   const { browser, os, deviceType } = parseDeviceInfo(userAgent);
   const source = getTrafficSource(referrer);
 
@@ -129,6 +189,16 @@ router.post("/visit", asyncHandler(async (req: Request, res: Response) => {
   });
 
   if (exists) {
+    if (countryCode || region || city) {
+      await prisma.siteAccess.update({
+        where: { id: exists.id },
+        data: {
+          ...(countryCode ? { countryCode } : {}),
+          ...(region ? { region } : {}),
+          ...(city ? { city } : {}),
+        },
+      });
+    }
     return res.status(200).json({ status: "ok", deduped: true });
   }
 

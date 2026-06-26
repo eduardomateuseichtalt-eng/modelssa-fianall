@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { saveVisitorLocation } from "../lib/visitorLocation";
 
 const DETECTED_CITY_STORAGE_KEY = "modelsClubDetectedCity";
 const DETECTED_CITY_UPDATED_AT_KEY = "modelsClubDetectedCityUpdatedAt";
@@ -85,6 +86,13 @@ export default function AgeConsentModal() {
           }
 
           const cityName = String(city);
+          const region = String(
+            address.state || address.region || address.state_district || ""
+          ).trim();
+          const countryCode = String(address.country_code || "")
+            .trim()
+            .slice(0, 2)
+            .toUpperCase();
           setDetectedCity(cityName);
           setLocationStatus("ready");
           setLocationMessage(`Localização atualizada para ${cityName}.`);
@@ -96,6 +104,7 @@ export default function AgeConsentModal() {
           } catch {
             // ignore storage issues
           }
+          saveVisitorLocation({ city: cityName, region, countryCode });
         } catch (error) {
           setLocationStatus("error");
           setLocationMessage(error?.message || "Não foi possível detectar sua cidade.");
@@ -212,4 +221,3 @@ export default function AgeConsentModal() {
     </>
   );
 }
-

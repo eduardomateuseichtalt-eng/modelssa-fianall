@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { useNoIndex } from "../lib/useNoIndex";
@@ -15,6 +15,17 @@ export default function AdminApprovals() {
       return "-";
     }
     return parsed.toLocaleDateString("pt-BR");
+  };
+  const formatDateTimeBr = (value) => {
+    if (!value) return "-";
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime())
+      ? "-"
+      : parsed.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  };
+  const formatAccessLocation = (access) => {
+    const parts = [access.city, access.region, access.countryCode].filter(Boolean);
+    return parts.length > 0 ? parts.join(" / ") : "Localidade não identificada";
   };
 
   const [pendingModels, setPendingModels] = useState([]);
@@ -56,6 +67,15 @@ export default function AdminApprovals() {
     active: true,
   });
 
+  const loadAccessLogs = useCallback(() => {
+    setAccessLogsLoading(true);
+    setAccessLogsError("");
+    return apiFetch("/api/metrics/accesses")
+      .then((data) => setAccessLogs(Array.isArray(data) ? data : []))
+      .catch((err) => setAccessLogsError(err.message || "Erro ao carregar acessos."))
+      .finally(() => setAccessLogsLoading(false));
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     apiFetch("/api/models/pending")
@@ -79,12 +99,8 @@ export default function AdminApprovals() {
   }, []);
 
   useEffect(() => {
-    setAccessLogsLoading(true);
-    apiFetch("/api/metrics/accesses")
-      .then((data) => setAccessLogs(Array.isArray(data) ? data : []))
-      .catch((err) => setAccessLogsError(err.message || "Erro ao carregar acessos."))
-      .finally(() => setAccessLogsLoading(false));
-  }, []);
+    void loadAccessLogs();
+  }, [loadAccessLogs]);
 
   useEffect(() => {
     setFaqReportsLoading(true);
@@ -584,6 +600,55 @@ export default function AdminApprovals() {
           </div>
         </>
       ) : null}
+
+      <section className="section admin-access-section">
+        <div className="admin-access-heading">
+          <div>
+            <h2 className="section-title">
+              Rastreamento de <span>acessos</span>
+            </h2>
+            <p className="muted">
+              Últimas 100 visitas únicas por dia. A localização é aproximada e o IP bruto não é armazenado.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => void loadAccessLogs()}
+            disabled={accessLogsLoading}
+          >
+            {accessLogsLoading ? "Atualizando..." : "Atualizar"}
+          </button>
+        </div>
+
+        {accessLogsError ? <div className="notice">{accessLogsError}</div> : null}
+        {!accessLogsLoading && accessLogs.length === 0 ? (
+          <p className="muted admin-access-empty">Nenhum acesso registrado ainda.</p>
+        ) : null}
+
+        {accessLogs.length > 0 ? (
+          <div className="admin-access-table" role="table" aria-label="Acessos recentes">
+            <div className="admin-access-row admin-access-row-head" role="row">
+              <span>Data e hora</span>
+              <span>Localidade</span>
+              <span>Dispositivo</span>
+              <span>Origem</span>
+              <span>Página</span>
+            </div>
+            {accessLogs.map((access) => (
+              <div className="admin-access-row" role="row" key={access.id}>
+                <span data-label="Data e hora">{formatDateTimeBr(access.createdAt)}</span>
+                <span data-label="Localidade">{formatAccessLocation(access)}</span>
+                <span data-label="Dispositivo">
+                  {[access.deviceType, access.browser, access.os].filter(Boolean).join(" / ") || "-"}
+                </span>
+                <span data-label="Origem">{access.source || "direct"}</span>
+                <span data-label="Página">{access.path || "/"}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </section>
 
       {message && <div className="notice">{message}</div>}
       {error && <div className="notice">{error}</div>}

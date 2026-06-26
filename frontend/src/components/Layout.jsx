@@ -5,6 +5,11 @@ import Footer from "./Footer";
 import AgeConsentModal from "./AgeConsentModal";
 import ScrollToTop from "./ScrollToTop";
 import { apiFetch } from "../lib/api";
+import {
+  normalizeVisitorLocation,
+  readVisitorLocation,
+  VISITOR_LOCATION_EVENT,
+} from "../lib/visitorLocation";
 
 const METRICS_TIMEZONE = "America/Sao_Paulo";
 
@@ -29,53 +34,53 @@ function getVisitDayKey() {
 export default function Layout() {
   useEffect(() => {
     const todayKey = getVisitDayKey();
-    if (localStorage.getItem("siteVisitTrackedDay") === todayKey) {
-      return;
-    }
+    const trackingKey = "siteVisitTrackedDay";
 
-    const ua = navigator.userAgent || "";
-    const deviceType = /android|iphone|ipad|mobile/i.test(ua)
-      ? "mobile"
-      : /tablet|ipad/i.test(ua)
-        ? "tablet"
-        : "desktop";
+    const sendVisit = async (location, forceUpdate = false) => {
+      let alreadyTracked = false;
+      try {
+        alreadyTracked = localStorage.getItem(trackingKey) === todayKey;
+      } catch {
+        alreadyTracked = false;
+      }
+      if (!forceUpdate && alreadyTracked) {
+        return;
+      }
 
-    const browser = /edg\//i.test(ua)
-      ? "Edge"
-      : /chrome\//i.test(ua)
-        ? "Chrome"
-        : /firefox\//i.test(ua)
-          ? "Firefox"
-          : /safari\//i.test(ua)
-            ? "Safari"
-            : "unknown";
+      try {
+        await apiFetch("/api/metrics/visit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            path: window.location.pathname,
+            referrer: document.referrer || "",
+            language: navigator.language || "",
+            screenResolution: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+            ...normalizeVisitorLocation(location),
+          }),
+        });
+        try {
+          localStorage.setItem(trackingKey, todayKey);
+        } catch {
+          // O servidor ainda faz a deduplicacao quando o storage esta bloqueado.
+        }
+      } catch {
+        // Metricas nunca devem impedir a navegacao pelo site.
+      }
+    };
 
-    const os = /windows/i.test(ua)
-      ? "Windows"
-      : /mac os x/i.test(ua)
-        ? "macOS"
-        : /android/i.test(ua)
-          ? "Android"
-          : /iphone|ipad|ipod/i.test(ua)
-            ? "iOS"
-            : /linux/i.test(ua)
-              ? "Linux"
-              : "unknown";
+    const storedLocation = readVisitorLocation();
+    const hasStoredLocation = Boolean(
+      storedLocation.city || storedLocation.region || storedLocation.countryCode
+    );
+    void sendVisit(storedLocation, hasStoredLocation);
 
-    localStorage.setItem("siteVisitTrackedDay", todayKey);
-    apiFetch("/api/metrics/visit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        path: window.location.pathname,
-        referrer: document.referrer || "",
-        language: navigator.language || "",
-        screenResolution: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
-        browser,
-        os,
-        deviceType,
-      }),
-    }).catch(() => {});
+    const handleLocationUpdate = (event) => {
+      void sendVisit(event.detail, true);
+    };
+    window.addEventListener(VISITOR_LOCATION_EVENT, handleLocationUpdate);
+
+    return () => window.removeEventListener(VISITOR_LOCATION_EVENT, handleLocationUpdate);
   }, []);
 
   return (
