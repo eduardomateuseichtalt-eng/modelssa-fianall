@@ -121,8 +121,6 @@ router.post("/visit", asyncHandler(async (req: Request, res: Response) => {
   const language = String(payload.language || "").trim();
   const screenResolution = String(payload.screenResolution || "").trim();
   const { browser, os, deviceType } = parseDeviceInfo(userAgent);
-  const forwardIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-  const ipAddress = String(payload.ipAddress || forwardIp || req.ip || "").trim();
   const source = getTrafficSource(referrer);
 
   const exists = await prisma.siteAccess.findFirst({
@@ -138,7 +136,6 @@ router.post("/visit", asyncHandler(async (req: Request, res: Response) => {
     data: {
       dayKey,
       fingerprintHash,
-      ipAddress: ipAddress || null,
       countryCode: countryCode || null,
       region: region || null,
       city: city || null,
@@ -164,7 +161,6 @@ router.get("/accesses", requireAdmin, asyncHandler(async (_req: Request, res: Re
     select: {
       id: true,
       createdAt: true,
-      ipAddress: true,
       countryCode: true,
       region: true,
       city: true,
