@@ -3,7 +3,7 @@ export default function About() {
     <div className="page">
       <p className="pill">Institucional</p>
       <h1 className="section-title" style={{ marginTop: 12 }}>
-        Sobre as acompanhantes SA
+        Sobre a Models-Club LTDA
       </h1>
       <p className="muted" style={{ marginTop: 12, maxWidth: 720 }}>
         {
