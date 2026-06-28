@@ -630,10 +630,6 @@ export default function ModelRegister() {
             <p className="muted">
               Informe seu e-mail para receber o codigo de confirmacao e continuar seu cadastro.
             </p>
-            <p className="muted">
-              Apos a aprovacao do perfil, a acompanhante recebe 30 dias gratis no plano escolhido.
-            </p>
-
             {introError && <div className="notice">{introError}</div>}
             {introInfo && <div className="notice">{introInfo}</div>}
 
