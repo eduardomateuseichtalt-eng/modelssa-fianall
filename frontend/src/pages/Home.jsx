@@ -691,16 +691,12 @@ export default function Home() {
           >
             Falar com equipe
           </a>
-          <Link to="/anuncie" className="btn btn-outline">
-            Ver planos
-          </Link>
         </div>
       </section>
 
     </div>
   );
 }
-
 
 
 

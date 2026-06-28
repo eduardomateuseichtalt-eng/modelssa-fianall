@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Modelos from "./pages/Modelos";
@@ -16,7 +16,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import Pricing from "./pages/Pricing";
 import Faq from "./pages/Faq";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -71,7 +70,7 @@ export default function App() {
         <Route path="/cadastro" element={<Register />} />
         <Route path="/sobre" element={<About />} />
         <Route path="/contato" element={<Contact />} />
-        <Route path="/anuncie" element={<Pricing />} />
+        <Route path="/anuncie" element={<Navigate to="/seja-modelo" replace />} />
         <Route path="/faq" element={<Faq />} />
         <Route path="/shots" element={<Shots />} />
         <Route path="/avaliacoes" element={<Reviews />} />
