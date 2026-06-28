@@ -48,31 +48,31 @@ export default function Faq() {
 
       <div className="cards">
         <div className="card">
-          <h4>Como funciona a aprovacao?</h4>
+          <h4>Como funciona a aprovação?</h4>
           <p className="muted">
-            Todos os cadastros passam por avaliacao manual e validacao de idade.
+            Todos os cadastros passam por avaliação manual e validação de idade.
           </p>
         </div>
         <div className="card">
           <h4>Posso editar meu perfil?</h4>
           <p className="muted">
-            Sim, apos login voce pode atualizar fotos e dados principais.
+            Sim, após login você pode atualizar fotos e dados principais.
           </p>
         </div>
         <div className="card">
-          <h4>Quais dados aparecem no publico?</h4>
+          <h4>Quais dados aparecem no público?</h4>
           <p className="muted">
-            Somente informacoes aprovadas e os canais de contato informados.
+            Somente informações aprovadas e os canais de contato informados.
           </p>
         </div>
       </div>
 
       <section className="section" style={{ marginTop: 32 }}>
         <div className="card" style={{ maxWidth: 820 }}>
-          <h4>Relatar denuncia</h4>
+          <h4>Relatar denúncia</h4>
           <p className="muted">
-            Descreva o problema para a equipe analisar. Seu relato aparecera na
-            area administrativa.
+            Descreva o problema para a equipe analisar. Seu relato aparecerá na
+            área administrativa.
           </p>
 
           {reportNotice ? <div className="notice" style={{ marginTop: 12 }}>{reportNotice}</div> : null}
