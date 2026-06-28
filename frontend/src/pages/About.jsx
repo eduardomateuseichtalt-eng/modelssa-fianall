@@ -7,7 +7,7 @@ export default function About() {
       </h1>
       <p className="muted" style={{ marginTop: 12, maxWidth: 720 }}>
         {
-          "Somos uma plataforma premium inspirada no mercado de anuncios de acompanhantes de alto padrao. Conectamos acompanhantes e anunciantes em um ambiente seguro, com verificacao manual e foco em experiencia."
+          "Somos uma plataforma premium inspirada no mercado de anúncios de acompanhantes de alto padrão. Conectamos acompanhantes e anunciantes em um ambiente seguro, com verificação manual e foco em experiência."
         }
       </p>
 
@@ -20,19 +20,19 @@ export default function About() {
             <h4>Exclusividade</h4>
             <p className="muted">
               Selecionamos perfis completos e atualizados para garantir alto
-              padrao visual.
+              padrão visual.
             </p>
           </div>
           <div className="card">
-            <h4>Seguranca</h4>
+            <h4>Segurança</h4>
             <p className="muted">
-              Conteudo 18+ com consentimento ativo e politicas claras.
+              Conteúdo 18+ com consentimento ativo e políticas claras.
             </p>
           </div>
           <div className="card">
             <h4>Performance</h4>
             <p className="muted">
-              Layout pensado para facilitar conversoes e contato direto.
+              Layout pensado para facilitar conversões e contato direto.
             </p>
           </div>
         </div>
