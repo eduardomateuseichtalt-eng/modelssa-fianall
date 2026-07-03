@@ -2572,9 +2572,9 @@ select {
 .model-register-photo-preview-card {
   margin-top: 10px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  background: linear-gradient(180deg, #ffffff, #f8f7f4);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.1);
   padding: 16px;
   display: grid;
   grid-template-columns: 108px 1fr;
@@ -2587,11 +2587,11 @@ select {
   height: 108px;
   border-radius: 18px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  background: #efede8;
   display: grid;
   place-items: center;
-  color: rgba(255, 255, 255, 0.85);
+  color: #2b2926;
   font-weight: 700;
   font-size: 20px;
 }
@@ -2612,20 +2612,21 @@ select {
 .model-register-photo-preview-info strong {
   font-size: 20px;
   line-height: 1.1;
+  color: #111111;
 }
 
 .model-register-photo-preview-info em {
   font-style: italic;
-  color: var(--muted);
+  color: #4f4b46;
 }
 
 .model-register-photo-preview-info span {
-  color: rgba(255, 255, 255, 0.88);
+  color: #2b2926;
 }
 
 .model-register-photo-online {
-  color: #50c878 !important;
-  font-weight: 600;
+  color: #147a3d !important;
+  font-weight: 700;
 }
 
 .model-register-photo-meta {
