@@ -27,6 +27,7 @@ import faqReportsRoutes from "./routes/faq-reports.routes";
 import modelReviewsRoutes from "./routes/model-reviews.routes";
 import roomRoutes from "./routes/room.routes";
 import motelPartnersRoutes from "./routes/motel-partners.routes";
+import { getPasswordPolicyError } from "./lib/password-policy";
 
 // ========================
 // APP
@@ -281,6 +282,11 @@ app.post(
       return res.status(400).json({ error: "Dados obrigatorios ausentes" });
     }
 
+    const passwordError = getPasswordPolicyError(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
+    }
+
     const exists = await prisma.user.findUnique({
       where: { email },
     });
@@ -384,6 +390,11 @@ app.post("/api/auth/admin-reset", async (req, res) => {
       return res.status(400).json({ error: "Dados obrigatorios ausentes" });
     }
 
+    const passwordError = getPasswordPolicyError(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const updated = await prisma.user.upsert({
       where: { email },
@@ -421,6 +432,11 @@ app.post("/api/admin/bootstrap", async (req, res) => {
   }
 
   try {
+    const passwordError = getPasswordPolicyError(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
 
     const admin = await prisma.user.upsert({

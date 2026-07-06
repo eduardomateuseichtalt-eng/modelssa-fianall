@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcryptjs";
+import { getPasswordPolicyError } from "../lib/password-policy";
 
 export async function createUser(
   email: string,
@@ -12,6 +13,11 @@ export async function createUser(
 
   if (exists) {
     throw new Error("Usuário já existe");
+  }
+
+  const passwordError = getPasswordPolicyError(password);
+  if (passwordError) {
+    throw new Error(passwordError);
   }
 
   const passwordHash = await bcrypt.hash(password, 10);

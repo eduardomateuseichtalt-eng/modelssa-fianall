@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { buildProgressiveUploadFormData } from "../lib/progressiveUpload";
 import ProgressiveImage from "../components/ProgressiveImage";
+import {
+  getPasswordPolicyError,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "../lib/passwordPolicy";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_SHOT_VIDEO_SECONDS = 10;
@@ -975,8 +980,9 @@ export default function ModelDashboard() {
       return;
     }
 
-    if (passwordNext.length < 6) {
-      setPasswordError("A nova senha deve ter pelo menos 6 caracteres.");
+    const passwordPolicyError = getPasswordPolicyError(passwordNext);
+    if (passwordPolicyError) {
+      setPasswordError(passwordPolicyError);
       return;
     }
 
@@ -2115,6 +2121,8 @@ export default function ModelDashboard() {
                   placeholder="Nova senha"
                   value={passwordNext}
                   onChange={(event) => setPasswordNext(event.target.value)}
+                  minLength={PASSWORD_MIN_LENGTH}
+                  maxLength={PASSWORD_MAX_LENGTH}
                 />
                 <input
                   className="input"
@@ -2122,6 +2130,8 @@ export default function ModelDashboard() {
                   placeholder="Confirmar nova senha"
                   value={passwordConfirm}
                   onChange={(event) => setPasswordConfirm(event.target.value)}
+                  minLength={PASSWORD_MIN_LENGTH}
+                  maxLength={PASSWORD_MAX_LENGTH}
                 />
                 <div className="form-actions" style={{ marginTop: 4 }}>
                   <button

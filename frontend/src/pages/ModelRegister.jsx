@@ -1,6 +1,11 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { apiFetch, API_URL } from "../lib/api";
 import { buildProgressiveUploadFormData } from "../lib/progressiveUpload";
+import {
+  getPasswordPolicyError,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "../lib/passwordPolicy";
 
 const initialForm = {
   name: "",
@@ -431,6 +436,12 @@ export default function ModelRegister() {
   const validateBeforeSubmit = () => {
     setMediaError("");
     setProfileError("");
+
+    const passwordError = getPasswordPolicyError(form.password);
+    if (passwordError) {
+      setMessage(passwordError);
+      return false;
+    }
 
     if (!profileFile) {
       setProfileError("A foto de perfil e obrigatoria.");
@@ -1167,6 +1178,8 @@ export default function ModelRegister() {
               placeholder="Senha"
               value={form.password}
               onChange={handleChange}
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
               onKeyDown={(event) => handleFieldKeyDown(2, event)}
               ref={(node) => {
                 fieldRefs.current[2] = node;

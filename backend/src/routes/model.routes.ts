@@ -10,6 +10,7 @@ import { gen6, hashCode, normalizePhone } from "../lib/otp";
 import { sendModelRegisterOtpEmail } from "../lib/email";
 import { sendWhatsAppText } from "../lib/whatsapp";
 import { asyncHandler } from "../lib/async-handler";
+import { getPasswordPolicyError } from "../lib/password-policy";
 import { normalizeCity, rotationSeed, stableHash01 } from "../utils/rotation";
 import { getModelMediaLimits, getModelTrialEndDate } from "../lib/model-plan";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
@@ -662,6 +663,11 @@ router.post("/register", asyncHandler(async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Dados obrigatorios ausentes" });
   }
 
+  const passwordError = getPasswordPolicyError(password);
+  if (passwordError) {
+    return res.status(400).json({ error: passwordError });
+  }
+
   const parsedAge = toNumberOrNull(age);
   const planTierRaw = String(planTier || "").trim().toUpperCase();
 
@@ -995,8 +1001,9 @@ router.post("/reset-password", asyncHandler(async (req: Request, res: Response) 
     return res.status(400).json({ error: "Codigo invalido." });
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: "A nova senha deve ter pelo menos 6 caracteres." });
+  const passwordError = getPasswordPolicyError(newPassword);
+  if (passwordError) {
+    return res.status(400).json({ error: passwordError });
   }
 
   const attemptKey = `model:reset:attempts:${email}`;
@@ -1053,8 +1060,9 @@ router.post("/change-password", requireAuth, asyncHandler(async (req: Request, r
     return res.status(400).json({ error: "Dados obrigatorios ausentes." });
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: "A nova senha deve ter pelo menos 6 caracteres." });
+  const passwordError = getPasswordPolicyError(newPassword);
+  if (passwordError) {
+    return res.status(400).json({ error: passwordError });
   }
 
   if (currentPassword === newPassword) {

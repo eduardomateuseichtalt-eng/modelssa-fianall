@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "./lib/prisma";
+import { getPasswordPolicyError } from "./lib/password-policy";
 
 const seedModelEmails = [
   "ayla@models-sa.com",
@@ -13,7 +14,18 @@ const seedModelEmails = [
 ];
 
 async function main() {
-  const passwordHash = await bcrypt.hash("demo123", 10);
+  const seedUserPassword = String(process.env.SEED_USER_PASSWORD || "");
+  const seedAdminPassword = String(process.env.SEED_ADMIN_PASSWORD || "");
+  const seedUserPasswordError = getPasswordPolicyError(seedUserPassword);
+  const seedAdminPasswordError = getPasswordPolicyError(seedAdminPassword);
+
+  if (seedUserPasswordError || seedAdminPasswordError) {
+    throw new Error(
+      "Configure SEED_USER_PASSWORD e SEED_ADMIN_PASSWORD com senhas fortes antes de executar o seed."
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(seedUserPassword, 10);
 
   if (seedModelEmails.length > 0) {
     const seededModels = await prisma.model.findMany({
@@ -61,7 +73,7 @@ async function main() {
     },
   });
 
-  const adminPasswordHash = await bcrypt.hash("vamosmengao10", 10);
+  const adminPasswordHash = await bcrypt.hash(seedAdminPassword, 10);
   await prisma.user.upsert({
     where: { email: "eduardomateuseichtalt@gmail.com" },
     update: {
