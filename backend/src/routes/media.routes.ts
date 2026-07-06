@@ -9,6 +9,7 @@ import {
   validateBunnyConnection,
 } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
+import { createIpRateLimiter } from "../lib/rate-limit";
 import { getModelMediaLimits } from "../lib/model-plan";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 import {
@@ -53,6 +54,12 @@ const FORCE_FULL_AGE_GATE_MODEL_IDS = new Set(
     .map((item) => item.trim())
     .filter(Boolean)
 );
+const ageVerificationLimiter = createIpRateLimiter({
+  prefix: "age-verification",
+  limit: 10,
+  ttlSeconds: 60 * 60,
+  errorMessage: "Muitas tentativas de confirmacao. Tente novamente mais tarde.",
+});
 
 const mapMediaType = (mime: string) =>
   mime.startsWith("video/") ? "VIDEO" : "IMAGE";
@@ -470,21 +477,17 @@ router.get("/health", requireAdmin, asyncHandler(async (_req: Request, res: Resp
 
 router.post(
   "/age-verification",
-  upload.single("photo"),
+  ageVerificationLimiter,
   asyncHandler(async (req: Request, res: Response) => {
     const secret = getAgeTokenSecret();
     if (!secret) {
       return res.status(500).json({ error: "Verificacao indisponivel no momento" });
     }
 
-    const file = req.file as Express.Multer.File | undefined;
-    if (!file) {
-      return res.status(400).json({ error: "Foto obrigatoria para verificacao" });
-    }
-
-    const mimeType = String(file.mimetype || "").toLowerCase();
-    if (!mimeType.startsWith("image/")) {
-      return res.status(400).json({ error: "Formato de foto invalido" });
+    if (req.body?.confirmedAdult !== true) {
+      return res.status(400).json({
+        error: "Confirme que voce tem 18 anos ou mais para continuar.",
+      });
     }
 
     const token = crypto.randomBytes(24).toString("hex");
