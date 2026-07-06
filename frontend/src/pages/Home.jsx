@@ -675,29 +675,9 @@ export default function Home() {
 
       
 
-      <section className="section">
-        <h2 className="section-title">
-          Para <span>marcas</span>
-        </h2>
-        <p className="muted" style={{ marginTop: 10 }}>
-          Solucoes exclusivas para marcas que queiram anunciar na plataforma.
-        </p>
-        <div className="hero-actions">
-          <a
-            className="btn"
-            href="https://wa.me/554984170134"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Falar com equipe
-          </a>
-        </div>
-      </section>
-
     </div>
   );
 }
-
 
 
 
