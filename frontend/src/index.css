@@ -2720,26 +2720,43 @@ select {
 
 .model-presence-toggle {
   min-height: 46px;
+  min-width: 108px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: rgba(15, 14, 18, 0.9);
-  color: var(--text);
+  background: #242329;
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 0 12px;
   cursor: pointer;
   margin-top: 4px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
 }
 
 .model-presence-toggle.online {
-  border-color: rgba(61, 191, 103, 0.5);
+  border-color: #35c970;
+  background: #173823;
 }
 
 .model-presence-toggle.offline {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: #74737a;
+  background: #343239;
+}
+
+.model-presence-toggle.rooms {
+  border-color: #c7a26b;
+  background: #3a3024;
+  color: #ffffff;
+}
+
+.model-presence-toggle.rooms.active {
+  border-color: #e4bd80;
+  background: #59452d;
+  box-shadow: 0 0 0 2px rgba(199, 162, 107, 0.2), 0 5px 14px rgba(0, 0, 0, 0.18);
 }
 
 .model-presence-dot {
@@ -2804,14 +2821,25 @@ select {
 }
 
 @media (max-width: 640px) {
+  .model-area-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .model-area-actions {
     width: 100%;
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   .model-presence-toggle {
+    flex: 1 1 0;
+    min-width: 0;
     padding: 0 10px;
-    font-size: 12px;
+    font-size: 13px;
+  }
+
+  .model-hamburger {
+    flex: 0 0 46px;
   }
 }
 

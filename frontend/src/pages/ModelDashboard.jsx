@@ -1419,7 +1419,7 @@ export default function ModelDashboard() {
           <div className="model-presence-control" ref={roomPanelRef}>
             <button
               type="button"
-              className="model-presence-toggle offline"
+              className={`model-presence-toggle rooms ${roomPanelOpen ? "active" : ""}`}
               onClick={() => setRoomPanelOpen((current) => !current)}
               aria-expanded={roomPanelOpen}
               aria-label="Abrir lista de quartos para locacao"
