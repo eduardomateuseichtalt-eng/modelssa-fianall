@@ -193,7 +193,7 @@ export default function Footer() {
         <div>
           <div className="brand">
             <span className="brand-mark">MS</span>
-            <span className="notranslate" translate="no">
+            <span className="notranslate footer-brand-name" translate="no">
               models-club
             </span>
           </div>
@@ -295,4 +295,3 @@ export default function Footer() {
     </footer>
   );
 }
-

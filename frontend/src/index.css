@@ -3754,6 +3754,10 @@ select {
   color: var(--muted);
 }
 
+.footer-brand-name {
+  color: var(--gold);
+}
+
 .footer-partners {
   margin-top: 26px;
   padding-top: 20px;
