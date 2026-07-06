@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "prisma generate --schema prisma/schema.prisma && tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/main.js",
     "seed": "ts-node-dev --transpile-only src/seed.ts"
   },
