@@ -88,3 +88,23 @@ export function createIpRateLimiter({
   };
 }
 
+export function createAuthenticatedRateLimiter({
+  prefix,
+  limit,
+  ttlSeconds,
+  errorMessage = "Muitas tentativas. Tente mais tarde.",
+}: RateLimitOptions) {
+  return async (_req: Request, res: Response, next: NextFunction) => {
+    const userId = String(res.locals.user?.id || "").trim();
+    if (!userId) {
+      return res.status(401).json({ error: "Autenticacao necessaria" });
+    }
+
+    const key = `rl:${prefix}:user:${userId}`;
+    const count = await incrementWithExpiry(key, ttlSeconds);
+    if (count > limit) {
+      return res.status(429).json({ error: errorMessage });
+    }
+    return next();
+  };
+}

@@ -2,14 +2,20 @@ import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import multer from "multer";
 import { prisma } from "../lib/prisma";
-import { getUserFromRequest, requireAdmin, requireAuth } from "../lib/auth";
+import {
+  getUserFromRequest,
+  requireAdmin,
+  requireAuth,
+  requireModel,
+  requireModelOrAdmin,
+} from "../lib/auth";
 import {
   deleteFromBunny,
   deleteThumbnailFromBunny,
   validateBunnyConnection,
 } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
-import { createIpRateLimiter } from "../lib/rate-limit";
+import { createAuthenticatedRateLimiter, createIpRateLimiter } from "../lib/rate-limit";
 import { getModelMediaLimits } from "../lib/model-plan";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 import {
@@ -17,24 +23,13 @@ import {
   getProgressiveUploadThumbnails,
   uploadProgressiveFile,
 } from "../lib/progressive-upload";
+import {
+  createSecureMemoryStorage,
+  getUploadedFileError,
+  THUMBNAIL_MAX_BYTES,
+} from "../lib/secure-upload";
 
 const router = Router();
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 50 * 1024 * 1024,
-  },
-});
-
-const progressiveMediaUpload = upload.fields([
-  { name: "files", maxCount: 15 },
-  { name: "thumbnails", maxCount: 15 },
-]);
-const progressiveProfileUpload = upload.fields([
-  { name: "file", maxCount: 1 },
-  { name: "thumbnails", maxCount: 1 },
-]);
 
 const allowedTypes = new Set([
   "image/jpeg",
@@ -43,6 +38,37 @@ const allowedTypes = new Set([
   "video/mp4",
 ]);
 const allowedImageTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
+
+const uploadFileFilter: multer.Options["fileFilter"] = (_req, file, callback) => {
+  const allowed = file.fieldname === "thumbnails"
+    ? file.mimetype === "image/webp"
+    : allowedTypes.has(file.mimetype);
+  if (!allowed) {
+    callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+    return;
+  }
+  callback(null, true);
+};
+
+const mediaUpload = multer({
+  storage: createSecureMemoryStorage({ maxTotalBytes: 120 * 1024 * 1024 }),
+  limits: { files: 20, fields: 40 },
+  fileFilter: uploadFileFilter,
+});
+const profileUpload = multer({
+  storage: createSecureMemoryStorage({ maxTotalBytes: 12 * 1024 * 1024 }),
+  limits: { files: 2, fields: 10 },
+  fileFilter: uploadFileFilter,
+});
+
+const progressiveMediaUpload = mediaUpload.fields([
+  { name: "files", maxCount: 10 },
+  { name: "thumbnails", maxCount: 10 },
+]);
+const progressiveProfileUpload = profileUpload.fields([
+  { name: "file", maxCount: 1 },
+  { name: "thumbnails", maxCount: 1 },
+]);
 
 const AGE_TOKEN_TTL_DAYS = Number(process.env.AGE_VERIFY_TTL_DAYS || 30);
 const AGE_TOKEN_HEADER = "x-age-token";
@@ -60,6 +86,44 @@ const ageVerificationLimiter = createIpRateLimiter({
   ttlSeconds: 60 * 60,
   errorMessage: "Muitas tentativas de confirmacao. Tente novamente mais tarde.",
 });
+const registrationUploadLimiter = createIpRateLimiter({
+  prefix: "media-registration-upload",
+  limit: 10,
+  ttlSeconds: 60 * 60,
+});
+const registrationAccountUploadLimiter = createAuthenticatedRateLimiter({
+  prefix: "media-registration-upload",
+  limit: 10,
+  ttlSeconds: 60 * 60,
+});
+const modelMediaUploadLimiter = createIpRateLimiter({
+  prefix: "media-model-upload",
+  limit: 30,
+  ttlSeconds: 60 * 60,
+});
+const modelAccountUploadLimiter = createAuthenticatedRateLimiter({
+  prefix: "media-model-upload",
+  limit: 30,
+  ttlSeconds: 60 * 60,
+});
+
+const getUploadValidationError = (
+  files: Express.Multer.File[],
+  thumbnails: Express.Multer.File[]
+) => {
+  for (const file of files) {
+    const error = getUploadedFileError(file);
+    if (error) return error;
+  }
+  for (const thumbnail of thumbnails) {
+    if (thumbnail.mimetype !== "image/webp" || thumbnail.size > THUMBNAIL_MAX_BYTES) {
+      return "Miniatura de imagem invalida.";
+    }
+    const error = getUploadedFileError(thumbnail);
+    if (error) return error;
+  }
+  return null;
+};
 
 const mapMediaType = (mime: string) =>
   mime.startsWith("video/") ? "VIDEO" : "IMAGE";
@@ -147,6 +211,9 @@ const ensureAgeVerified = async (req: Request, modelId?: string) => {
 router.post(
   "/upload",
   requireAuth,
+  requireModelOrAdmin,
+  registrationUploadLimiter,
+  registrationAccountUploadLimiter,
   progressiveMediaUpload,
   asyncHandler(async (req: Request, res: Response) => {
     const user = res.locals.user as { id: string; role: string } | undefined;
@@ -159,6 +226,7 @@ router.post(
         ? String(req.body?.modelId || "").trim()
         : user.id;
     const files = getProgressiveUploadFiles(req);
+    const receivedThumbnails = getProgressiveUploadFiles(req, "thumbnails");
     const thumbnails = getProgressiveUploadThumbnails(req);
 
     if (!modelId) {
@@ -167,6 +235,11 @@ router.post(
 
     if (!files || files.length === 0) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    }
+
+    const uploadValidationError = getUploadValidationError(files, receivedThumbnails);
+    if (uploadValidationError) {
+      return res.status(400).json({ error: uploadValidationError });
     }
 
     const model = await prisma.model.findUnique({ where: { id: modelId } });
@@ -253,6 +326,9 @@ router.post(
 router.post(
   "/upload-self",
   requireAuth,
+  requireModel,
+  modelMediaUploadLimiter,
+  modelAccountUploadLimiter,
   progressiveMediaUpload,
   asyncHandler(async (req: Request, res: Response) => {
     const user = res.locals.user as { id: string; role: string };
@@ -262,10 +338,17 @@ router.post(
 
     const modelId = user.id;
     const files = getProgressiveUploadFiles(req);
+    const receivedThumbnails = getProgressiveUploadFiles(req, "thumbnails");
     const thumbnails = getProgressiveUploadThumbnails(req);
 
     if (!files || files.length === 0) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    }
+
+
+    const uploadValidationError = getUploadValidationError(files, receivedThumbnails);
+    if (uploadValidationError) {
+      return res.status(400).json({ error: uploadValidationError });
     }
 
     const model = await prisma.model.findUnique({
@@ -378,6 +461,9 @@ router.post(
 router.post(
   "/profile-image",
   requireAuth,
+  requireModel,
+  modelMediaUploadLimiter,
+  modelAccountUploadLimiter,
   progressiveProfileUpload,
   asyncHandler(async (req: Request, res: Response) => {
     const user = res.locals.user as { id: string; role: string } | undefined;
@@ -386,9 +472,15 @@ router.post(
     }
 
     const file = getProgressiveUploadFiles(req, "file")[0];
+    const receivedThumbnails = getProgressiveUploadFiles(req, "thumbnails");
     const thumbnail = getProgressiveUploadThumbnails(req).get(0);
     if (!file) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    }
+
+    const uploadValidationError = getUploadValidationError([file], receivedThumbnails);
+    if (uploadValidationError) {
+      return res.status(400).json({ error: uploadValidationError });
     }
 
     if (!allowedImageTypes.has(file.mimetype)) {

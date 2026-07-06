@@ -66,3 +66,25 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   res.locals.user = user;
   return next();
 }
+
+export function requireModel(_req: Request, res: Response, next: NextFunction) {
+  const user = res.locals.user as JwtPayload | undefined;
+  if (!user) {
+    return res.status(401).json({ error: "Autenticacao necessaria" });
+  }
+  if (user.role !== "MODEL") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+  return next();
+}
+
+export function requireModelOrAdmin(_req: Request, res: Response, next: NextFunction) {
+  const user = res.locals.user as JwtPayload | undefined;
+  if (!user) {
+    return res.status(401).json({ error: "Autenticacao necessaria" });
+  }
+  if (user.role !== "MODEL" && user.role !== "ADMIN") {
+    return res.status(403).json({ error: "Acesso restrito" });
+  }
+  return next();
+}

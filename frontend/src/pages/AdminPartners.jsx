@@ -106,6 +106,10 @@ export default function AdminPartners() {
       setPhotoError("Use apenas JPG, PNG ou WEBP.");
       return;
     }
+    if (selected.size > 10 * 1024 * 1024) {
+      setPhotoError("A imagem deve ter no maximo 10 MB.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", selected);

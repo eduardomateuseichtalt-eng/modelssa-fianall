@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import { prisma } from "../lib/prisma";
-import { getUserFromRequest, requireAuth } from "../lib/auth";
+import { getUserFromRequest, requireAuth, requireModel } from "../lib/auth";
 import { deleteFromBunny, deleteThumbnailFromBunny } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
@@ -10,20 +10,14 @@ import {
   getProgressiveUploadThumbnails,
   uploadProgressiveFile,
 } from "../lib/progressive-upload";
+import { createAuthenticatedRateLimiter, createIpRateLimiter } from "../lib/rate-limit";
+import {
+  createSecureMemoryStorage,
+  getUploadedFileError,
+  THUMBNAIL_MAX_BYTES,
+} from "../lib/secure-upload";
 
 const router = Router();
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 50 * 1024 * 1024,
-  },
-});
-
-const progressiveShotUpload = upload.fields([
-  { name: "files", maxCount: 2 },
-  { name: "thumbnails", maxCount: 2 },
-]);
 
 const shotTypes = new Set([
   "image/jpeg",
@@ -32,6 +26,36 @@ const shotTypes = new Set([
   "video/mp4",
   "video/quicktime",
 ]);
+
+const shotUpload = multer({
+  storage: createSecureMemoryStorage({ maxTotalBytes: 60 * 1024 * 1024 }),
+  limits: { files: 4, fields: 20 },
+  fileFilter: (_req, file, callback) => {
+    const allowed = file.fieldname === "thumbnails"
+      ? file.mimetype === "image/webp"
+      : shotTypes.has(file.mimetype);
+    if (!allowed) {
+      callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+      return;
+    }
+    callback(null, true);
+  },
+});
+
+const progressiveShotUpload = shotUpload.fields([
+  { name: "files", maxCount: 2 },
+  { name: "thumbnails", maxCount: 2 },
+]);
+const shotUploadLimiter = createIpRateLimiter({
+  prefix: "shot-upload",
+  limit: 30,
+  ttlSeconds: 60 * 60,
+});
+const shotAccountUploadLimiter = createAuthenticatedRateLimiter({
+  prefix: "shot-upload",
+  limit: 30,
+  ttlSeconds: 60 * 60,
+});
 
 const SHOT_TTL_HOURS = 24;
 const NEARBY_CITY_RADIUS_KM_DEFAULT = 50;
@@ -388,6 +412,9 @@ router.get("/nearby", asyncHandler(async (req: Request, res: Response) => {
 router.post(
   "/upload",
   requireAuth,
+  requireModel,
+  shotUploadLimiter,
+  shotAccountUploadLimiter,
   progressiveShotUpload,
   asyncHandler(async (req: Request, res: Response) => {
     await purgeExpiredShots();
@@ -397,9 +424,26 @@ router.post(
     }
 
     const files = getProgressiveUploadFiles(req);
+    const receivedThumbnails = getProgressiveUploadFiles(req, "thumbnails");
     const thumbnails = getProgressiveUploadThumbnails(req);
     if (!files || files.length === 0) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    }
+
+    for (const file of files) {
+      const validationError = getUploadedFileError(file);
+      if (validationError) {
+        return res.status(400).json({ error: validationError });
+      }
+    }
+    for (const thumbnail of receivedThumbnails) {
+      if (thumbnail.mimetype !== "image/webp" || thumbnail.size > THUMBNAIL_MAX_BYTES) {
+        return res.status(400).json({ error: "Miniatura de imagem invalida." });
+      }
+      const validationError = getUploadedFileError(thumbnail);
+      if (validationError) {
+        return res.status(400).json({ error: validationError });
+      }
     }
 
     const model = await prisma.model.findUnique({ where: { id: user.id } });

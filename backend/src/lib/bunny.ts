@@ -97,15 +97,28 @@ export async function uploadToBunny(
     throw new Error("Bunny CDN configuration missing");
   }
 
-  const safeName =
+  const extensionByContentType: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "video/mp4": "mp4",
+    "video/quicktime": "mov",
+  };
+  const safeExtension = extensionByContentType[contentType];
+  if (!safeExtension) {
+    throw new Error("Formato de arquivo nao permitido");
+  }
+
+  const safeBaseName =
     fileName
       .normalize("NFKD")
       .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\.[^.]+$/, "")
       .replace(/\s+/g, "-")
-      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/[^a-zA-Z0-9_-]/g, "-")
       .replace(/-+/g, "-")
-      .slice(-180) || "arquivo";
-  const uniqueName = `${uuidv4()}-${safeName}`;
+      .slice(-160) || "arquivo";
+  const uniqueName = `${uuidv4()}-${safeBaseName}.${safeExtension}`;
   const path = `uploads/${uniqueName}`;
   return uploadBufferToPath(buffer, path, contentType);
 }

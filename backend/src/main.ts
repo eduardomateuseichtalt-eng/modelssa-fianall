@@ -30,6 +30,7 @@ import motelPartnersRoutes from "./routes/motel-partners.routes";
 import { getPasswordPolicyError } from "./lib/password-policy";
 import { clearAuthCookie, hasAuthCookie, setAuthCookie } from "./lib/auth-cookie";
 import { requireAuth } from "./lib/auth";
+import multer from "multer";
 
 // ========================
 // APP
@@ -541,6 +542,19 @@ app.use((_req, res) => {
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const msg = String(err?.message || "");
+
+  if (err instanceof multer.MulterError) {
+    const status = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+    return res.status(status).json({
+      error: err.code === "LIMIT_FILE_SIZE"
+        ? "Arquivo maior que o limite permitido."
+        : "Upload invalido.",
+    });
+  }
+
+  if (Number(err?.status) === 413) {
+    return res.status(413).json({ error: msg || "Upload maior que o limite permitido." });
+  }
 
   // Se for erro de CORS, devolve 403 (nao 500)
   if (msg.startsWith("CORS bloqueado para a origem:")) {

@@ -9,7 +9,8 @@ import {
   PASSWORD_MIN_LENGTH,
 } from "../lib/passwordPolicy";
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_VIDEO_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_SHOT_VIDEO_SECONDS = 10;
 const MAX_SHOT_PHOTOS = 2;
 const DEFAULT_MAX_PHOTOS = 7;
@@ -734,8 +735,11 @@ export default function ModelDashboard() {
     const errors = [];
 
     for (const file of incoming) {
-      if (file.size > MAX_FILE_SIZE) {
-        errors.push(`${file.name} excede ${formatSize(MAX_FILE_SIZE)}.`);
+      const maxFileSize = file.type.startsWith("image/")
+        ? MAX_IMAGE_FILE_SIZE
+        : MAX_VIDEO_FILE_SIZE;
+      if (file.size > maxFileSize) {
+        errors.push(`${file.name} excede ${formatSize(maxFileSize)}.`);
         continue;
       }
       if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
@@ -810,8 +814,11 @@ export default function ModelDashboard() {
     const errors = [];
 
     for (const file of incoming) {
-      if (file.size > MAX_FILE_SIZE) {
-        errors.push(`${file.name} excede ${formatSize(MAX_FILE_SIZE)}.`);
+      const maxFileSize = file.type.startsWith("image/")
+        ? MAX_IMAGE_FILE_SIZE
+        : MAX_VIDEO_FILE_SIZE;
+      if (file.size > maxFileSize) {
+        errors.push(`${file.name} excede ${formatSize(maxFileSize)}.`);
         continue;
       }
       if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
@@ -1133,6 +1140,10 @@ export default function ModelDashboard() {
       setAvatarError("Envie uma imagem valida para a foto de perfil.");
       return;
     }
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
+      setAvatarError(`A imagem excede ${formatSize(MAX_IMAGE_FILE_SIZE)}.`);
+      return;
+    }
 
     setAvatarUploading(true);
     try {
@@ -1172,6 +1183,10 @@ export default function ModelDashboard() {
 
     if (!file.type.startsWith("image/")) {
       setCoverError("Envie uma imagem valida para a foto de capa.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
+      setCoverError(`A imagem excede ${formatSize(MAX_IMAGE_FILE_SIZE)}.`);
       return;
     }
 

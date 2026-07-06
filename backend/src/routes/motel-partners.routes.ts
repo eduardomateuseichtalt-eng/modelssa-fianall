@@ -5,6 +5,8 @@ import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../lib/auth";
 import { asyncHandler } from "../lib/async-handler";
 import { uploadToBunny } from "../lib/bunny";
+import { createAuthenticatedRateLimiter, createIpRateLimiter } from "../lib/rate-limit";
+import { createSecureMemoryStorage, getUploadedFileError } from "../lib/secure-upload";
 
 const router = Router();
 
@@ -15,8 +17,25 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const allowedImageTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
 
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE },
+  storage: createSecureMemoryStorage({ maxTotalBytes: MAX_FILE_SIZE }),
+  limits: { files: 1, fields: 5 },
+  fileFilter: (_req, file, callback) => {
+    if (!allowedImageTypes.has(file.mimetype)) {
+      callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+      return;
+    }
+    callback(null, true);
+  },
+});
+const adminPhotoUploadLimiter = createIpRateLimiter({
+  prefix: "admin-partner-photo-upload",
+  limit: 30,
+  ttlSeconds: 60 * 60,
+});
+const adminAccountPhotoUploadLimiter = createAuthenticatedRateLimiter({
+  prefix: "admin-partner-photo-upload",
+  limit: 30,
+  ttlSeconds: 60 * 60,
 });
 
 const sanitizeText = (value: unknown, maxLen: number) => {
@@ -100,6 +119,8 @@ router.post(
 router.post(
   "/admin/upload-photo",
   requireAdmin,
+  adminPhotoUploadLimiter,
+  adminAccountPhotoUploadLimiter,
   upload.single("file"),
   asyncHandler(async (req: Request, res: Response) => {
     const file = req.file as Express.Multer.File | undefined;
@@ -109,6 +130,11 @@ router.post(
 
     if (!allowedImageTypes.has(file.mimetype)) {
       return res.status(400).json({ error: "Formato de imagem invalido." });
+    }
+
+    const validationError = getUploadedFileError(file);
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
     }
 
     const uploaded = await uploadToBunny(

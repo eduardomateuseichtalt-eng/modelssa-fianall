@@ -43,7 +43,8 @@ const GENDER_IDENTITY_LABELS = {
 };
 
 const MAX_FILES = 6;
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_VIDEO_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_VIDEO_SECONDS = 30;
 const ENABLE_PLAN_SELECTION_ON_REGISTER = false;
 
@@ -208,8 +209,11 @@ export default function ModelRegister() {
     const errors = [];
 
     for (const file of sliced) {
-      if (file.size > MAX_FILE_SIZE) {
-        errors.push(`${file.name} excede ${formatSize(MAX_FILE_SIZE)}.`);
+      const maxFileSize = file.type.startsWith("image/")
+        ? MAX_IMAGE_FILE_SIZE
+        : MAX_VIDEO_FILE_SIZE;
+      if (file.size > maxFileSize) {
+        errors.push(`${file.name} excede ${formatSize(maxFileSize)}.`);
         continue;
       }
       if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
@@ -291,8 +295,8 @@ export default function ModelRegister() {
       setProfileError("Escolha apenas imagem para a foto de perfil.");
       return;
     }
-    if (file.size > MAX_FILE_SIZE) {
-      setProfileError(`Arquivo excede ${formatSize(MAX_FILE_SIZE)}.`);
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
+      setProfileError(`Arquivo excede ${formatSize(MAX_IMAGE_FILE_SIZE)}.`);
       return;
     }
     try {
@@ -1257,7 +1261,7 @@ export default function ModelRegister() {
               <div>
                 <h4>Foto de perfil</h4>
                 <p className="muted">
-                  Use uma foto clara do rosto. Maximo {formatSize(MAX_FILE_SIZE)}.
+                  Use uma foto clara do rosto. Maximo {formatSize(MAX_IMAGE_FILE_SIZE)}.
                 </p>
               </div>
               {profileFile ? <span className="media-count">1/1</span> : null}
