@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import { asyncHandler } from "../lib/async-handler";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
+import { createAuthenticatedRateLimiter, createIpRateLimiter } from "../lib/rate-limit";
 
 type FaqReportRow = {
   id: string;
@@ -24,9 +25,26 @@ type FaqReportRow = {
 
 const router = Router();
 const MAX_MESSAGE_LENGTH = 2000;
+const MIN_MESSAGE_LENGTH = 10;
 const MAX_CONTACT_LENGTH = 255;
 const MAX_RESPONSE_LENGTH = 2000;
 const ALLOWED_CATEGORIES = new Set(["DENUNCIA", "SUGESTAO", "RECLAMACAO"]);
+const publicReportLimiter = createIpRateLimiter({
+  prefix: "faq-public-report",
+  limit: 10,
+  ttlSeconds: 60 * 60,
+  errorMessage: "Limite de envios atingido. Tente novamente mais tarde.",
+});
+const modelReportIpLimiter = createIpRateLimiter({
+  prefix: "faq-model-report",
+  limit: 20,
+  ttlSeconds: 24 * 60 * 60,
+});
+const modelReportAccountLimiter = createAuthenticatedRateLimiter({
+  prefix: "faq-model-report",
+  limit: 20,
+  ttlSeconds: 24 * 60 * 60,
+});
 
 const respondModelTrialExpired = (
   res: Response,
@@ -45,12 +63,13 @@ const trimToNull = (value: unknown) => {
 
 router.post(
   "/",
+  publicReportLimiter,
   asyncHandler(async (req: Request, res: Response) => {
     const message = String(req.body?.message || "").trim();
     const contact = trimToNull(req.body?.contact);
 
-    if (!message) {
-      return res.status(400).json({ error: "Descreva o problema." });
+    if (message.length < MIN_MESSAGE_LENGTH) {
+      return res.status(400).json({ error: "Descreva o problema com pelo menos 10 caracteres." });
     }
 
     if (message.length > MAX_MESSAGE_LENGTH) {
@@ -79,6 +98,8 @@ router.post(
 router.post(
   "/self",
   requireAuth,
+  modelReportIpLimiter,
+  modelReportAccountLimiter,
   asyncHandler(async (_req: Request, res: Response) => {
     const user = res.locals.user as { id: string; role: string } | undefined;
     if (!user || user.role !== "MODEL") {
@@ -91,8 +112,8 @@ router.post(
       .toUpperCase();
     const contact = trimToNull(_req.body?.contact);
 
-    if (!message) {
-      return res.status(400).json({ error: "Descreva o problema." });
+    if (message.length < MIN_MESSAGE_LENGTH) {
+      return res.status(400).json({ error: "Descreva o problema com pelo menos 10 caracteres." });
     }
     if (message.length > MAX_MESSAGE_LENGTH) {
       return res.status(400).json({ error: "Mensagem muito longa." });

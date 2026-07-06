@@ -1,9 +1,11 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
+import { createHash } from "crypto";
 import { prisma } from "../lib/prisma";
 import { getUserFromRequest, requireAuth, requireModel } from "../lib/auth";
 import { deleteFromBunny, deleteThumbnailFromBunny } from "../lib/bunny";
 import { asyncHandler } from "../lib/async-handler";
+import { redis } from "../lib/redis";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
 import {
   getProgressiveUploadFiles,
@@ -55,6 +57,12 @@ const shotAccountUploadLimiter = createAuthenticatedRateLimiter({
   prefix: "shot-upload",
   limit: 30,
   ttlSeconds: 60 * 60,
+});
+const guestLikeLimiter = createIpRateLimiter({
+  prefix: "shot-guest-like",
+  limit: 100,
+  ttlSeconds: 60 * 60,
+  errorMessage: "Limite de curtidas atingido. Tente novamente mais tarde.",
 });
 
 const SHOT_TTL_HOURS = 24;
@@ -560,7 +568,7 @@ router.delete("/:id/like", requireAuth, asyncHandler(async (req: Request, res: R
   return res.json({ liked: false, likeCount });
 }));
 
-router.post("/:id/like-guest", asyncHandler(async (req: Request, res: Response) => {
+router.post("/:id/like-guest", guestLikeLimiter, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const shot = await prisma.shot.findFirst({
@@ -569,6 +577,22 @@ router.post("/:id/like-guest", asyncHandler(async (req: Request, res: Response) 
 
   if (!shot) {
     return res.status(404).json({ error: "Shot nao encontrado" });
+  }
+
+  const guestFingerprint = createHash("sha256")
+    .update(`${req.ip || "unknown"}|${String(req.headers["user-agent"] || "")}`)
+    .digest("hex");
+  try {
+    const claimed = await redis.set(
+      `shot:guest-like:${id}:${guestFingerprint}`,
+      "1",
+      { EX: 24 * 60 * 60, NX: true }
+    );
+    if (!claimed) {
+      return res.json({ liked: true, likeCount: shot.likeCount, deduped: true });
+    }
+  } catch (error) {
+    console.error("Guest like deduplication error:", error);
   }
 
   const updated = await prisma.shot.update({

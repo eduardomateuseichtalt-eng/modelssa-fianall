@@ -3,9 +3,16 @@ import crypto from "crypto";
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../lib/auth";
 import { asyncHandler } from "../lib/async-handler";
+import { createIpRateLimiter } from "../lib/rate-limit";
 
 const router = Router();
 const METRICS_TIMEZONE = process.env.METRICS_TIMEZONE || "America/Sao_Paulo";
+const metricsVisitLimiter = createIpRateLimiter({
+  prefix: "metrics-visit",
+  limit: 120,
+  ttlSeconds: 60 * 60,
+  errorMessage: "Limite de metricas atingido.",
+});
 
 function getDayKeyInTimeZone(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -157,7 +164,7 @@ const getTrafficSource = (referrer: string) => {
   return "referral";
 };
 
-router.post("/visit", asyncHandler(async (req: Request, res: Response) => {
+router.post("/visit", metricsVisitLimiter, asyncHandler(async (req: Request, res: Response) => {
   const secret = getMetricsSecret();
   if (!secret) {
     return res.status(500).json({ error: "Metrics indisponivel no momento" });

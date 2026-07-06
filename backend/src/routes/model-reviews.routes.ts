@@ -1,14 +1,26 @@
 import { Router, Request, Response } from "express";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
 import { asyncHandler } from "../lib/async-handler";
+import { createIpRateLimiter } from "../lib/rate-limit";
 
 const router = Router();
 const REVIEW_TEXT_MAX_LENGTH = 280;
 const REVIEW_TEXT_MIN_LENGTH = 8;
 const REVIEW_POST_LIMIT_PER_IP_PER_MODEL = 5;
 const REVIEW_POST_LIMIT_WINDOW_SECONDS = 24 * 60 * 60;
+const reviewReadLimiter = createIpRateLimiter({
+  prefix: "model-review-read",
+  limit: 600,
+  ttlSeconds: 60 * 60,
+});
+const reviewWriteLimiter = createIpRateLimiter({
+  prefix: "model-review-write",
+  limit: 20,
+  ttlSeconds: 24 * 60 * 60,
+  errorMessage: "Limite de avaliacoes atingido. Tente novamente mais tarde.",
+});
 
 let reviewTableReady = false;
 
@@ -86,7 +98,7 @@ async function ensureReviewTable() {
   reviewTableReady = true;
 }
 
-router.get("/top-models", asyncHandler(async (req: Request, res: Response) => {
+router.get("/top-models", reviewReadLimiter, asyncHandler(async (req: Request, res: Response) => {
   const rawLimit = Number.parseInt(String(req.query.limit || "40"), 10);
   const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 40;
 
@@ -192,7 +204,7 @@ router.get("/top-models", asyncHandler(async (req: Request, res: Response) => {
   });
 }));
 
-router.get("/:modelId", asyncHandler(async (req: Request, res: Response) => {
+router.get("/:modelId", reviewReadLimiter, asyncHandler(async (req: Request, res: Response) => {
   const modelId = String(req.params.modelId || "").trim();
   if (!modelId) {
     return res.status(400).json({ error: "ModelId obrigatorio." });
@@ -221,7 +233,7 @@ router.get("/:modelId", asyncHandler(async (req: Request, res: Response) => {
   return res.json(rows);
 }));
 
-router.post("/:modelId", asyncHandler(async (req: Request, res: Response) => {
+router.post("/:modelId", reviewWriteLimiter, asyncHandler(async (req: Request, res: Response) => {
   const modelId = String(req.params.modelId || "").trim();
   if (!modelId) {
     return res.status(400).json({ error: "ModelId obrigatorio." });
@@ -256,6 +268,18 @@ router.post("/:modelId", asyncHandler(async (req: Request, res: Response) => {
     const postCount = await incrementWithExpiry(rateKey, REVIEW_POST_LIMIT_WINDOW_SECONDS);
     if (postCount > REVIEW_POST_LIMIT_PER_IP_PER_MODEL) {
       return res.status(429).json({ error: "Limite de avaliacoes excedido para hoje." });
+    }
+
+    const duplicateHash = createHash("sha256")
+      .update(`${ip}|${modelId}|${comment.toLowerCase()}`)
+      .digest("hex");
+    const claimed = await redis.set(
+      `model-review:duplicate:${duplicateHash}`,
+      "1",
+      { EX: REVIEW_POST_LIMIT_WINDOW_SECONDS, NX: true }
+    );
+    if (!claimed) {
+      return res.status(409).json({ error: "Esta avaliacao ja foi enviada." });
     }
   } catch (error) {
     console.error("Model review rate-limit error:", error);

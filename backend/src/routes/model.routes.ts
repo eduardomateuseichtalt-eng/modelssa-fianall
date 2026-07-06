@@ -15,8 +15,15 @@ import { setAuthCookie } from "../lib/auth-cookie";
 import { normalizeCity, rotationSeed, stableHash01 } from "../utils/rotation";
 import { getModelMediaLimits, getModelTrialEndDate } from "../lib/model-plan";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
+import { createIpRateLimiter } from "../lib/rate-limit";
 
 const router = Router();
+const profileViewLimiter = createIpRateLimiter({
+  prefix: "model-profile-view",
+  limit: 300,
+  ttlSeconds: 60 * 60,
+  errorMessage: "Limite de visualizacoes atingido.",
+});
 const isProduction = process.env.NODE_ENV === "production";
 const ACCESS_SECRET =
   process.env.JWT_ACCESS_SECRET || (isProduction ? "" : "access_secret_dev");
@@ -1785,7 +1792,7 @@ router.delete("/:id", requireAdmin, asyncHandler(async (req: Request, res: Respo
   return res.json({ status: "deleted" });
 }));
 
-router.post("/:id/profile-view", asyncHandler(async (req: Request, res: Response) => {
+router.post("/:id/profile-view", profileViewLimiter, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const secret = getMetricsSecret();
 
