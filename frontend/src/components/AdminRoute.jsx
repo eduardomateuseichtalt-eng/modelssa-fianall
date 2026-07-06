@@ -1,21 +1,12 @@
 import { Navigate } from "react-router-dom";
-
-const ADMIN_EMAIL = "eduardoeichtalt@gmail.com";
+import { useAuth } from "../context/AuthContext";
 
 export default function AdminRoute({ children }) {
-  const token = localStorage.getItem("accessToken");
-  const storedUser = localStorage.getItem("user");
-  let user = null;
-
-  try {
-    if (storedUser && storedUser !== "undefined") {
-      user = JSON.parse(storedUser);
-    }
-  } catch {
-    user = null;
+  const { user, loading } = useAuth();
+  if (loading) {
+    return null;
   }
-
-  if (!token || !user || user.role !== "ADMIN" || user.email !== ADMIN_EMAIL) {
+  if (!user || user.role !== "ADMIN") {
     return <Navigate to="/admin/login" replace />;
   }
 

@@ -1093,16 +1093,6 @@ export default function ModelDashboard() {
     setProfileCoverUrl(data.coverUrl || "");
     applyProfilePlanData(data);
 
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        parsed.displayName = data.name || parsed.displayName;
-        localStorage.setItem("user", JSON.stringify(parsed));
-      } catch {
-        // Ignora parse invalido de cache local
-      }
-    }
   };
 
   const handleSaveProfile = async () => {

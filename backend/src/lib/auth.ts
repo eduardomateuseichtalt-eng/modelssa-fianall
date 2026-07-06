@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { getAuthCookie } from "./auth-cookie";
 
 const isProduction = process.env.NODE_ENV === "production";
 const ACCESS_SECRET =
@@ -17,12 +18,15 @@ type JwtPayload = {
 
 export function getUserFromRequest(req: Request) {
   const authHeader = req.headers.authorization;
+  const bearerToken =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.slice("Bearer ".length).trim()
+      : "";
+  const token = getAuthCookie(req) || bearerToken;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return null;
   }
-
-  const token = authHeader.replace("Bearer ", "");
 
   try {
     return jwt.verify(token, ACCESS_SECRET) as JwtPayload;

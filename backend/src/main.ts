@@ -28,6 +28,8 @@ import modelReviewsRoutes from "./routes/model-reviews.routes";
 import roomRoutes from "./routes/room.routes";
 import motelPartnersRoutes from "./routes/motel-partners.routes";
 import { getPasswordPolicyError } from "./lib/password-policy";
+import { clearAuthCookie, hasAuthCookie, setAuthCookie } from "./lib/auth-cookie";
+import { requireAuth } from "./lib/auth";
 
 // ========================
 // APP
@@ -51,15 +53,18 @@ const parseCsv = (value: string) =>
     .map((item) => normalizeOrigin(item))
     .filter(Boolean);
 
-const defaultAllowedOrigins = [
+const productionAllowedOrigins = [
   "https://models-club.com",
   "https://www.models-club.com",
-  "https://api.models-club.com",
   "https://modelssa-fianall.vercel.app",
-  "https://backend-model-s.onrender.com",
+];
+const developmentAllowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
 ];
+const defaultAllowedOrigins = isProduction
+  ? productionAllowedOrigins
+  : [...productionAllowedOrigins, ...developmentAllowedOrigins];
 
 const envAllowedOrigins = parseCsv(process.env.CORS_ALLOWED_ORIGINS || "");
 const allowedOrigins = new Set(
@@ -87,6 +92,19 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+
+app.use((req, res, next) => {
+  if (!isProduction || !hasAuthCookie(req) || !["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    return next();
+  }
+
+  const origin = String(req.headers.origin || "");
+  if (!origin || !allowedOrigins.has(normalizeOrigin(origin))) {
+    return res.status(403).json({ error: "Origem da requisicao nao autorizada" });
+  }
+
+  return next();
+});
 
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -129,10 +147,6 @@ const PORT = Number(process.env.PORT) || 4000;
 const ACCESS_SECRET =
   process.env.JWT_ACCESS_SECRET ||
   (isProduction ? "" : "access_secret_dev");
-const REFRESH_SECRET =
-  process.env.JWT_REFRESH_SECRET ||
-  (isProduction ? "" : "refresh_secret_dev");
-
 const ADMIN_ROUTE_ENABLED_NON_PROD = !isProduction;
 const ENABLE_ADMIN_RESET =
   ADMIN_ROUTE_ENABLED_NON_PROD ||
@@ -190,7 +204,6 @@ function assertRequiredSecrets() {
 
   const missing: string[] = [];
   if (!ACCESS_SECRET) missing.push("JWT_ACCESS_SECRET");
-  if (!REFRESH_SECRET) missing.push("JWT_REFRESH_SECRET");
   if (!String(process.env.OTP_HASH_SECRET || "").trim()) {
     missing.push("OTP_HASH_SECRET");
   }
@@ -260,12 +273,8 @@ assertRequiredSecrets();
 // ========================
 // AUTH HELPERS
 // ========================
-function generateAccessToken(payload: object) {
-  return jwt.sign(payload, ACCESS_SECRET, { expiresIn: "15m" });
-}
-
-function generateRefreshToken(payload: object) {
-  return jwt.sign(payload, REFRESH_SECRET, { expiresIn: "7d" });
+function generateAccessToken(payload: object, expiresIn: "1h" | "8h") {
+  return jwt.sign(payload, ACCESS_SECRET, { expiresIn });
 }
 
 // ========================
@@ -343,17 +352,15 @@ app.post(
       return res.status(401).json({ error: "Credenciais invalidas" });
     }
 
+    const isAdmin = user.role === "ADMIN";
     const accessToken = generateAccessToken({
       id: user.id,
       email: user.email,
       role: user.role,
-    });
-
-    const refreshToken = generateRefreshToken({ id: user.id });
+    }, isAdmin ? "1h" : "8h");
+    setAuthCookie(res, accessToken, isAdmin ? 60 * 60 * 1000 : 8 * 60 * 60 * 1000);
 
       return res.json({
-        accessToken,
-        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -367,6 +374,50 @@ app.post(
     }
   }
 );
+
+app.get("/api/auth/session", requireAuth, async (_req, res) => {
+  try {
+    const sessionUser = res.locals.user as { id: string; role: string };
+
+    if (sessionUser.role === "MODEL") {
+      const model = await prisma.model.findUnique({
+        where: { id: sessionUser.id },
+        select: { id: true, email: true, name: true, isVerified: true },
+      });
+      if (!model) {
+        clearAuthCookie(res);
+        return res.status(401).json({ error: "Sessao invalida" });
+      }
+      return res.json({
+        user: {
+          id: model.id,
+          email: model.email,
+          displayName: model.name,
+          role: "MODEL",
+          isVerified: model.isVerified,
+        },
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: sessionUser.id },
+      select: { id: true, email: true, displayName: true, role: true },
+    });
+    if (!user || user.role !== sessionUser.role) {
+      clearAuthCookie(res);
+      return res.status(401).json({ error: "Sessao invalida" });
+    }
+    return res.json({ user });
+  } catch (error) {
+    console.error("Session validation error:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+app.post("/api/auth/logout", (_req, res) => {
+  clearAuthCookie(res);
+  return res.json({ status: "ok" });
+});
 
 app.post("/api/auth/admin-reset", async (req, res) => {
   try {

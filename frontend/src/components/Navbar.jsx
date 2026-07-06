@@ -1,46 +1,19 @@
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const readUser = () => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser && storedUser !== "undefined") {
-        setUser(JSON.parse(storedUser));
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    }
-  };
-
   useEffect(() => {
-    readUser();
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  useEffect(() => {
-    const handleStorage = (event) => {
-      if (event.key === "user") {
-        readUser();
-      }
-    };
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
-    setUser(null);
+  const handleLogout = async () => {
+    await logout();
     setMobileMenuOpen(false);
     navigate("/");
   };

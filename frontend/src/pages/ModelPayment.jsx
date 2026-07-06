@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
 const PIX_KEY = "faa9aca1-3e24-4437-abcb-ae58ae550979";
 const WHATSAPP_NUMBER_E164 = "5549999836511";
@@ -142,20 +143,8 @@ async function copyToClipboard(text) {
   }
 }
 
-function loadStoredUser() {
-  try {
-    const raw = localStorage.getItem("user");
-    if (!raw) {
-      return null;
-    }
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
 export default function ModelPayment() {
-  const storedUser = useMemo(() => loadStoredUser(), []);
+  const { user: storedUser } = useAuth();
   const [planId, setPlanId] = useState("pro");
   const [toast, setToast] = useState("");
   const [profileData, setProfileData] = useState(null);

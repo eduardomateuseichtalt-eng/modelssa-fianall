@@ -11,6 +11,7 @@ import { sendModelRegisterOtpEmail } from "../lib/email";
 import { sendWhatsAppText } from "../lib/whatsapp";
 import { asyncHandler } from "../lib/async-handler";
 import { getPasswordPolicyError } from "../lib/password-policy";
+import { setAuthCookie } from "../lib/auth-cookie";
 import { normalizeCity, rotationSeed, stableHash01 } from "../utils/rotation";
 import { getModelMediaLimits, getModelTrialEndDate } from "../lib/model-plan";
 import { buildModelTrialExpiredResponse, modelHasPaidAreaAccess } from "../lib/model-access";
@@ -827,6 +828,7 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
     ACCESS_SECRET,
     { expiresIn: "1d" }
   );
+  setAuthCookie(res, accessToken, 24 * 60 * 60 * 1000);
 
   try {
     await markModelOnlinePulse(model.id);
@@ -840,7 +842,6 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
   ]);
 
   return res.json({
-    accessToken,
     user: {
       id: model.id,
       email: model.email,

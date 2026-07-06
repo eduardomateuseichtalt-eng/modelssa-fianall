@@ -6,6 +6,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from "../lib/passwordPolicy";
+import { useAuth } from "../context/AuthContext";
 
 function pixField(id, value) {
   const str = String(value ?? "");
@@ -112,6 +113,7 @@ function formatDateBr(value) {
 }
 
 export default function ModelLogin() {
+  const { logout, setAuthenticatedUser } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
@@ -158,8 +160,7 @@ export default function ModelLogin() {
         body: JSON.stringify({ email, password }),
       });
 
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      setAuthenticatedUser(data.user);
 
       navigate("/modelo/area");
     } catch (err) {
@@ -171,9 +172,7 @@ export default function ModelLogin() {
         err?.data?.code === "MODEL_TRIAL_EXPIRED" &&
         paymentData
       ) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
+        await logout();
         setPaymentBlock(paymentData);
         setError("");
         return;

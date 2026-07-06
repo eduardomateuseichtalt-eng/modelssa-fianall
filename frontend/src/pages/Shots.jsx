@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
 import ProgressiveImage from "../components/ProgressiveImage";
+import { useAuth } from "../context/AuthContext";
 
 function normalizeCityText(value) {
   return String(value || "")
@@ -11,6 +12,7 @@ function normalizeCityText(value) {
 }
 
 export default function Shots() {
+  const { user } = useAuth();
   const [shots, setShots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -173,9 +175,7 @@ export default function Shots() {
 
   const toggleLike = async (shotId, likedByUser) => {
     setActionMessage("");
-    const token = localStorage.getItem("accessToken");
-
-    if (!token) {
+    if (!user) {
       try {
         const response = await apiFetch(`/api/shots/${shotId}/like-guest`, {
           method: "POST",

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { Navigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
 const colorOptions = [
@@ -32,20 +31,6 @@ const buildSegments = (breakdown) => {
 };
 
 export default function ModelCityStats() {
-  let user = null;
-  try {
-    const stored = localStorage.getItem("user");
-    if (stored && stored !== "undefined") {
-      user = JSON.parse(stored);
-    }
-  } catch {
-    user = null;
-  }
-
-  if (!user || user.role !== "MODEL") {
-    return <Navigate to="/modelo/login" replace />;
-  }
-
   const [form, setForm] = useState({
     city: defaultCity,
     color: colorOptions[0].value,

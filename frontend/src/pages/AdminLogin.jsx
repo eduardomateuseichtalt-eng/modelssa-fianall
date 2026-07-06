@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { useNoIndex } from "../lib/useNoIndex";
+import { useAuth } from "../context/AuthContext";
 
 export default function AdminLogin() {
   useNoIndex();
   const navigate = useNavigate();
+  const { setAuthenticatedUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,9 +20,6 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-
       const data = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,9 +30,7 @@ export default function AdminLogin() {
         throw new Error("Acesso restrito");
       }
 
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      setAuthenticatedUser(data.user);
 
       console.log("ADMIN LOGIN OK -> indo para /admin/aprovacoes");
       navigate("/admin/aprovacoes");

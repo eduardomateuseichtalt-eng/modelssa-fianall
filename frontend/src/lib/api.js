@@ -2,16 +2,6 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export async function apiFetch(path, options = {}) {
   const headers = new Headers(options.headers || {});
-  const token = localStorage.getItem("accessToken");
-
-  const isPublic =
-    path.startsWith("/api/auth/login") ||
-    path.startsWith("/api/auth/register") ||
-    path.startsWith("/api/auth/refresh");
-
-  if (!isPublic && token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
 
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -34,18 +24,8 @@ export async function apiFetch(path, options = {}) {
       (data && data.error) ||
       (data && data.message) ||
       `Erro HTTP ${response.status}`;
-    const isAgeGate =
-      typeof message === "string" && message.toLowerCase().includes("verificacao de idade");
-
-    const isModelTrialExpired =
-      response.status === 402 &&
-      data &&
-      data.code === "MODEL_TRIAL_EXPIRED" &&
-      data.paymentRequired === true;
-
-    if ((response.status === 401 || response.status === 403 || isModelTrialExpired) && !isAgeGate) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("auth:unauthorized"));
     }
     const error = new Error(message);
     error.status = response.status;

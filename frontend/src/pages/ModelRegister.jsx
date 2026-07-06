@@ -547,7 +547,7 @@ export default function ModelRegister() {
       });
 
       if (mediaFiles.length > 0 && data?.id) {
-        const loginData = await apiFetch("/api/models/login", {
+        await apiFetch("/api/models/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -556,18 +556,13 @@ export default function ModelRegister() {
           }),
         });
 
-        const modelAccessToken = String(loginData?.accessToken || "");
-        if (!modelAccessToken) {
-          throw new Error("Nao foi possivel autenticar para envio de midia.");
-        }
-
         const filesToUpload = profileFile ? [profileFile, ...mediaFiles] : mediaFiles;
         const formData = await buildProgressiveUploadFormData(filesToUpload);
 
         await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.open("POST", `${API_URL}/api/media/upload`);
-          xhr.setRequestHeader("Authorization", `Bearer ${modelAccessToken}`);
+          xhr.withCredentials = true;
           xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
               setUploadProgress(Math.round((event.loaded / event.total) * 100));
