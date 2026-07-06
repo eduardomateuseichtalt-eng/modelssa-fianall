@@ -2098,7 +2098,7 @@ export default function ModelDashboard() {
                     </div>
                   </div>
                 </div>
-                <div className="form-actions" style={{ marginTop: 4 }}>
+                <div className="form-actions model-profile-save-actions" style={{ marginTop: 4 }}>
                   <button
                     className="btn"
                     type="button"
