@@ -3784,7 +3784,7 @@ select {
   border: 1px solid var(--border);
   border-radius: 12px;
   width: 4cm;
-  height: 4cm;
+  min-height: 4.35cm;
   padding: 8px;
   display: grid;
   gap: 4px;
@@ -3809,7 +3809,7 @@ select {
 
 .footer-partner-logo-shell {
   width: 100%;
-  height: 2.2cm;
+  height: 1.85cm;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3837,6 +3837,15 @@ select {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--gold);
+}
+
+.footer-partner-phone {
+  font-size: 10px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .footer-partner-meta {

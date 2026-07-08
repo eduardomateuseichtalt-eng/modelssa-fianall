@@ -1,61 +1,23 @@
 import { useMemo, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { apiFetch } from "../lib/api";
-
-const PARTNER_MOTEIS_TESTE = [
-  {
-    id: "motel-parceiro-teste",
-    name: "Motel Parceiro (Teste)",
-    address: "Endereco em validacao comercial",
-    city: "Curitiba - PR",
-    mapUrl: "https://maps.google.com",
-    logoUrl: "",
-  },
-];
-
-const normalizeText = (value) =>
-  String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-
-const extractCityName = (value) => {
-  const text = String(value || "").trim();
-  if (!text) return "";
-  if (text.includes("-")) {
-    return text.split("-")[0].trim();
-  }
-  if (text.includes(",")) {
-    return text.split(",")[0].trim();
-  }
-  return text;
-};
-
-const stripUfSuffix = (value) => String(value || "").replace(/\s*-\s*[A-Za-z]{2}$/, "").trim();
-
-const isPartnerFromCity = (partnerCity, detectedCity) => {
-  const partnerCityNorm = normalizeText(extractCityName(partnerCity));
-  const detectedCityNorm = normalizeText(detectedCity);
-  if (!partnerCityNorm || !detectedCityNorm) {
-    return false;
-  }
-  return (
-    partnerCityNorm.includes(detectedCityNorm) ||
-    detectedCityNorm.includes(partnerCityNorm)
-  );
-};
+import {
+  enrichSouthCapitalMotelPartners,
+  isMotelPartnerFromCity,
+  mergeSouthCapitalFallbackMotels,
+  stripMotelUfSuffix,
+} from "../lib/southMotelFallback";
 
 export default function Footer() {
   const location = useLocation();
-  const [partners, setPartners] = useState(PARTNER_MOTEIS_TESTE);
+  const [partners, setPartners] = useState([]);
   const [locationStatus, setLocationStatus] = useState("idle");
   const [detectedCity, setDetectedCity] = useState("");
   const [locationError, setLocationError] = useState("");
 
   const query = new URLSearchParams(location.search);
   const cityQuery = String(query.get("cidade") || query.get("city") || "").trim();
-  const searchCity = stripUfSuffix(cityQuery) || detectedCity;
+  const searchCity = stripMotelUfSuffix(cityQuery) || detectedCity;
 
   const detectLocationAndFilter = () => {
     if (!navigator?.geolocation) {
@@ -135,10 +97,6 @@ export default function Footer() {
       .then((data) => {
         if (!mounted) return;
         const safeData = Array.isArray(data) ? data : [];
-        if (safeData.length === 0) {
-          setPartners(PARTNER_MOTEIS_TESTE);
-          return;
-        }
         setPartners(
           safeData.map((partner) => ({
             id: partner.id,
@@ -147,12 +105,13 @@ export default function Footer() {
             city: partner.city || "",
             mapUrl: partner.mapUrl || "",
             logoUrl: partner.photoUrl || "",
+            phone: partner.phone || "",
           }))
         );
       })
       .catch(() => {
         if (!mounted) return;
-        setPartners(PARTNER_MOTEIS_TESTE);
+        setPartners([]);
       });
 
     return () => {
@@ -165,27 +124,42 @@ export default function Footer() {
   }, []);
 
   const locationResult = useMemo(() => {
-    if (!searchCity) {
+    const fallbackPartners = mergeSouthCapitalFallbackMotels(partners);
+    const enrichedPartners = enrichSouthCapitalMotelPartners(partners);
+    const basePartners = enrichedPartners.length > 0 ? enrichedPartners : fallbackPartners;
+
+    if (locationStatus === "denied" || locationStatus === "unsupported") {
       return {
-        partnersToShow: partners,
-        matchCount: partners.length,
+        partnersToShow: fallbackPartners,
+        matchCount: fallbackPartners.length,
+        isSouthFallback: true,
       };
     }
 
-    const matched = partners.filter((partner) =>
-      isPartnerFromCity(partner.city, searchCity)
+    if (!searchCity) {
+      return {
+        partnersToShow: basePartners,
+        matchCount: basePartners.length,
+        isSouthFallback: partners.length === 0,
+      };
+    }
+
+    const matched = basePartners.filter((partner) =>
+      isMotelPartnerFromCity(partner.city, searchCity)
     );
     if (matched.length === 0) {
       return {
-        partnersToShow: partners,
+        partnersToShow: basePartners,
         matchCount: 0,
+        isSouthFallback: partners.length === 0,
       };
     }
     return {
       partnersToShow: matched,
       matchCount: matched.length,
+      isSouthFallback: partners.length === 0,
     };
-  }, [partners, detectedCity, searchCity]);
+  }, [partners, locationStatus, searchCity]);
 
   return (
     <footer className="footer">
@@ -234,7 +208,9 @@ export default function Footer() {
           <p className="muted footer-partners-note">Buscando parceiros proximos...</p>
         ) : null}
         {locationStatus === "unsupported" ? (
-          <p className="muted footer-partners-note">Geolocalizacao indisponivel neste navegador.</p>
+          <p className="muted footer-partners-note">
+            Geolocalizacao indisponivel. Exibindo parceiros das capitais do Sul.
+          </p>
         ) : null}
         {locationStatus === "ready" && searchCity ? (
           <p className="muted footer-partners-note">
@@ -246,7 +222,7 @@ export default function Footer() {
         ) : null}
         {locationStatus === "denied" ? (
           <p className="muted footer-partners-note">
-            Localizacao bloqueada no navegador.
+            Localizacao bloqueada no navegador. Exibindo parceiros das capitais do Sul.
           </p>
         ) : null}
         {locationError && locationStatus !== "denied" && locationStatus !== "unsupported" ? (
@@ -257,7 +233,7 @@ export default function Footer() {
             <article
               key={partner.id}
               className="footer-partner-card"
-              title={`${partner.name}${partner.address ? ` | ${partner.address}` : ""}${partner.city ? ` | ${partner.city}` : ""}`}
+              title={`${partner.name}${partner.address ? ` | ${partner.address}` : ""}${partner.city ? ` | ${partner.city}` : ""}${partner.phone ? ` | ${partner.phone}` : ""}`}
             >
               <div className="footer-partner-logo-shell">
                 {partner.logoUrl ? (
@@ -275,6 +251,9 @@ export default function Footer() {
               </div>
               <strong style={{ color: "#ffffff" }}>{partner.name}</strong>
               <p className="muted footer-partner-meta" style={{ color: "rgba(255,255,255,0.85)" }}>{partner.city || partner.address}</p>
+              {partner.phone ? (
+                <p className="footer-partner-phone">{partner.phone}</p>
+              ) : null}
               {partner.mapUrl ? (
                 <a
                   href={partner.mapUrl}

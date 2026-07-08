@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
+import {
+  enrichSouthCapitalMotelPartners,
+  isMotelPartnerFromCity,
+  mergeSouthCapitalFallbackMotels,
+} from "../lib/southMotelFallback";
 
 function HomeFeaturedModelCard({ model }) {
   const fallbackPhoto = model.coverUrl || model.avatarUrl || "/model-placeholder.svg";
@@ -146,6 +151,7 @@ export default function Home() {
   const [isComposing, setIsComposing] = useState(false);
   const [motelPartners, setMotelPartners] = useState([]);
   const [detectedMotelCity, setDetectedMotelCity] = useState("");
+  const [motelLocationStatus, setMotelLocationStatus] = useState("idle");
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -180,22 +186,6 @@ export default function Home() {
       .trim();
   const stripUfSuffix = (value) =>
     value.replace(/\s*-\s*[A-Za-z]{2}$/, "").trim();
-  const extractCityNameFromPartner = (value) => {
-    const text = String(value || "").trim();
-    if (!text) return "";
-    if (text.includes("-")) return text.split("-")[0].trim();
-    if (text.includes(",")) return text.split(",")[0].trim();
-    return text;
-  };
-  const isPartnerFromCity = (partnerCity, detectedCity) => {
-    const partnerCityNorm = normalizeText(extractCityNameFromPartner(partnerCity));
-    const detectedCityNorm = normalizeText(detectedCity || "");
-    if (!partnerCityNorm || !detectedCityNorm) return false;
-    return (
-      partnerCityNorm.includes(detectedCityNorm) ||
-      detectedCityNorm.includes(partnerCityNorm)
-    );
-  };
   const formatCitySuggestion = (city) =>
     city.uf ? `${city.name} - ${city.uf}` : city.name;
   const selectSuggestion = (suggestion) => {
@@ -339,9 +329,11 @@ export default function Home() {
           safeData.map((p) => ({
             id: p.id,
             name: p.name,
+            address: p.address || "",
             city: p.city || "",
             mapUrl: p.mapUrl || "",
             logoUrl: p.photoUrl || "",
+            phone: p.phone || "",
           }))
         );
       })
@@ -355,9 +347,11 @@ export default function Home() {
   useEffect(() => {
     if (!navigator?.geolocation) {
       setDetectedMotelCity("");
+      setMotelLocationStatus("unsupported");
       return;
     }
 
+    setMotelLocationStatus("locating");
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
@@ -374,6 +368,7 @@ export default function Home() {
             `https://nominatim.openstreetmap.org/reverse?${params.toString()}`
           );
           if (!response.ok) {
+            setMotelLocationStatus("error");
             return setDetectedMotelCity("");
           }
           const data = await response.json();
@@ -385,13 +380,20 @@ export default function Home() {
             address.village ||
             address.county ||
             "";
-          if (city) setDetectedMotelCity(String(city));
+          if (city) {
+            setDetectedMotelCity(String(city));
+            setMotelLocationStatus("ready");
+            return;
+          }
+          setMotelLocationStatus("error");
         } catch (e) {
           setDetectedMotelCity("");
+          setMotelLocationStatus("error");
         }
       },
       () => {
         setDetectedMotelCity("");
+        setMotelLocationStatus("denied");
       },
       { enableHighAccuracy: false, timeout: 9000, maximumAge: 5 * 60 * 1000 }
     );
@@ -643,12 +645,30 @@ export default function Home() {
 
             {(() => {
               const searchCity = stripUfSuffix((citySearch || "").trim()) || detectedMotelCity;
-              if (!searchCity) return null;
-              const matched = motelPartners.filter((p) => isPartnerFromCity(p.city, searchCity));
+              const fallbackPartners = mergeSouthCapitalFallbackMotels(motelPartners);
+              const enrichedPartners = enrichSouthCapitalMotelPartners(motelPartners);
+              const partnerBase = enrichedPartners.length > 0 ? enrichedPartners : fallbackPartners;
+              const shouldShowFallback =
+                !searchCity &&
+                (motelLocationStatus === "denied" ||
+                  motelLocationStatus === "unsupported" ||
+                  motelLocationStatus === "error");
+              const matched = shouldShowFallback
+                ? fallbackPartners
+                : searchCity
+                ? partnerBase.filter((p) => isMotelPartnerFromCity(p.city, searchCity))
+                : [];
               if (!matched || matched.length === 0) return null;
               return (
                 <div style={{ marginTop: 24, marginBottom: 12 }}>
-                  <h4 className="pill">Moteis nesta cidade</h4>
+                  <h4 className="pill">
+                    {shouldShowFallback ? "Moteis parceiros no Sul" : "Moteis nesta cidade"}
+                  </h4>
+                  {shouldShowFallback ? (
+                    <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                      Localizacao indisponivel. Exibindo parceiros das capitais do Sul.
+                    </p>
+                  ) : null}
                   <div style={{ display: "flex", gap: 12, marginTop: 8, overflowX: "auto" }}>
                     {matched.map((m) => (
                       <a
@@ -661,6 +681,9 @@ export default function Home() {
                       >
                         <strong style={{ color: "#ffffff" }}>{m.name}</strong>
                         <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.city}</p>
+                        {m.phone ? (
+                          <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.phone}</p>
+                        ) : null}
                       </a>
                     ))}
                   </div>
@@ -678,7 +701,5 @@ export default function Home() {
     </div>
   );
 }
-
-
 
 
