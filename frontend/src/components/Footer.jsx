@@ -106,6 +106,7 @@ export default function Footer() {
             mapUrl: partner.mapUrl || "",
             logoUrl: partner.photoUrl || "",
             phone: partner.phone || "",
+            priceText: partner.priceText || "",
           }))
         );
       })
@@ -233,7 +234,7 @@ export default function Footer() {
             <article
               key={partner.id}
               className="footer-partner-card"
-              title={`${partner.name}${partner.address ? ` | ${partner.address}` : ""}${partner.city ? ` | ${partner.city}` : ""}${partner.phone ? ` | ${partner.phone}` : ""}`}
+              title={`${partner.name}${partner.address ? ` | ${partner.address}` : ""}${partner.city ? ` | ${partner.city}` : ""}${partner.phone ? ` | ${partner.phone}` : ""}${partner.priceText ? ` | ${partner.priceText}` : ""}`}
             >
               <div className="footer-partner-logo-shell">
                 {partner.logoUrl ? (
@@ -253,6 +254,9 @@ export default function Footer() {
               <p className="muted footer-partner-meta" style={{ color: "rgba(255,255,255,0.85)" }}>{partner.city || partner.address}</p>
               {partner.phone ? (
                 <p className="footer-partner-phone">{partner.phone}</p>
+              ) : null}
+              {partner.priceText ? (
+                <p className="footer-partner-price">{partner.priceText}</p>
               ) : null}
               {partner.mapUrl ? (
                 <a

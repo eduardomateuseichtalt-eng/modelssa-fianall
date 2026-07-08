@@ -10,6 +10,7 @@ export const SOUTH_CAPITAL_MOTEL_FALLBACK = [
     mapUrl: buildMapSearchUrl("Motel Le Ton R. Bento Cego, 251 Uberaba Curitiba PR"),
     logoUrl: "",
     phone: "(41) 99689-1733",
+    priceText: "",
   },
   {
     id: "fallback-curitiba-deslize",
@@ -19,6 +20,7 @@ export const SOUTH_CAPITAL_MOTEL_FALLBACK = [
     mapUrl: buildMapSearchUrl("Motel Deslize Curitiba PR"),
     logoUrl: "",
     phone: "(41) 3354-4041",
+    priceText: "",
   },
   {
     id: "fallback-florianopolis-2001",
@@ -28,6 +30,7 @@ export const SOUTH_CAPITAL_MOTEL_FALLBACK = [
     mapUrl: buildMapSearchUrl("Motel 2001 Florianopolis SC"),
     logoUrl: "",
     phone: "(48) 3258-1098",
+    priceText: "",
   },
   {
     id: "fallback-florianopolis-dallas",
@@ -37,6 +40,7 @@ export const SOUTH_CAPITAL_MOTEL_FALLBACK = [
     mapUrl: buildMapSearchUrl("Motel Dallas Florianopolis SC"),
     logoUrl: "",
     phone: "(48) 3243-6180",
+    priceText: "",
   },
   {
     id: "fallback-porto-alegre-drops",
@@ -46,6 +50,7 @@ export const SOUTH_CAPITAL_MOTEL_FALLBACK = [
     mapUrl: buildMapSearchUrl("Drops Motel Porto Alegre RS"),
     logoUrl: "",
     phone: "(51) 99865-6241",
+    priceText: "",
   },
   {
     id: "fallback-porto-alegre-audace",
@@ -55,6 +60,7 @@ export const SOUTH_CAPITAL_MOTEL_FALLBACK = [
     mapUrl: buildMapSearchUrl("Audace Motel Porto Alegre RS"),
     logoUrl: "",
     phone: "(51) 3095-1010",
+    priceText: "",
   },
 ];
 
@@ -109,6 +115,7 @@ export const mergeSouthCapitalFallbackMotels = (partners = []) => {
       mapUrl: savedPartner.mapUrl || fallback.mapUrl,
       logoUrl: savedPartner.logoUrl || fallback.logoUrl,
       phone: fallback.phone,
+      priceText: savedPartner.priceText || fallback.priceText,
     };
   });
 };
@@ -135,6 +142,7 @@ export const enrichSouthCapitalMotelPartners = (partners = []) => {
       mapUrl: partner.mapUrl || fallback.mapUrl,
       logoUrl: partner.logoUrl || fallback.logoUrl,
       phone: fallback.phone,
+      priceText: partner.priceText || fallback.priceText,
     };
   });
 };

@@ -7,6 +7,8 @@ const INITIAL_FORM = {
   name: "",
   address: "",
   city: "",
+  phone: "",
+  priceText: "",
   zipCode: "",
   photoUrl: "",
   mapUrl: "",
@@ -156,6 +158,8 @@ export default function AdminPartners() {
       name,
       address: form.address,
       city: form.city,
+      phone: form.phone,
+      priceText: form.priceText,
       photoUrl: form.photoUrl,
       mapUrl:
         buildMapUrlFromZipCode(form.zipCode, form.address, form.city) ||
@@ -212,6 +216,8 @@ export default function AdminPartners() {
       name: partner.name || "",
       address: partner.address || "",
       city: partner.city || "",
+      phone: partner.phone || "",
+      priceText: partner.priceText || "",
       zipCode: extractZipCodeFromMapUrl(partner.mapUrl || ""),
       photoUrl: partner.photoUrl || "",
       mapUrl: partner.mapUrl || "",
@@ -285,6 +291,24 @@ export default function AdminPartners() {
               value={form.city}
               onChange={(event) =>
                 setForm((current) => ({ ...current, city: event.target.value }))
+              }
+            />
+            <input
+              className="input"
+              type="text"
+              placeholder="Telefone/WhatsApp (ex.: (41) 99999-9999)"
+              value={form.phone}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, phone: event.target.value }))
+              }
+            />
+            <input
+              className="input"
+              type="text"
+              placeholder="Valor (ex.: a partir de R$ 120)"
+              value={form.priceText}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, priceText: event.target.value }))
               }
             />
             <input
@@ -409,6 +433,8 @@ export default function AdminPartners() {
                 </p>
                 {partner.address ? <p className="muted">{partner.address}</p> : null}
                 {partner.city ? <p className="muted">{partner.city}</p> : null}
+                {partner.phone ? <p className="muted">Telefone/WhatsApp: {partner.phone}</p> : null}
+                {partner.priceText ? <p className="muted">Valor: {partner.priceText}</p> : null}
                 {partner.photoUrl ? (
                   <img
                     src={partner.photoUrl}

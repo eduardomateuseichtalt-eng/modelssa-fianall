@@ -3848,6 +3848,15 @@ select {
   text-overflow: ellipsis;
 }
 
+.footer-partner-price {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .footer-partner-meta {
   white-space: nowrap;
   overflow: hidden;

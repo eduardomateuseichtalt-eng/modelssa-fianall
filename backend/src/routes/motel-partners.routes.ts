@@ -12,6 +12,7 @@ const router = Router();
 
 const MAX_NAME_LEN = 120;
 const MAX_TEXT_LEN = 240;
+const MAX_PRICE_LEN = 80;
 const MAX_URL_LEN = 500;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const allowedImageTypes = new Set(["image/jpeg", "image/webp", "image/png"]);
@@ -105,6 +106,8 @@ router.post(
         name: name.slice(0, MAX_NAME_LEN),
         address: sanitizeText(req.body?.address, MAX_TEXT_LEN),
         city: sanitizeText(req.body?.city, MAX_TEXT_LEN),
+        phone: sanitizeText(req.body?.phone, MAX_TEXT_LEN),
+        priceText: sanitizeText(req.body?.priceText, MAX_PRICE_LEN),
         photoUrl: sanitizeUrl(req.body?.photoUrl),
         mapUrl: sanitizeUrl(req.body?.mapUrl),
         displayOrder,
@@ -177,6 +180,14 @@ router.patch(
         city:
           req.body && Object.prototype.hasOwnProperty.call(req.body, "city")
             ? sanitizeText(req.body?.city, MAX_TEXT_LEN)
+            : undefined,
+        phone:
+          req.body && Object.prototype.hasOwnProperty.call(req.body, "phone")
+            ? sanitizeText(req.body?.phone, MAX_TEXT_LEN)
+            : undefined,
+        priceText:
+          req.body && Object.prototype.hasOwnProperty.call(req.body, "priceText")
+            ? sanitizeText(req.body?.priceText, MAX_PRICE_LEN)
             : undefined,
         photoUrl:
           req.body && Object.prototype.hasOwnProperty.call(req.body, "photoUrl")

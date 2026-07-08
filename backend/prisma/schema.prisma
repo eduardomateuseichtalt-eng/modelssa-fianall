@@ -230,6 +230,8 @@ model MotelPartner {
   name         String
   address      String?
   city         String?
+  phone        String?
+  priceText    String?
   photoUrl     String?
   mapUrl       String?
   displayOrder Int      @default(0)
