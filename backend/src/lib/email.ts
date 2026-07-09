@@ -3,6 +3,11 @@ type SendModelRegisterOtpParams = {
   code: string;
 };
 
+type SendModelPasswordResetParams = {
+  to: string;
+  code: string;
+};
+
 function buildOtpEmailHtml(code: string) {
   return `
     <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
@@ -31,10 +36,47 @@ function buildOtpEmailHtml(code: string) {
   `;
 }
 
-export async function sendModelRegisterOtpEmail({
+function buildPasswordResetEmailHtml(code: string) {
+  return `
+    <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
+      <h2 style="margin: 0 0 12px;">Recuperacao de senha</h2>
+      <p style="margin: 0 0 12px;">
+        Use o codigo abaixo para redefinir sua senha no models-club:
+      </p>
+      <div
+        style="
+          display: inline-block;
+          padding: 12px 18px;
+          border-radius: 10px;
+          background: #111827;
+          color: #ffffff;
+          font-size: 24px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+        "
+      >
+        ${code}
+      </div>
+      <p style="margin: 14px 0 0; color: #6b7280; font-size: 13px;">
+        Este codigo expira em 10 minutos. Se voce nao solicitou a recuperacao, ignore este e-mail.
+      </p>
+    </div>
+  `;
+}
+
+async function sendEmail({
   to,
-  code,
-}: SendModelRegisterOtpParams) {
+  subject,
+  html,
+  text,
+  devLabel,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  devLabel: string;
+}) {
   const resendApiKey = String(process.env.RESEND_API_KEY || "").trim();
   const from = String(process.env.EMAIL_FROM || "").trim();
 
@@ -42,7 +84,7 @@ export async function sendModelRegisterOtpEmail({
     if (process.env.NODE_ENV === "production") {
       throw new Error("Provedor de e-mail nao configurado.");
     }
-    console.log(`[DEV EMAIL OTP] models-club -> ${to}: codigo ${code}`);
+    console.log(`[${devLabel}] models-club -> ${to}: ${text}`);
     return { provider: "console-dev" as const };
   }
 
@@ -59,9 +101,9 @@ export async function sendModelRegisterOtpEmail({
       body: JSON.stringify({
         from,
         to: [to],
-        subject: "Codigo de confirmacao - models-club",
-        html: buildOtpEmailHtml(code),
-        text: `Seu codigo de confirmacao no models-club e: ${code}`,
+        subject,
+        html,
+        text,
       }),
       signal: controller.signal,
     });
@@ -75,4 +117,30 @@ export async function sendModelRegisterOtpEmail({
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function sendModelRegisterOtpEmail({
+  to,
+  code,
+}: SendModelRegisterOtpParams) {
+  return sendEmail({
+    to,
+    subject: "Codigo de confirmacao - models-club",
+    html: buildOtpEmailHtml(code),
+    text: `Seu codigo de confirmacao no models-club e: ${code}`,
+    devLabel: "DEV EMAIL OTP",
+  });
+}
+
+export async function sendModelPasswordResetEmail({
+  to,
+  code,
+}: SendModelPasswordResetParams) {
+  return sendEmail({
+    to,
+    subject: "Codigo de recuperacao de senha - models-club",
+    html: buildPasswordResetEmailHtml(code),
+    text: `Seu codigo de recuperacao de senha no models-club e: ${code}. Valido por 10 minutos.`,
+    devLabel: "DEV EMAIL RESET",
+  });
 }

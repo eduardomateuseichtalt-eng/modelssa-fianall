@@ -197,7 +197,7 @@ export default function ModelLogin() {
         body: JSON.stringify({ email: recoverEmail }),
       });
       setRecoverStep("reset");
-      setRecoverMessage("Codigo enviado para o WhatsApp cadastrado.");
+      setRecoverMessage("Codigo enviado para o email cadastrado.");
     } catch (err) {
       setRecoverError(err.message || "Falha ao enviar codigo.");
     } finally {
@@ -373,7 +373,7 @@ export default function ModelLogin() {
           <>
             <h2>Recuperar senha</h2>
             <p className="muted">
-              Informe seu email para receber um codigo no WhatsApp cadastrado.
+              Informe seu email para receber um codigo de recuperacao.
             </p>
             {recoverError && <div className="notice">{recoverError}</div>}
             {recoverMessage && <div className="notice">{recoverMessage}</div>}

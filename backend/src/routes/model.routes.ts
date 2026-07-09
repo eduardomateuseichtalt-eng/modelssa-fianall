@@ -7,8 +7,7 @@ import { prisma } from "../lib/prisma";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import { redis } from "../lib/redis";
 import { gen6, hashCode, normalizePhone } from "../lib/otp";
-import { sendModelRegisterOtpEmail } from "../lib/email";
-import { sendWhatsAppText } from "../lib/whatsapp";
+import { sendModelPasswordResetEmail, sendModelRegisterOtpEmail } from "../lib/email";
 import { asyncHandler } from "../lib/async-handler";
 import { getPasswordPolicyError } from "../lib/password-policy";
 import { setAuthCookie } from "../lib/auth-cookie";
@@ -36,7 +35,6 @@ const RESET_SEND_LIMIT_PER_EMAIL = 5;
 const RESET_SEND_LIMIT_PER_IP = 10;
 const RESET_VERIFY_ATTEMPT_LIMIT = 8;
 const RESET_RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
-const DEFAULT_COUNTRY_CODE = process.env.SMS_DEFAULT_COUNTRY_CODE || "55";
 const REGISTER_EMAIL_OTP_TTL_SECONDS = 10 * 60;
 const REGISTER_EMAIL_SEND_LIMIT_PER_EMAIL = 5;
 const REGISTER_EMAIL_SEND_LIMIT_PER_IP = 10;
@@ -382,16 +380,6 @@ async function reverseGeocodeModelCity(lat: number, lon: number) {
   } catch {
     return null;
   }
-}
-
-function formatWhatsAppDigits(phoneDigits: string) {
-  if (phoneDigits.startsWith(DEFAULT_COUNTRY_CODE)) {
-    return phoneDigits;
-  }
-  if (phoneDigits.length <= 11) {
-    return `${DEFAULT_COUNTRY_CODE}${phoneDigits}`;
-  }
-  return phoneDigits;
 }
 
 function respondModelTrialExpired(
@@ -957,7 +945,7 @@ router.post("/forgot-password", asyncHandler(async (req: Request, res: Response)
   const model = await prisma.model.findUnique({
     where: { email },
     select: {
-      whatsapp: true,
+      id: true,
     },
   });
 
@@ -965,14 +953,6 @@ router.post("/forgot-password", asyncHandler(async (req: Request, res: Response)
   if (!model) {
     return res.json({ success: true, expiresIn: RESET_CODE_TTL_SECONDS });
   }
-
-  const rawWhatsappDigits = normalizePhone(String(model.whatsapp || ""));
-  if (rawWhatsappDigits.length < 10) {
-    return res.status(400).json({
-      error: "Nao foi possivel recuperar a senha. Atualize seu WhatsApp no cadastro.",
-    });
-  }
-  const whatsappDigits = formatWhatsAppDigits(rawWhatsappDigits);
 
   const code = gen6();
   const codeKey = `model:reset:code:${email}`;
@@ -984,13 +964,10 @@ router.post("/forgot-password", asyncHandler(async (req: Request, res: Response)
   ]);
 
   try {
-    await sendWhatsAppText(
-      whatsappDigits,
-      `Codigo de recuperacao de senha: ${code}. Valido por 10 minutos.`
-    );
+    await sendModelPasswordResetEmail({ to: email, code });
   } catch (error) {
-    console.error("Model forgot password send error:", error);
-    return res.status(500).json({ error: "Falha ao enviar o codigo." });
+    console.error("Model forgot password email error:", error);
+    return res.status(500).json({ error: "Falha ao enviar o codigo por e-mail." });
   }
 
   return res.json({ success: true, expiresIn: RESET_CODE_TTL_SECONDS });
