@@ -80,7 +80,6 @@ router.get(
   asyncHandler(async (_req: Request, res: Response) => {
     const partners = await prisma.motelPartner.findMany({
       orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
-      take: 300,
     });
     return res.json(partners);
   })

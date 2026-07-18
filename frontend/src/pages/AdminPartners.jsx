@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { useNoIndex } from "../lib/useNoIndex";
@@ -59,10 +59,18 @@ const extractZipCodeFromMapUrl = (mapUrlValue) => {
   }
 };
 
+const normalizeSearchText = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
 export default function AdminPartners() {
   useNoIndex();
 
   const [partners, setPartners] = useState([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -72,6 +80,21 @@ export default function AdminPartners() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const photoInputRef = useRef(null);
+  const editorRef = useRef(null);
+  const nameInputRef = useRef(null);
+
+  const filteredPartners = useMemo(() => {
+    const term = normalizeSearchText(search);
+    if (!term) {
+      return partners;
+    }
+
+    return partners.filter((partner) =>
+      [partner.name, partner.city, partner.address, partner.phone]
+        .map(normalizeSearchText)
+        .some((value) => value.includes(term))
+    );
+  }, [partners, search]);
 
   useEffect(() => {
     setLoading(true);
@@ -88,6 +111,20 @@ export default function AdminPartners() {
     setEditingId("");
     setForm(INITIAL_FORM);
     setPhotoError("");
+  };
+
+  const scrollToEditor = () => {
+    window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      nameInputRef.current?.focus({ preventScroll: true });
+    });
+  };
+
+  const handleNewPartner = () => {
+    resetForm();
+    setMessage("");
+    setError("");
+    scrollToEditor();
   };
 
   const handlePickPhoto = () => {
@@ -211,6 +248,9 @@ export default function AdminPartners() {
   };
 
   const handleEdit = (partner) => {
+    setMessage("");
+    setError("");
+    setPhotoError("");
     setEditingId(partner.id);
     setForm({
       name: partner.name || "",
@@ -224,6 +264,7 @@ export default function AdminPartners() {
       displayOrder: String(partner.displayOrder ?? 0),
       active: partner.active !== false,
     });
+    scrollToEditor();
   };
 
   const handleToggleActive = async (partner) => {
@@ -249,7 +290,7 @@ export default function AdminPartners() {
         Moteis <span>parceiros</span>
       </h1>
       <p className="muted" style={{ marginTop: 10 }}>
-        Cadastre e edite os parceiros exibidos no rodape do site.
+        Pesquise, cadastre e edite os parceiros exibidos no rodape do site.
       </p>
 
       <div className="form-actions" style={{ marginTop: 12 }}>
@@ -262,11 +303,142 @@ export default function AdminPartners() {
       {error ? <div className="notice">{error}</div> : null}
       {photoError ? <div className="notice">{photoError}</div> : null}
 
-      <section className="section" style={{ marginTop: 24 }}>
+      <section className="section admin-partners-list" style={{ marginTop: 24 }}>
+        <div className="admin-partners-toolbar card">
+          <div>
+            <h4>Todos os moteis parceiros</h4>
+            <p className="muted">
+              Digite o nome do motel para encontra-lo e fazer alteracoes.
+            </p>
+          </div>
+          <button className="btn" type="button" onClick={handleNewPartner}>
+            Cadastrar novo motel
+          </button>
+        </div>
+
+        <div className="admin-partners-search">
+          <label htmlFor="partner-search">Pesquisar motel parceiro</label>
+          <div className="admin-partners-search-row">
+            <input
+              id="partner-search"
+              className="input"
+              type="search"
+              placeholder="Digite o nome, cidade ou endereco..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              autoComplete="off"
+            />
+            {search ? (
+              <button
+                className="btn btn-outline"
+                type="button"
+                onClick={() => setSearch("")}
+              >
+                Limpar busca
+              </button>
+            ) : null}
+          </div>
+          {!loading && partners.length > 0 ? (
+            <p className="muted admin-partners-result-count" aria-live="polite">
+              {filteredPartners.length === partners.length
+                ? `${partners.length} parceiro(s) cadastrado(s)`
+                : `${filteredPartners.length} de ${partners.length} parceiro(s) encontrado(s)`}
+            </p>
+          ) : null}
+        </div>
+
+        {loading ? (
+          <p>Carregando parceiros...</p>
+        ) : partners.length === 0 ? (
+          <p className="muted admin-partners-empty">
+            Nenhum motel parceiro cadastrado ainda.
+          </p>
+        ) : filteredPartners.length === 0 ? (
+          <div className="card admin-partners-empty">
+            <h4>Nenhum motel encontrado</h4>
+            <p className="muted">
+              Confira o nome digitado ou limpe a busca para ver todos os parceiros.
+            </p>
+            <button
+              className="btn btn-outline"
+              type="button"
+              onClick={() => setSearch("")}
+            >
+              Ver todos os moteis
+            </button>
+          </div>
+        ) : (
+          <div className="cards admin-partners-grid">
+            {filteredPartners.map((partner) => (
+              <div
+                className={`card admin-partner-card ${
+                  editingId === partner.id ? "admin-partner-card--editing" : ""
+                }`}
+                key={partner.id}
+              >
+                <div className="admin-partner-card-heading">
+                  <h4>{partner.name}</h4>
+                  <span
+                    className={`admin-partner-status ${
+                      partner.active ? "is-active" : "is-inactive"
+                    }`}
+                  >
+                    {partner.active ? "Ativo" : "Inativo"}
+                  </span>
+                </div>
+                <p className="muted">Ordem de exibicao: {partner.displayOrder}</p>
+                {partner.address ? <p className="muted">{partner.address}</p> : null}
+                {partner.city ? <p className="muted">{partner.city}</p> : null}
+                {partner.phone ? (
+                  <p className="muted">Telefone/WhatsApp: {partner.phone}</p>
+                ) : null}
+                {partner.priceText ? (
+                  <p className="muted">Valor: {partner.priceText}</p>
+                ) : null}
+                {partner.photoUrl ? (
+                  <img
+                    src={partner.photoUrl}
+                    alt={`Foto de ${partner.name}`}
+                    className="admin-partner-photo"
+                  />
+                ) : null}
+                <div className="form-actions admin-partner-actions">
+                  <button
+                    className="btn btn-outline"
+                    type="button"
+                    onClick={() => handleEdit(partner)}
+                  >
+                    Editar dados
+                  </button>
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => handleToggleActive(partner)}
+                  >
+                    {partner.active ? "Desativar" : "Ativar"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section
+        ref={editorRef}
+        className="section admin-partner-editor"
+        style={{ marginTop: 24 }}
+      >
         <div className="card">
-          <h4>{editingId ? "Editar parceiro" : "Novo parceiro"}</h4>
+          <h4>{editingId ? "Editar motel parceiro" : "Novo motel parceiro"}</h4>
+          {editingId ? (
+            <p className="muted">
+              Altere os campos desejados e clique em atualizar parceiro.
+            </p>
+          ) : null}
           <div className="form-grid" style={{ marginTop: 12 }}>
             <input
+              ref={nameInputRef}
               className="input"
               type="text"
               placeholder="Nome do motel parceiro"
@@ -416,53 +588,6 @@ export default function AdminPartners() {
             ) : null}
           </div>
         </div>
-      </section>
-
-      <section className="section" style={{ marginTop: 24 }}>
-        {loading ? (
-          <p>Carregando parceiros...</p>
-        ) : partners.length === 0 ? (
-          <p className="muted">Nenhum motel parceiro cadastrado ainda.</p>
-        ) : (
-          <div className="cards">
-            {partners.map((partner) => (
-              <div className="card" key={partner.id}>
-                <h4>{partner.name}</h4>
-                <p className="muted">
-                  Ordem: {partner.displayOrder} | {partner.active ? "Ativo" : "Inativo"}
-                </p>
-                {partner.address ? <p className="muted">{partner.address}</p> : null}
-                {partner.city ? <p className="muted">{partner.city}</p> : null}
-                {partner.phone ? <p className="muted">Telefone/WhatsApp: {partner.phone}</p> : null}
-                {partner.priceText ? <p className="muted">Valor: {partner.priceText}</p> : null}
-                {partner.photoUrl ? (
-                  <img
-                    src={partner.photoUrl}
-                    alt={`Foto de ${partner.name}`}
-                    style={{ marginTop: 12, borderRadius: 12, maxHeight: 140, objectFit: "cover" }}
-                  />
-                ) : null}
-                {partner.mapUrl ? <p className="muted">Mapa: {partner.mapUrl}</p> : null}
-                <div className="form-actions" style={{ marginTop: 10 }}>
-                  <button
-                    className="btn btn-outline"
-                    type="button"
-                    onClick={() => handleEdit(partner)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    className="btn"
-                    type="button"
-                    onClick={() => handleToggleActive(partner)}
-                  >
-                    {partner.active ? "Desativar" : "Ativar"}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
     </div>
   );

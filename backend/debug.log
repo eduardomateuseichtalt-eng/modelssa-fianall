@@ -1,0 +1,4 @@
+[0717/222437.257:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+[0717/222437.273:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+[0717/222455.606:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+[0717/222630.034:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)

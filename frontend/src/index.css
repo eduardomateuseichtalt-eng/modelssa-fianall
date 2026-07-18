@@ -744,6 +744,139 @@ select {
   font-size: 14px;
 }
 
+.admin-partners-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.admin-partners-toolbar .muted,
+.admin-partner-editor .muted {
+  margin-top: 6px;
+}
+
+.admin-partners-search {
+  margin-top: 18px;
+}
+
+.admin-partners-search > label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-partners-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-partners-search-row .input {
+  flex: 1;
+}
+
+.admin-partners-result-count {
+  margin-top: 9px;
+  font-size: 13px;
+}
+
+.admin-partners-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.admin-partner-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-partner-card--editing {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(199, 162, 107, 0.16);
+}
+
+.admin-partner-card-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-partner-card-heading h4 {
+  overflow-wrap: anywhere;
+}
+
+.admin-partner-status {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-partner-status.is-active {
+  border-color: rgba(34, 197, 94, 0.38);
+  background: rgba(34, 197, 94, 0.1);
+  color: #86efac;
+}
+
+.admin-partner-status.is-inactive {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.09);
+  color: var(--muted);
+}
+
+.admin-partner-photo {
+  width: 100%;
+  max-height: 160px;
+  margin-top: 12px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.admin-partner-actions {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.admin-partners-empty {
+  margin-top: 20px;
+}
+
+.admin-partners-empty .btn {
+  margin-top: 14px;
+}
+
+.admin-partner-editor {
+  scroll-margin-top: 100px;
+}
+
+@media (max-width: 680px) {
+  .admin-partners-toolbar,
+  .admin-partners-search-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-partners-toolbar .btn,
+  .admin-partners-search-row .btn {
+    width: 100%;
+  }
+
+  .admin-partners-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .models-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));

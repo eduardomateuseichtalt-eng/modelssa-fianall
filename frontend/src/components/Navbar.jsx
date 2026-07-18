@@ -41,7 +41,7 @@ export default function Navbar() {
               {user.role === "ADMIN" ? (
                 <>
                   <NavLink to="/admin/aprovacoes">Aprovacoes</NavLink>
-                  <NavLink to="/admin/parceiros">Parceiros</NavLink>
+                  <NavLink to="/admin/parceiros">Moteis parceiros</NavLink>
                 </>
               ) : null}
               {user.role === "MODEL" ? (
@@ -105,7 +105,7 @@ export default function Navbar() {
                     to="/admin/parceiros"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Parceiros
+                    Moteis parceiros
                   </NavLink>
                 </>
               ) : null}
