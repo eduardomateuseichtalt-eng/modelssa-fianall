@@ -95,54 +95,17 @@ export const isMotelPartnerFromCity = (partnerCity, detectedCity) => {
 
 export const mergeSouthCapitalFallbackMotels = (partners = []) => {
   const apiPartners = Array.isArray(partners) ? partners : [];
-  const apiByName = new Map(
-    apiPartners
-      .filter((partner) => partner?.name)
-      .map((partner) => [normalizeMotelText(partner.name), partner])
+  const fallbackNames = new Set(
+    SOUTH_CAPITAL_MOTEL_FALLBACK.map((partner) =>
+      normalizeMotelText(partner.name)
+    )
   );
 
-  return SOUTH_CAPITAL_MOTEL_FALLBACK.map((fallback) => {
-    const savedPartner = apiByName.get(normalizeMotelText(fallback.name));
-    if (!savedPartner) {
-      return fallback;
-    }
-
-    return {
-      ...fallback,
-      id: savedPartner.id || fallback.id,
-      address: savedPartner.address || fallback.address,
-      city: savedPartner.city || fallback.city,
-      mapUrl: savedPartner.mapUrl || fallback.mapUrl,
-      logoUrl: savedPartner.logoUrl || fallback.logoUrl,
-      phone: fallback.phone,
-      priceText: savedPartner.priceText || fallback.priceText,
-    };
-  });
+  return apiPartners.filter((partner) =>
+    fallbackNames.has(normalizeMotelText(partner?.name))
+  );
 };
 
 export const enrichSouthCapitalMotelPartners = (partners = []) => {
-  const apiPartners = Array.isArray(partners) ? partners : [];
-  const fallbackByName = new Map(
-    SOUTH_CAPITAL_MOTEL_FALLBACK.map((fallback) => [
-      normalizeMotelText(fallback.name),
-      fallback,
-    ])
-  );
-
-  return apiPartners.map((partner) => {
-    const fallback = fallbackByName.get(normalizeMotelText(partner?.name));
-    if (!fallback) {
-      return partner;
-    }
-
-    return {
-      ...partner,
-      address: partner.address || fallback.address,
-      city: partner.city || fallback.city,
-      mapUrl: partner.mapUrl || fallback.mapUrl,
-      logoUrl: partner.logoUrl || fallback.logoUrl,
-      phone: fallback.phone,
-      priceText: partner.priceText || fallback.priceText,
-    };
-  });
+  return Array.isArray(partners) ? partners : [];
 };
