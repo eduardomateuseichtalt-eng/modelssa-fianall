@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
+import { formatMotelPrice } from "../lib/motelPrice";
 import {
   enrichSouthCapitalMotelPartners,
   isMotelPartnerFromCity,
@@ -686,7 +687,7 @@ export default function Home() {
                           <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.phone}</p>
                         ) : null}
                         {m.priceText ? (
-                          <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.priceText}</p>
+                          <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{formatMotelPrice(m.priceText)}</p>
                         ) : null}
                       </a>
                     ))}
@@ -705,4 +706,3 @@ export default function Home() {
     </div>
   );
 }
-

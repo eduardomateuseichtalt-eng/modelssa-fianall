@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { formatMotelPrice } from "../lib/motelPrice";
 import {
   enrichSouthCapitalMotelPartners,
   isMotelPartnerFromCity,
@@ -234,7 +235,7 @@ export default function Footer() {
             <article
               key={partner.id}
               className="footer-partner-card"
-              title={`${partner.name}${partner.address ? ` | ${partner.address}` : ""}${partner.city ? ` | ${partner.city}` : ""}${partner.phone ? ` | ${partner.phone}` : ""}${partner.priceText ? ` | ${partner.priceText}` : ""}`}
+              title={`${partner.name}${partner.address ? ` | ${partner.address}` : ""}${partner.city ? ` | ${partner.city}` : ""}${partner.phone ? ` | ${partner.phone}` : ""}${partner.priceText ? ` | ${formatMotelPrice(partner.priceText)}` : ""}`}
             >
               <div className="footer-partner-logo-shell">
                 {partner.logoUrl ? (
@@ -256,7 +257,7 @@ export default function Footer() {
                 <p className="footer-partner-phone">{partner.phone}</p>
               ) : null}
               {partner.priceText ? (
-                <p className="footer-partner-price">{partner.priceText}</p>
+                <p className="footer-partner-price">{formatMotelPrice(partner.priceText)}</p>
               ) : null}
               {partner.mapUrl ? (
                 <a

@@ -860,6 +860,30 @@ select {
   scroll-margin-top: 100px;
 }
 
+.admin-partner-price-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.admin-partner-price-field > span {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-right: 0;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  background: #f1ede7;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-partner-price-field .input {
+  min-width: 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
 @media (max-width: 680px) {
   .admin-partners-toolbar,
   .admin-partners-search-row {

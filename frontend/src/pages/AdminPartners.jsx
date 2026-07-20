@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { formatMotelPrice, normalizeMotelPrice } from "../lib/motelPrice";
 import { useNoIndex } from "../lib/useNoIndex";
 
 const INITIAL_FORM = {
@@ -196,7 +197,7 @@ export default function AdminPartners() {
       address: form.address,
       city: form.city,
       phone: form.phone,
-      priceText: form.priceText,
+      priceText: normalizeMotelPrice(form.priceText),
       photoUrl: form.photoUrl,
       mapUrl:
         buildMapUrlFromZipCode(form.zipCode, form.address, form.city) ||
@@ -257,7 +258,7 @@ export default function AdminPartners() {
       address: partner.address || "",
       city: partner.city || "",
       phone: partner.phone || "",
-      priceText: partner.priceText || "",
+      priceText: normalizeMotelPrice(partner.priceText),
       zipCode: extractZipCodeFromMapUrl(partner.mapUrl || ""),
       photoUrl: partner.photoUrl || "",
       mapUrl: partner.mapUrl || "",
@@ -393,7 +394,7 @@ export default function AdminPartners() {
                   <p className="muted">Telefone/WhatsApp: {partner.phone}</p>
                 ) : null}
                 {partner.priceText ? (
-                  <p className="muted">Valor: {partner.priceText}</p>
+                  <p className="muted">Valor: {formatMotelPrice(partner.priceText)}</p>
                 ) : null}
                 {partner.photoUrl ? (
                   <img
@@ -474,15 +475,23 @@ export default function AdminPartners() {
                 setForm((current) => ({ ...current, phone: event.target.value }))
               }
             />
-            <input
-              className="input"
-              type="text"
-              placeholder="Valor (ex.: a partir de R$ 120)"
-              value={form.priceText}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, priceText: event.target.value }))
-              }
-            />
+            <label className="admin-partner-price-field">
+              <span>A partir de:</span>
+              <input
+                className="input"
+                type="text"
+                inputMode="decimal"
+                aria-label="Valor inicial do motel"
+                placeholder="Ex.: R$ 120"
+                value={form.priceText}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    priceText: normalizeMotelPrice(event.target.value),
+                  }))
+                }
+              />
+            </label>
             <input
               className="input"
               type="text"
