@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
+import { mergeModelsWithDemo, preloadDemoImages } from "../demo/models.ts";
 
 export default function Modelos() {
   const [models, setModels] = useState([]);
@@ -18,14 +19,14 @@ export default function Modelos() {
   useEffect(() => {
     let canceled = false;
 
-    const applyItems = (data) => {
+    const applyItems = (data, filters = {}) => {
       const items = Array.isArray(data)
         ? data
         : Array.isArray(data?.items)
         ? data.items
         : [];
       if (!canceled) {
-        setModels(items);
+        setModels(mergeModelsWithDemo(items, { limit: 24, ...filters }));
       }
     };
 
@@ -41,7 +42,7 @@ export default function Modelos() {
         })
         .catch(() => {
           if (!canceled) {
-            setModels([]);
+            setModels(mergeModelsWithDemo([], { limit: 24 }));
             setDetectedCity("");
             setUsedNearbyFallback(false);
             setUsedDeviceLocation(false);
@@ -78,7 +79,7 @@ export default function Modelos() {
 
       apiFetch(`/api/models?${query.toString()}`)
         .then((data) => {
-          applyItems(data);
+          applyItems(data, { city: cityParam, service: serviceParam });
           if (!canceled) {
             setDetectedCity(cityParam);
             setUsedNearbyFallback(false);
@@ -87,7 +88,7 @@ export default function Modelos() {
         })
         .catch(() => {
           if (!canceled) {
-            setModels([]);
+            setModels(mergeModelsWithDemo([], { limit: 24, city: cityParam, service: serviceParam }));
             setDetectedCity(cityParam);
             setUsedNearbyFallback(false);
             setUsedDeviceLocation(false);
@@ -160,6 +161,10 @@ export default function Modelos() {
       canceled = true;
     };
   }, [location.search]);
+
+  useEffect(() => {
+    preloadDemoImages(models, 8);
+  }, [models]);
 
   useEffect(() => {
     if (!location.hash) {

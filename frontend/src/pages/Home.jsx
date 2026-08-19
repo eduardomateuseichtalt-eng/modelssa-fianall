@@ -8,6 +8,7 @@ import {
   isMotelPartnerFromCity,
   mergeSouthCapitalFallbackMotels,
 } from "../lib/southMotelFallback";
+import { mergeModelsWithDemo, preloadDemoImages } from "../demo/models.ts";
 
 function HomeFeaturedModelCard({ model }) {
   const fallbackPhoto = model.coverUrl || model.avatarUrl || "/model-placeholder.svg";
@@ -171,10 +172,14 @@ export default function Home() {
           : Array.isArray(data?.items)
           ? data.items
           : [];
-        setModels(items);
+        setModels(mergeModelsWithDemo(items, { limit: 60 }));
       })
-      .catch(() => setModels([]));
+      .catch(() => setModels(mergeModelsWithDemo([], { limit: 60 })));
   }, []);
+
+  useEffect(() => {
+    preloadDemoImages(models, 8);
+  }, [models]);
 
   
 

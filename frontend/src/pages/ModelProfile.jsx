@@ -2,6 +2,12 @@
 import { useParams, Link, useLocation } from "react-router-dom";
 import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
+import {
+  getDemoModelById,
+  isDemoModel,
+  isDemoModelId,
+  markDemoModelOffline,
+} from "../demo/models.ts";
 
 const SERVICE_OPTIONS = [
   { name: "Acompanhante", featured: true },
@@ -164,6 +170,7 @@ export default function ModelProfile() {
   const [priceOptionsOpen, setPriceOptionsOpen] = useState(false);
   const [ageToken, setAgeToken] = useState(readAgeToken());
   const effectiveAgeToken = ageToken || ageTokenFromQuery;
+  const demoProfileId = isDemoModelId(id);
   const priceCardRef = useRef(null);
   const mediaImageRef = useRef(null);
   const pinchStartDistanceRef = useRef(0);
@@ -176,23 +183,59 @@ export default function ModelProfile() {
   const touchPanStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
 
   useEffect(() => {
+    if (demoProfileId) {
+      const demoModel = getDemoModelById(id);
+      if (!demoModel) {
+        setModel(null);
+        setLoading(false);
+        return;
+      }
+
+      const demoMedia = demoModel.galleryPreviewPhotos.map((url, index) => ({
+        id: `${demoModel.id}-media-${index + 1}`,
+        type: "IMAGE",
+        url,
+        isExplicit: false,
+      }));
+      setModel(demoModel);
+      setMedia(demoMedia);
+      setMediaSummary({
+        photos: demoMedia.length,
+        videos: 0,
+        total: demoMedia.length,
+        safePhotos: demoMedia.length,
+        safeVideos: 0,
+        safeTotal: demoMedia.length,
+      });
+      setModelShots([]);
+      setReviews([]);
+      setLoading(false);
+      return;
+    }
+
     apiFetch(`/api/models/${id}`)
       .then((data) => setModel(data))
       .catch(() => setModel(null))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, demoProfileId]);
 
   useEffect(() => {
+    if (demoProfileId) {
+      return;
+    }
     apiFetch(`/api/models/${id}/profile-view`, { method: "POST" }).catch(() => {});
-  }, [id]);
+  }, [id, demoProfileId]);
 
   useEffect(() => {
+    if (demoProfileId) {
+      return;
+    }
     const token = effectiveAgeToken ? encodeURIComponent(effectiveAgeToken) : "";
     const query = token ? `?ageToken=${token}` : "";
     apiFetch(`/api/media/model/${id}${query}`)
       .then((data) => setMedia(Array.isArray(data) ? data : []))
       .catch(() => setMedia([]));
-  }, [id, effectiveAgeToken]);
+  }, [id, effectiveAgeToken, demoProfileId]);
 
   useEffect(() => {
     if (!ageTokenFromQuery) {
@@ -218,6 +261,9 @@ export default function ModelProfile() {
   }, [ageToken, ageTokenFromQuery, ageTokenExpiresAtFromQuery]);
 
   useEffect(() => {
+    if (demoProfileId) {
+      return;
+    }
     let active = true;
     setShotsLoading(true);
     apiFetch(`/api/shots?modelId=${encodeURIComponent(id)}`)
@@ -238,9 +284,12 @@ export default function ModelProfile() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, demoProfileId]);
 
   useEffect(() => {
+    if (demoProfileId) {
+      return;
+    }
     let active = true;
     setReviewsLoading(true);
     setReviewsError("");
@@ -268,7 +317,7 @@ export default function ModelProfile() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, demoProfileId]);
 
   useEffect(() => {
     if (!avatarMenuOpen && !viewerMode) {
@@ -339,6 +388,9 @@ export default function ModelProfile() {
   }, [ageTokenFromQuery]);
 
   useEffect(() => {
+    if (demoProfileId) {
+      return;
+    }
     apiFetch(`/api/media/model/${id}/summary`)
       .then((data) => {
         setMediaSummary({
@@ -360,7 +412,7 @@ export default function ModelProfile() {
           safeTotal: 0,
         });
       });
-  }, [id]);
+  }, [id, demoProfileId]);
 
   useEffect(() => {
     const handleMouseMove = (event) => {
@@ -429,6 +481,7 @@ export default function ModelProfile() {
     );
   }
 
+  const isDemoProfile = isDemoModel(model);
   const wa = String(model.whatsapp || "").replace(/\D/g, "");
   const waMsg = encodeURIComponent(
     `ol\u00e1 ${model.name}! vi seu perfil no models-club e gostaria de marcar um atendimento. quando voc\u00ea tem disponibilidade?`
@@ -438,6 +491,12 @@ export default function ModelProfile() {
 
   const handleOpenWhatsApp = (event) => {
     event.preventDefault();
+
+    if (isDemoProfile) {
+      markDemoModelOffline(model.id);
+      setModel((current) => (current ? { ...current, isOnline: false } : current));
+      return;
+    }
 
     if (!waAppUrl || !waWebUrl) {
       return;
@@ -1235,6 +1294,10 @@ export default function ModelProfile() {
                   type="button"
                   className="btn btn-outline"
                   onClick={() => {
+                    if (isDemoProfile) {
+                      setReviewSubmitError("Este perfil e demonstrativo e nao envia avaliacao ao backend.");
+                      return;
+                    }
                     setReviewFormOpen((current) => !current);
                     setReviewNotice("");
                     setReviewSubmitError("");
@@ -1293,6 +1356,10 @@ export default function ModelProfile() {
                         reviewText.trim().length < 8
                       }
                       onClick={async () => {
+                        if (isDemoProfile) {
+                          setReviewSubmitError("Este perfil e demonstrativo e nao envia avaliacao ao backend.");
+                          return;
+                        }
                         setReviewNotice("");
                         setReviewSubmitError("");
                         const payload = {
