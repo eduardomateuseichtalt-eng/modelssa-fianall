@@ -1,11 +1,39 @@
-import europeModels from "../demo-data/models-europe.json";
-import americanModels from "../demo-data/models-americas.json";
+import happyEscortsMultiModels from "../../modelos.fake/happyescorts_multi_perfis (1).json";
+import happyEscortsRomeModels from "../../modelos.fake/happyescorts_roma_perfis.json";
+import orhidiSpainModels from "../../modelos.fake/orhidi_es_perfis.json";
+import orhidiItalyModels from "../../modelos.fake/orhidi_it_perfis.json";
+import orhidiMoreModels from "../../modelos.fake/orhidi_more_perfis.json";
+import orhidiMore2Models from "../../modelos.fake/orhidi_more2_perfis.json";
+import orhidiMore3Models from "../../modelos.fake/orhidi_more3_perfis.json";
 
 export const DEMO_MODEL_PREFIX = "demo-model-";
 const DEMO_OFFLINE_STORAGE_KEY = "modelsClubDemoOfflineModels";
 const DEMO_PHONE = "390000000000";
 
-const demoSourceModels = [...europeModels, ...americanModels];
+// URLs mantidas nos JSONs de origem para auditoria, mas que falharam na validação
+// HTTP e não devem ser exibidas no frontend.
+const BROKEN_DEMO_PHOTO_URLS = new Set([
+  "https://www.happyescorts.com/images/com_escorts/gallery/167/167761/Escort__moqea.jpeg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/167/167761/Escort__jvsho.jpeg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/201/201157/Escort__pxomo.jpeg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/201/201157/Escort__ulizx.jpeg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/201/201157/Escort__vmgza.jpeg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/201/201157/Escort__pzubu.jpeg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/201/201157/Escort__qmhzc.jpeg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/228/228551/Escort__fhvfj.jpg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/226/226961/Escort__easht.jpg",
+  "https://www.happyescorts.com/images/com_escorts/gallery/228/228800/Escort__luelu.jpeg",
+]);
+
+const demoSourceModels = [
+  ...happyEscortsMultiModels,
+  ...happyEscortsRomeModels,
+  ...orhidiSpainModels,
+  ...orhidiItalyModels,
+  ...orhidiMoreModels,
+  ...orhidiMore2Models,
+  ...orhidiMore3Models,
+];
 
 const normalizeText = (value) =>
   String(value || "")
@@ -13,6 +41,26 @@ const normalizeText = (value) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+
+const repairMojibake = (value) =>
+  String(value || "")
+    .replace(/Ã¡/g, "á")
+    .replace(/Ã©/g, "é")
+    .replace(/Ã­/g, "í")
+    .replace(/Ã³/g, "ó")
+    .replace(/Ãº/g, "ú")
+    .replace(/Ã£/g, "ã")
+    .replace(/Ãµ/g, "õ")
+    .replace(/Ã§/g, "ç")
+    .replace(/Ã‰/g, "É")
+    .replace(/Ã‡/g, "Ç")
+    .replace(/Â°/g, "°")
+    .replace(/Â/g, "")
+    .replace(/â€“/g, "–")
+    .replace(/â€”/g, "—")
+    .replace(/â€™/g, "’")
+    .replace(/â€œ/g, "“")
+    .replace(/â€/g, "”");
 
 const readOfflineIds = () => {
   try {
@@ -26,30 +74,77 @@ const readOfflineIds = () => {
 export const isDemoModelId = (id) => String(id || "").startsWith(DEMO_MODEL_PREFIX);
 export const isDemoModel = (model) => isDemoModelId(model?.id);
 
+const normalizeImageUrl = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw || BROKEN_DEMO_PHOTO_URLS.has(raw) || /placeholder|no[-_ ]?photo|sem[-_ ]?foto/i.test(raw)) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "";
+    }
+    if (!/\.(?:jpe?g|png|webp)$/i.test(parsed.pathname)) {
+      return "";
+    }
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+};
+
 const normalizePhotos = (photos) =>
-  Array.from(new Set(Array.isArray(photos) ? photos.map((photo) => String(photo || "").trim()) : []))
-    .filter(Boolean);
+  Array.from(
+    new Set(
+      (Array.isArray(photos) ? photos : [])
+        .map(normalizeImageUrl)
+        .filter(Boolean)
+    )
+  );
+
+const uniqueSourceModels = (() => {
+  const profileUrls = new Set();
+  const firstPhotos = new Set();
+
+  return demoSourceModels.filter((source) => {
+    const profileUrl = String(source?.profileUrl || "").trim().toLowerCase();
+    const photos = normalizePhotos(source?.photos);
+    const firstPhoto = photos[0] || "";
+    if (!profileUrl || !firstPhoto || profileUrls.has(profileUrl) || firstPhotos.has(firstPhoto)) {
+      return false;
+    }
+    profileUrls.add(profileUrl);
+    firstPhotos.add(firstPhoto);
+    return true;
+  });
+})();
 
 const normalizeDemoModel = (source, index, offlineIds) => {
   const photos = normalizePhotos(source.photos);
-  if (!photos.length || !source?.name || !source?.city) {
+  if (!photos.length || !source?.name || !source?.city || !source?.profileUrl) {
     return null;
   }
 
-  const id = `${DEMO_MODEL_PREFIX}${String(source.key || index + 1)
+  const id = `${DEMO_MODEL_PREFIX}${String(source.id || source.profileUrl || index + 1)
     .toLowerCase()
     .replace(/[^a-z0-9-]+/g, "-")}`;
   const isOffline = offlineIds.has(id);
-  const attributes = source.attributes || {};
-  const prices = source.prices || {};
+  const services = Array.isArray(source.services) && source.services.length
+    ? source.services
+    : Array.isArray(source.tags)
+      ? source.tags
+      : ["Acompanhante"];
+  const price = Number(source.price) || 0;
 
   return {
     id,
-    name: String(source.name),
+    name: repairMojibake(source.name),
     age: Number(source.age) || 25,
-    city: String(source.city),
-    country: String(source.country || "Brasil"),
-    bio: String(source.bio || "Perfil demonstrativo com dados sinteticos."),
+    city: repairMojibake(source.city),
+    country: repairMojibake(source.country || "Brasil"),
+    profileUrl: String(source.profileUrl),
+    bio: "Perfil demonstrativo com dados importados para visualizacao no frontend.",
     avatarUrl: photos[0],
     coverUrl: photos[1] || photos[0],
     galleryPreviewPhotos: photos,
@@ -57,17 +152,17 @@ const normalizeDemoModel = (source, index, offlineIds) => {
     whatsapp: DEMO_PHONE,
     email: "demo-model@example.invalid",
     phone: DEMO_PHONE,
-    genderIdentity: String(source.genderIdentity || "Mulher"),
-    nationality: String(source.nationality || source.country || "Nao informado"),
-    ethnicity: String(attributes.ethnicity || "Nao informado"),
-    height: Number(attributes.height) || null,
-    hairStyle: String(attributes.hairStyle || "Nao informado"),
-    hairLength: String(attributes.hairLength || "Nao informado"),
-    eyeColor: String(attributes.eyeColor || "Nao informado"),
-    offeredServices: Array.isArray(source.services) ? source.services : [],
-    priceHour: Number(prices.hour) || 0,
-    price30Min: Number(prices["30Min"]) || 0,
-    price2Hours: Number(prices["2Hours"]) || 0,
+    genderIdentity: "Mulher",
+    nationality: repairMojibake(source.nationalityLabel || source.country || "Nao informado"),
+    ethnicity: repairMojibake(source.bodyLabel || "Nao informado"),
+    height: Number(source.heightCm) || null,
+    hairStyle: repairMojibake(source.hairLabel || "Nao informado"),
+    hairLength: "Nao informado",
+    eyeColor: repairMojibake(source.eyeLabel || "Nao informado"),
+    offeredServices: services.map((service) => repairMojibake(service)),
+    priceHour: price,
+    price30Min: price ? Math.round(price * 0.65) : 0,
+    price2Hours: price ? price * 2 : 0,
     price15Min: 0,
     price4Hours: 0,
     priceOvernight: 0,
@@ -76,14 +171,15 @@ const normalizeDemoModel = (source, index, offlineIds) => {
     planTier: "BASIC",
     isVerified: true,
     isDemo: true,
-    isOnline: Boolean(source.isOnline) && !isOffline,
-    demoSource: "synthetic-local-data",
+    isOnline: index % 20 === 0 && !isOffline,
+    isDemoSourceUrl: true,
+    demoSource: repairMojibake(source.source || new URL(source.profileUrl).hostname),
   };
 };
 
 export const getDemoModels = () => {
   const offlineIds = readOfflineIds();
-  return demoSourceModels.map((model, index) => normalizeDemoModel(model, index, offlineIds)).filter(Boolean);
+  return uniqueSourceModels.map((model, index) => normalizeDemoModel(model, index, offlineIds)).filter(Boolean);
 };
 
 export const getDemoModelById = (id) =>
@@ -134,4 +230,3 @@ export const preloadDemoImages = (models, count = 8) => {
     image.src = url;
   });
 };
-
