@@ -43,7 +43,7 @@ As variaveis `ADMIN_RESET_KEY` e `ADMIN_KEY_RESET` nao sao necessarias enquanto 
 Configure para Production:
 
 ```env
-VITE_API_URL=https://api.models-club.com
+VITE_API_URL=https://backend-g10a.onrender.com
 ```
 
 O endereco deve apontar para o dominio HTTPS real do backend. Depois de alterar `VITE_API_URL`, publique novamente o frontend, pois o Vite grava esse valor durante o build.
@@ -51,8 +51,8 @@ O endereco deve apontar para o dominio HTTPS real do backend. Depois de alterar 
 ## Dominios
 
 - `models-club.com` e `www.models-club.com`: frontend.
-- `api.models-club.com`: backend.
-- O DNS de `api.models-club.com` deve apontar para o servico do backend.
+- `backend-g10a.onrender.com`: backend.
+- O dominio `backend-g10a.onrender.com` deve apontar para o servico do backend no Render.
 - Nao inclua `localhost` em `CORS_ALLOWED_ORIGINS` de producao.
 
 ## Ordem de publicacao
