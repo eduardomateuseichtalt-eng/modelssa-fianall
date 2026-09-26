@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
@@ -8,9 +8,11 @@ import {
   isMotelPartnerFromCity,
   mergeSouthCapitalFallbackMotels,
 } from "../lib/southMotelFallback";
-import { mergeModelsWithDemo, preloadDemoImages } from "../demo/models.ts";
+import { mergeModelsWithDemo } from "../demo/models.ts";
 
-function HomeFeaturedModelCard({ model }) {
+const HOME_MODELS_PAGE_SIZE = 12;
+
+function HomeFeaturedModelCard({ model, priority = false }) {
   const fallbackPhoto = model.coverUrl || model.avatarUrl || "/model-placeholder.svg";
   const galleryPhotos = Array.isArray(model.galleryPreviewPhotos)
     ? model.galleryPreviewPhotos.filter(Boolean)
@@ -86,7 +88,7 @@ function HomeFeaturedModelCard({ model }) {
           className="model-photo home-model-photo"
           src={photos[activePhotoIndex] || fallbackPhoto}
           alt={model.name}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
         />
         {hasWebcam ? (
           <span className="model-badge model-badge-webcam">Virtual</span>
@@ -110,120 +112,40 @@ function HomeFeaturedModelCard({ model }) {
   );
 }
 
-function HomeFeaturedModelDeck({ models }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
-  const dragStartYRef = useRef(0);
-  const dragOffsetRef = useRef(0);
-  const isDraggingRef = useRef(false);
-  const blockClickRef = useRef(false);
-  const wheelLockedRef = useRef(false);
-
-  useEffect(() => {
-    setActiveIndex((current) => Math.min(current, Math.max(models.length - 1, 0)));
-  }, [models.length]);
-
-  if (!models.length) {
+function HomeFeaturedModelFeed({
+  models,
+  feedRef,
+  sentinelRef,
+  isLoading,
+  hasMore,
+}) {
+  if (!models.length && !isLoading) {
     return null;
   }
-
-  const moveCard = (direction) => {
-    setActiveIndex((current) => {
-      const nextIndex = current + direction;
-      if (nextIndex < 0) return models.length - 1;
-      if (nextIndex >= models.length) return 0;
-      return nextIndex;
-    });
-    setDragOffset(0);
-    dragOffsetRef.current = 0;
-  };
-
-  const handlePointerDown = (event) => {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    dragStartYRef.current = event.clientY;
-    dragOffsetRef.current = 0;
-    isDraggingRef.current = true;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
-
-  const handlePointerMove = (event) => {
-    if (!isDraggingRef.current) return;
-    const offset = event.clientY - dragStartYRef.current;
-    dragOffsetRef.current = offset;
-    setDragOffset(offset);
-  };
-
-  const handlePointerUp = (event) => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-    const offset = dragOffsetRef.current;
-    if (Math.abs(offset) >= 55) {
-      blockClickRef.current = true;
-      moveCard(offset < 0 ? 1 : -1);
-    } else {
-      setDragOffset(0);
-      dragOffsetRef.current = 0;
-    }
-  };
-
-  const handleDeckClick = (event) => {
-    if (!blockClickRef.current) return;
-    event.preventDefault();
-    event.stopPropagation();
-    blockClickRef.current = false;
-  };
-
-  const handleWheel = (event) => {
-    if (wheelLockedRef.current || Math.abs(event.deltaY) < 25) return;
-    wheelLockedRef.current = true;
-    moveCard(event.deltaY > 0 ? 1 : -1);
-    window.setTimeout(() => {
-      wheelLockedRef.current = false;
-    }, 350);
-  };
 
   return (
     <section className="home-featured-section" aria-label="Acompanhantes em destaque">
       <div className="home-featured-heading">
         <div>
           <h3 className="section-title">Acompanhantes <span>em destaque</span></h3>
-          <p className="muted">Deslize para cima ou para baixo para navegar pelos perfis.</p>
-        </div>
-        <span className="home-featured-counter">
-          {activeIndex + 1}/{models.length}
-        </span>
-      </div>
-      <div
-        className="home-featured-deck"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onWheel={handleWheel}
-        onClickCapture={handleDeckClick}
-        style={{ touchAction: "none" }}
-      >
-        <div
-          className="home-featured-card-motion"
-          style={{
-            transform: `translateY(${dragOffset}px) rotate(${dragOffset / 35}deg)`,
-          }}
-        >
-          <HomeFeaturedModelCard model={models[activeIndex]} />
+          <p className="muted">Deslize para cima ou para baixo para navegar pelos cards.</p>
         </div>
       </div>
-      <div className="home-featured-actions">
-        <button type="button" className="btn btn-outline" onClick={() => moveCard(-1)}>
-          Anterior
-        </button>
-        <Link to={`/modelos/${models[activeIndex].id}`} className="btn">
-          Ver perfil completo
-        </Link>
-        <button type="button" className="btn btn-outline" onClick={() => moveCard(1)}>
-          Próximo
-        </button>
+      <div ref={feedRef} className="home-featured-feed">
+        {models.map((model, index) => (
+          <div className="home-featured-feed-item" key={model.id}>
+            <HomeFeaturedModelCard model={model} priority={index === 0} />
+          </div>
+        ))}
+        <div ref={sentinelRef} className="home-models-sentinel" aria-hidden="true" />
       </div>
+      <p className="home-models-load-status muted" role="status">
+        {isLoading
+          ? "Carregando mais acompanhantes..."
+          : hasMore
+          ? "Role para ver mais acompanhantes."
+          : "Todos os acompanhantes disponíveis foram carregados."}
+      </p>
     </section>
   );
 }
@@ -266,6 +188,8 @@ const normalizeGenderCategory = (genderIdentity) => {
 
 export default function Home() {
   const [models, setModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsHasMore, setModelsHasMore] = useState(true);
   const [featuredGenderFilter, setFeaturedGenderFilter] = useState("WOMEN");
   const [citySearch, setCitySearch] = useState("");
   const [isComposing, setIsComposing] = useState(false);
@@ -280,24 +204,93 @@ export default function Home() {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const debounceRef = useRef(null);
+  const modelsPageRef = useRef(0);
+  const modelsRequestRef = useRef(false);
+  const modelsHasMoreRef = useRef(true);
+  const modelsRealItemsRef = useRef([]);
+  const modelsFeedRef = useRef(null);
+  const modelsSentinelRef = useRef(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    apiFetch("/api/models?page=1&limit=60")
-      .then((data) => {
-        const items = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.items)
-          ? data.items
-          : [];
-        setModels(mergeModelsWithDemo(items, { limit: 60 }));
-      })
-      .catch(() => setModels(mergeModelsWithDemo([], { limit: 60 })));
+  const loadMoreModels = useCallback(async () => {
+    if (modelsRequestRef.current || !modelsHasMoreRef.current) {
+      return;
+    }
+
+    modelsRequestRef.current = true;
+    setModelsLoading(true);
+    const nextPage = modelsPageRef.current + 1;
+    try {
+      const data = await apiFetch(
+        `/api/models?page=${nextPage}&limit=${HOME_MODELS_PAGE_SIZE}`
+      );
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+      const currentIds = new Set(
+        modelsRealItemsRef.current.map((model) => String(model?.id || ""))
+      );
+      const nextItems = items.filter((model) => {
+        const id = String(model?.id || "");
+        if (!id || currentIds.has(id)) return false;
+        currentIds.add(id);
+        return true;
+      });
+      modelsRealItemsRef.current = [...modelsRealItemsRef.current, ...nextItems];
+      modelsPageRef.current = nextPage;
+      setModels(
+        mergeModelsWithDemo(modelsRealItemsRef.current, {
+          limit: Math.max(
+            HOME_MODELS_PAGE_SIZE,
+            modelsRealItemsRef.current.length
+          ),
+        })
+      );
+      const total = Number(data?.total);
+      const hasMore = Number.isFinite(total)
+        ? nextPage * HOME_MODELS_PAGE_SIZE < total
+        : items.length >= HOME_MODELS_PAGE_SIZE;
+      modelsHasMoreRef.current = hasMore;
+      setModelsHasMore(hasMore);
+    } catch {
+      modelsHasMoreRef.current = false;
+      setModelsHasMore(false);
+      if (modelsPageRef.current === 0) {
+        setModels(mergeModelsWithDemo([], { limit: HOME_MODELS_PAGE_SIZE }));
+      }
+    } finally {
+      modelsRequestRef.current = false;
+      setModelsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    preloadDemoImages(models, 8);
-  }, [models]);
+    loadMoreModels();
+  }, [loadMoreModels]);
+
+  useEffect(() => {
+    const sentinel = modelsSentinelRef.current;
+    if (
+      !sentinel ||
+      !modelsFeedRef.current ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadMoreModels();
+        }
+      },
+      { root: modelsFeedRef.current, rootMargin: "500px 0px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreModels, models.length]);
 
   
 
@@ -323,17 +316,6 @@ export default function Home() {
   const trimmedCity = citySearch.trim();
   const cityQuery = stripUfSuffix(trimmedCity);
   const normalizedCitySearch = normalizeText(cityQuery);
-  const cityLookup = new Map();
-  models.forEach((model) => {
-    const city = (model.city || "").trim();
-    if (!city) {
-      return;
-    }
-    const key = normalizeText(city);
-    if (!cityLookup.has(key)) {
-      cityLookup.set(key, city);
-    }
-  });
   const normalizePlanTier = (value) => String(value || "").trim().toUpperCase();
   const genderFilteredModels = models.filter(
     (model) => normalizeGenderCategory(model.genderIdentity) === featuredGenderFilter
@@ -344,10 +326,7 @@ export default function Home() {
   const basicModels = genderFilteredModels.filter(
     (model) => normalizePlanTier(model.planTier) !== "PRO"
   );
-  const featuredProModels = proModels.slice(0, 10);
-  const remainingSlots = Math.max(15 - featuredProModels.length, 0);
-  const featuredBasicModels = basicModels.slice(0, remainingSlots);
-  const featuredModels = [...featuredProModels, ...featuredBasicModels].slice(0, 15);
+  const featuredModels = [...proModels, ...basicModels];
   
   
 
@@ -755,7 +734,13 @@ export default function Home() {
               </div>
             </div>
 
-            <HomeFeaturedModelDeck models={featuredModels} />
+            <HomeFeaturedModelFeed
+              models={featuredModels}
+              feedRef={modelsFeedRef}
+              sentinelRef={modelsSentinelRef}
+              isLoading={modelsLoading}
+              hasMore={modelsHasMore}
+            />
 
             <div className="trust-section">
               <h3>Contrate com mais seguranca e praticidade</h3>
