@@ -101,6 +101,8 @@ export const mergeSouthCapitalFallbackMotels = (partners = []) => {
     )
   );
 
+  if (apiPartners.length === 0) return SOUTH_CAPITAL_MOTEL_FALLBACK;
+
   return apiPartners.filter((partner) =>
     fallbackNames.has(normalizeMotelText(partner?.name))
   );

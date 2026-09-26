@@ -686,6 +686,20 @@ export default function Home() {
                         className="model-card"
                         style={{ minWidth: 220, padding: 12, display: "block" }}
                       >
+                        {m.logoUrl ? (
+                          <img
+                            src={m.logoUrl}
+                            alt={`Logo do ${m.name}`}
+                            style={{
+                              width: "100%",
+                              height: 110,
+                              objectFit: "cover",
+                              borderRadius: 8,
+                              marginBottom: 10,
+                            }}
+                            loading="lazy"
+                          />
+                        ) : null}
                         <strong style={{ color: "#ffffff" }}>{m.name}</strong>
                         <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.city}</p>
                         {m.phone ? (
