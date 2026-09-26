@@ -1,4 +1,5 @@
 ﻿import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch, API_URL } from "../lib/api";
 import { buildProgressiveUploadFormData } from "../lib/progressiveUpload";
 import {
@@ -118,6 +119,7 @@ const getVideoDuration = (file) =>
   });
 
 export default function ModelRegister() {
+  const navigate = useNavigate();
   const confirmMediaAccess = () =>
     window.confirm(
       "Voce autoriza o site a acessar a galeria ou a camera do seu dispositivo?"
@@ -619,6 +621,7 @@ export default function ModelRegister() {
       setMediaPreviews([]);
       setProfileFile(null);
       setProfilePreview("");
+      navigate("/", { replace: true });
     } catch (error) {
       setMessage(error.message || "Erro ao cadastrar.");
     } finally {
