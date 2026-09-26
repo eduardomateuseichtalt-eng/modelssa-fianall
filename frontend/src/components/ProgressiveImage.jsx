@@ -133,7 +133,6 @@ const ProgressiveImage = forwardRef(function ProgressiveImage({
     let fullStarted = false;
     let fullLoaded = false;
     let previewImage;
-    let fullFallbackTimer;
 
     const loadFullImage = () => {
       if (fullStarted || canceled) {
@@ -168,16 +167,12 @@ const ProgressiveImage = forwardRef(function ProgressiveImage({
       };
       previewImage.onerror = loadFullImage;
       previewImage.src = previewSrc;
-      fullFallbackTimer = window.setTimeout(loadFullImage, 1500);
     } else {
       loadFullImage();
     }
 
     return () => {
       canceled = true;
-      if (fullFallbackTimer) {
-        window.clearTimeout(fullFallbackTimer);
-      }
       if (previewImage) {
         previewImage.onload = null;
         previewImage.onerror = null;

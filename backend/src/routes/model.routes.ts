@@ -52,9 +52,14 @@ const PROFILE_CLICKS_MAX_DAYS = 90;
 const MODEL_NEARBY_RADIUS_KM_DEFAULT = 50;
 const MODEL_NEARBY_RADIUS_KM_MAX = 200;
 const MODEL_CITY_COORD_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const PUBLIC_MODELS_CACHE_TTL_MS = 15 * 1000;
 
 type CityCoord = { lat: number; lon: number; expiresAt: number };
 const modelCityCoordCache = new Map<string, CityCoord>();
+let publicModelsCache:
+  | { value: PublicModelBase[]; expiresAt: number }
+  | null = null;
+let publicModelsCachePromise: Promise<PublicModelBase[]> | null = null;
 
 const sanitizeStringArray = (value: unknown): string[] | undefined => {
   if (value === undefined) {
@@ -241,19 +246,41 @@ const PUBLIC_MODEL_SELECT: Prisma.ModelSelect = {
 };
 
 async function getPublicModelsBase(): Promise<PublicModelBase[]> {
-  const modelsRaw = await prisma.model.findMany({
-    where: {
-      isVerified: true,
-      media: { some: { status: "APPROVED" } },
-    },
-    select: PUBLIC_MODEL_SELECT,
-  });
+  const now = Date.now();
+  if (publicModelsCache && publicModelsCache.expiresAt > now) {
+    return publicModelsCache.value;
+  }
+  if (publicModelsCachePromise) {
+    return publicModelsCachePromise;
+  }
 
-  return modelsRaw.map(({ media, ...model }) => ({
-    ...model,
-    offeredServices: Array.isArray(model.offeredServices) ? model.offeredServices : [],
-    galleryPreviewPhotos: media.map((item) => item.url).filter(Boolean),
-  }));
+  publicModelsCachePromise = prisma.model
+    .findMany({
+      where: {
+        isVerified: true,
+        media: { some: { status: "APPROVED" } },
+      },
+      select: PUBLIC_MODEL_SELECT,
+    })
+    .then((modelsRaw) => {
+      const value = modelsRaw.map(({ media, ...model }) => ({
+        ...model,
+        offeredServices: Array.isArray(model.offeredServices)
+          ? model.offeredServices
+          : [],
+        galleryPreviewPhotos: media.map((item) => item.url).filter(Boolean),
+      }));
+      publicModelsCache = {
+        value,
+        expiresAt: Date.now() + PUBLIC_MODELS_CACHE_TTL_MS,
+      };
+      return value;
+    })
+    .finally(() => {
+      publicModelsCachePromise = null;
+    });
+
+  return publicModelsCachePromise;
 }
 
 function toRadians(value: number) {
@@ -1861,5 +1888,4 @@ router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 export default router;
-
 
