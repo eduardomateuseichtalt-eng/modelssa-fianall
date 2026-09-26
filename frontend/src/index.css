@@ -1125,12 +1125,8 @@ select {
 .home-featured-feed {
   display: grid;
   gap: 18px;
-  max-height: min(72vh, 720px);
-  overflow-y: auto;
   padding: 2px 6px 4px 2px;
   scroll-snap-type: y proximity;
-  overscroll-behavior-y: contain;
-  scrollbar-width: thin;
 }
 
 .home-featured-feed-item {
@@ -4552,10 +4548,6 @@ select {
 
   .home-featured-section {
     max-width: 100%;
-  }
-  
-  .home-featured-feed {
-    max-height: 68vh;
   }
 
   .home-gender-filter-actions {

@@ -286,7 +286,7 @@ export default function Home() {
           loadMoreModels();
         }
       },
-      { root: modelsFeedRef.current, rootMargin: "500px 0px" }
+      { root: null, rootMargin: "500px 0px" }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
