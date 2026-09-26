@@ -110,6 +110,124 @@ function HomeFeaturedModelCard({ model }) {
   );
 }
 
+function HomeFeaturedModelDeck({ models }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const dragStartYRef = useRef(0);
+  const dragOffsetRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const blockClickRef = useRef(false);
+  const wheelLockedRef = useRef(false);
+
+  useEffect(() => {
+    setActiveIndex((current) => Math.min(current, Math.max(models.length - 1, 0)));
+  }, [models.length]);
+
+  if (!models.length) {
+    return null;
+  }
+
+  const moveCard = (direction) => {
+    setActiveIndex((current) => {
+      const nextIndex = current + direction;
+      if (nextIndex < 0) return models.length - 1;
+      if (nextIndex >= models.length) return 0;
+      return nextIndex;
+    });
+    setDragOffset(0);
+    dragOffsetRef.current = 0;
+  };
+
+  const handlePointerDown = (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    dragStartYRef.current = event.clientY;
+    dragOffsetRef.current = 0;
+    isDraggingRef.current = true;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const handlePointerMove = (event) => {
+    if (!isDraggingRef.current) return;
+    const offset = event.clientY - dragStartYRef.current;
+    dragOffsetRef.current = offset;
+    setDragOffset(offset);
+  };
+
+  const handlePointerUp = (event) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    const offset = dragOffsetRef.current;
+    if (Math.abs(offset) >= 55) {
+      blockClickRef.current = true;
+      moveCard(offset < 0 ? 1 : -1);
+    } else {
+      setDragOffset(0);
+      dragOffsetRef.current = 0;
+    }
+  };
+
+  const handleDeckClick = (event) => {
+    if (!blockClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    blockClickRef.current = false;
+  };
+
+  const handleWheel = (event) => {
+    if (wheelLockedRef.current || Math.abs(event.deltaY) < 25) return;
+    wheelLockedRef.current = true;
+    moveCard(event.deltaY > 0 ? 1 : -1);
+    window.setTimeout(() => {
+      wheelLockedRef.current = false;
+    }, 350);
+  };
+
+  return (
+    <section className="home-featured-section" aria-label="Acompanhantes em destaque">
+      <div className="home-featured-heading">
+        <div>
+          <h3 className="section-title">Acompanhantes <span>em destaque</span></h3>
+          <p className="muted">Deslize para cima ou para baixo para navegar pelos perfis.</p>
+        </div>
+        <span className="home-featured-counter">
+          {activeIndex + 1}/{models.length}
+        </span>
+      </div>
+      <div
+        className="home-featured-deck"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onWheel={handleWheel}
+        onClickCapture={handleDeckClick}
+        style={{ touchAction: "none" }}
+      >
+        <div
+          className="home-featured-card-motion"
+          style={{
+            transform: `translateY(${dragOffset}px) rotate(${dragOffset / 35}deg)`,
+          }}
+        >
+          <HomeFeaturedModelCard model={models[activeIndex]} />
+        </div>
+      </div>
+      <div className="home-featured-actions">
+        <button type="button" className="btn btn-outline" onClick={() => moveCard(-1)}>
+          Anterior
+        </button>
+        <Link to={`/modelos/${models[activeIndex].id}`} className="btn">
+          Ver perfil completo
+        </Link>
+        <button type="button" className="btn btn-outline" onClick={() => moveCard(1)}>
+          Próximo
+        </button>
+      </div>
+    </section>
+  );
+}
+
 const FEATURED_GENDER_FILTERS = [
   { id: "WOMEN", label: "Mulheres" },
   { id: "TRAVESTIS", label: "Travestis" },
@@ -636,6 +754,8 @@ export default function Home() {
                 </Link>
               </div>
             </div>
+
+            <HomeFeaturedModelDeck models={featuredModels} />
 
             <div className="trust-section">
               <h3>Contrate com mais seguranca e praticidade</h3>
