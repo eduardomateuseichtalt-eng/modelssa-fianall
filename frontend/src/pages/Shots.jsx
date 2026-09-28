@@ -349,6 +349,7 @@ export default function Shots() {
                           src={shot.imageUrl}
                           alt={`Shot de ${shot.model?.name || "Acompanhante"}`}
                           loading="lazy"
+                          previewOnly
                         />
                       ) : shot.videoUrl ? (
                         <video
@@ -402,6 +403,7 @@ export default function Shots() {
                     src={shot.imageUrl}
                     alt={`Shot de ${shot.model?.name || "Acompanhante"}`}
                     loading="lazy"
+                    previewOnly
                   />
                 ) : shot.videoUrl ? (
                   <video src={shot.videoUrl} muted loop playsInline preload="metadata" />

@@ -73,6 +73,8 @@ const ProgressiveImage = forwardRef(function ProgressiveImage({
   fallbackSrc = "/model-placeholder.svg",
   loading = "lazy",
   fetchPriority,
+  previewOnly = false,
+  decoding = "async",
   style,
   ...props
 }, forwardedRef) {
@@ -161,6 +163,13 @@ const ProgressiveImage = forwardRef(function ProgressiveImage({
       previewImage = new Image();
       previewImage.onload = () => {
         if (!canceled && !fullLoaded) {
+          const previewIsLargeEnough =
+            Math.max(previewImage.naturalWidth, previewImage.naturalHeight) >= 320;
+          if (previewOnly && previewIsLargeEnough) {
+            fullLoaded = true;
+            setImageState({ requestKey, displaySrc: previewSrc, phase: "loaded" });
+            return;
+          }
           setImageState({ requestKey, displaySrc: previewSrc, phase: "preview" });
           loadFullImage();
         }
@@ -182,7 +191,7 @@ const ProgressiveImage = forwardRef(function ProgressiveImage({
         fullImage.onerror = null;
       }
     };
-  }, [src, previewSrc, fallbackSrc, requestKey, shouldLoad, fetchPriority]);
+  }, [src, previewSrc, fallbackSrc, requestKey, shouldLoad, fetchPriority, previewOnly]);
 
   const hasCurrentState = imageState?.requestKey === requestKey;
   const displaySrc = !src
@@ -199,6 +208,7 @@ const ProgressiveImage = forwardRef(function ProgressiveImage({
       src={displaySrc}
       alt={alt}
       loading={loading}
+      decoding={decoding}
       fetchPriority={fetchPriority}
       data-progressive-phase={phase}
       style={style}

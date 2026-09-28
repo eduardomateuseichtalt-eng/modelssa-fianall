@@ -83,6 +83,7 @@ export default function Reviews() {
                       }
                       alt={model.name}
                       loading="lazy"
+                      previewOnly
                     />
                   </div>
                   <div className="model-info" style={{ marginTop: 12 }}>

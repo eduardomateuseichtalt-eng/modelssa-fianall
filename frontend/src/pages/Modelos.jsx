@@ -278,6 +278,7 @@ export default function Modelos() {
                   src={model.coverUrl || model.avatarUrl || "/model-placeholder.svg"}
                   alt={model.name}
                   loading="lazy"
+                  previewOnly
                 />
                 {Array.isArray(model.offeredServices) &&
                 model.offeredServices.some((service) =>

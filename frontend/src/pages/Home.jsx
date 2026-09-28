@@ -89,6 +89,8 @@ function HomeFeaturedModelCard({ model, priority = false }) {
           src={photos[activePhotoIndex] || fallbackPhoto}
           alt={model.name}
           loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
+          previewOnly
         />
         {hasWebcam ? (
           <span className="model-badge model-badge-webcam">Virtual</span>

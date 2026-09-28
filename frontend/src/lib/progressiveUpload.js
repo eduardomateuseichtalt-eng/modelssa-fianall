@@ -1,5 +1,6 @@
-const THUMBNAIL_MAX_DIMENSION = 72;
-const THUMBNAIL_QUALITY = 0.35;
+const THUMBNAIL_MAX_DIMENSION = 400;
+const THUMBNAIL_QUALITY = 0.6;
+const THUMBNAIL_MAX_BYTES = 180 * 1024;
 const FULL_IMAGE_MAX_DIMENSION = 2560;
 const FULL_IMAGE_QUALITY = 0.88;
 const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -22,6 +23,16 @@ function canvasToWebp(canvas, quality) {
   return new Promise((resolve) => {
     canvas.toBlob(resolve, "image/webp", quality);
   });
+}
+
+async function createThumbnailBlob(canvas) {
+  for (const quality of [THUMBNAIL_QUALITY, 0.45, 0.3]) {
+    const blob = await canvasToWebp(canvas, quality);
+    if (blob?.type === "image/webp" && blob.size <= THUMBNAIL_MAX_BYTES) {
+      return blob;
+    }
+  }
+  return null;
 }
 
 function drawScaledImage(image, sourceWidth, sourceHeight, maxDimension) {
@@ -70,7 +81,7 @@ async function createImageVariants(file) {
 
     const [fullBlob, thumbnailBlob] = await Promise.all([
       canvasToWebp(fullCanvas, FULL_IMAGE_QUALITY),
-      canvasToWebp(thumbnailCanvas, THUMBNAIL_QUALITY),
+      createThumbnailBlob(thumbnailCanvas),
     ]);
 
     const baseName = file.name.replace(/\.[^.]+$/, "") || "imagem";
