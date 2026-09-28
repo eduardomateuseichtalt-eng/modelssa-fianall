@@ -144,7 +144,7 @@ const normalizeDemoModel = (source, index, offlineIds) => {
     city: repairMojibake(source.city),
     country: repairMojibake(source.country || "Brasil"),
     profileUrl: String(source.profileUrl),
-    bio: "Perfil demonstrativo com dados importados para visualizacao no frontend.",
+    bio: "",
     avatarUrl: photos[0],
     coverUrl: photos[1] || photos[0],
     galleryPreviewPhotos: photos,
