@@ -5,6 +5,10 @@ import orhidiItalyModels from "../../modelos.fake/orhidi_it_perfis.json";
 import orhidiMoreModels from "../../modelos.fake/orhidi_more_perfis.json";
 import orhidiMore2Models from "../../modelos.fake/orhidi_more2_perfis.json";
 import orhidiMore3Models from "../../modelos.fake/orhidi_more3_perfis.json";
+import {
+  TEMPORARY_CITY_DISTRIBUTION,
+  TEMPORARY_CITY_DISTRIBUTION_ENABLED,
+} from "./temporaryCityDistribution";
 
 export const DEMO_MODEL_PREFIX = "demo-model-";
 const DEMO_OFFLINE_STORAGE_KEY = "modelsClubDemoOfflineModels";
@@ -179,7 +183,50 @@ const normalizeDemoModel = (source, index, offlineIds) => {
 
 export const getDemoModels = () => {
   const offlineIds = readOfflineIds();
-  return uniqueSourceModels.map((model, index) => normalizeDemoModel(model, index, offlineIds)).filter(Boolean);
+  const models = uniqueSourceModels
+    .map((model, index) => normalizeDemoModel(model, index, offlineIds))
+    .filter(Boolean);
+
+  if (!TEMPORARY_CITY_DISTRIBUTION_ENABLED) {
+    return models;
+  }
+
+  const multiPhotoModels = models.filter(
+    (model) => model.galleryPreviewPhotos.length > 1
+  );
+  const singlePhotoModels = models.filter(
+    (model) => model.galleryPreviewPhotos.length === 1
+  );
+  const candidates = [...multiPhotoModels, ...singlePhotoModels];
+  const assignedCities = new Map();
+  let candidateIndex = 0;
+  const maxCityCount = Math.max(
+    ...TEMPORARY_CITY_DISTRIBUTION.map(({ count }) => count)
+  );
+
+  for (let position = 0; position < maxCityCount; position += 1) {
+    for (const { city, count } of TEMPORARY_CITY_DISTRIBUTION) {
+      if (position >= count) continue;
+      const model = candidates[candidateIndex];
+      if (!model) break;
+      assignedCities.set(model.id, city);
+      candidateIndex += 1;
+    }
+  }
+
+  return models.map((model) => {
+    const assignedCity = assignedCities.get(model.id);
+    return assignedCity
+      ? {
+          ...model,
+          city: assignedCity,
+          temporaryCityAssignment: true,
+        }
+      : {
+          ...model,
+          searchOnlyDemo: true,
+        };
+  });
 };
 
 export const getDemoModelById = (id) =>
@@ -208,12 +255,23 @@ const matchesDemoFilters = (model, { city = "", service = "" } = {}) => {
 export const mergeModelsWithDemo = (realModels, options = {}) => {
   const real = Array.isArray(realModels) ? realModels.filter(Boolean) : [];
   const limit = Number.isFinite(Number(options.limit)) ? Math.max(1, Number(options.limit)) : 24;
+  const hasCityFilter = Boolean(normalizeText(options.city));
   const filteredDemo = getDemoModels()
+    .filter((model) => !model.searchOnlyDemo || hasCityFilter)
     .filter((model) => matchesDemoFilters(model, options))
-    .sort((left, right) => right.galleryPreviewPhotos.length - left.galleryPreviewPhotos.length);
+    .sort((left, right) => {
+      const photoCountDifference =
+        right.galleryPreviewPhotos.length - left.galleryPreviewPhotos.length;
+      if (photoCountDifference !== 0) return photoCountDifference;
+      return Number(Boolean(left.searchOnlyDemo)) - Number(Boolean(right.searchOnlyDemo));
+    });
   const existingIds = new Set(real.map((model) => String(model?.id || "")));
-  const demosNeeded = Math.max(0, limit - real.length);
-  const demos = filteredDemo.filter((model) => !existingIds.has(model.id)).slice(0, demosNeeded);
+  const demosNeeded = hasCityFilter
+    ? filteredDemo.length
+    : Math.max(0, limit - real.length);
+  const demos = filteredDemo
+    .filter((model) => !existingIds.has(model.id))
+    .slice(0, demosNeeded);
   return [...real.slice(0, limit), ...demos];
 };
 
