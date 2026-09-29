@@ -9,7 +9,9 @@ import {
   TEMPORARY_CITY_DISTRIBUTION,
   TEMPORARY_CITY_DISTRIBUTION_ENABLED,
   TEMPORARY_DEMO_HOURLY_PRICES,
+  TEMPORARY_DEMO_OFFERED_SERVICES,
   TEMPORARY_DEMO_PRICING_ENABLED,
+  TEMPORARY_DEMO_SERVICES_ENABLED,
 } from "./temporaryCityDistribution";
 
 export const DEMO_MODEL_PREFIX = "demo-model-";
@@ -230,7 +232,7 @@ export const getDemoModels = () => {
     });
   }
 
-  if (!TEMPORARY_DEMO_PRICING_ENABLED) {
+  if (!TEMPORARY_DEMO_PRICING_ENABLED && !TEMPORARY_DEMO_SERVICES_ENABLED) {
     return distributedModels;
   }
 
@@ -241,19 +243,50 @@ export const getDemoModels = () => {
       if (photoCountDifference !== 0) return photoCountDifference;
       return Number(Boolean(left.searchOnlyDemo)) - Number(Boolean(right.searchOnlyDemo));
     })
-    .slice(0, TEMPORARY_DEMO_HOURLY_PRICES.length)
+    .slice(
+      0,
+      Math.max(
+        TEMPORARY_DEMO_PRICING_ENABLED
+          ? TEMPORARY_DEMO_HOURLY_PRICES.length
+          : 0,
+        TEMPORARY_DEMO_SERVICES_ENABLED
+          ? TEMPORARY_DEMO_OFFERED_SERVICES.length
+          : 0
+      )
+    )
     .map((model) => model.id);
   const priceById = new Map(
-    featuredDemoIds.map((id, index) => [id, TEMPORARY_DEMO_HOURLY_PRICES[index]])
+    TEMPORARY_DEMO_PRICING_ENABLED
+      ? featuredDemoIds.map((id, index) => [
+          id,
+          TEMPORARY_DEMO_HOURLY_PRICES[index],
+        ])
+      : []
+  );
+  const servicesById = new Map(
+    TEMPORARY_DEMO_SERVICES_ENABLED
+      ? featuredDemoIds.map((id, index) => [
+          id,
+          TEMPORARY_DEMO_OFFERED_SERVICES[index],
+        ])
+      : []
   );
 
   return distributedModels.map((model) => {
     const temporaryPrice = priceById.get(model.id);
-    if (!temporaryPrice) return model;
+    const temporaryServices = servicesById.get(model.id);
+    if (!temporaryPrice && !temporaryServices) return model;
     return {
       ...model,
-      priceHour: temporaryPrice,
-      temporaryHourlyPrice: true,
+      ...(temporaryPrice
+        ? { priceHour: temporaryPrice, temporaryHourlyPrice: true }
+        : {}),
+      ...(temporaryServices
+        ? {
+            offeredServices: temporaryServices,
+            temporaryOfferedServices: true,
+          }
+        : {}),
     };
   });
 };

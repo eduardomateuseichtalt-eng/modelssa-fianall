@@ -2,9 +2,24 @@ export const TEMPORARY_CITY_DISTRIBUTION_ENABLED = true;
 
 // Roll back by setting TEMPORARY_CITY_DISTRIBUTION_ENABLED to false.
 export const TEMPORARY_DEMO_PRICING_ENABLED = true;
+export const TEMPORARY_DEMO_SERVICES_ENABLED = true;
 // Temporary hourly values applied to the first 11 demo cards in Home order.
 export const TEMPORARY_DEMO_HOURLY_PRICES = [
   500, 500, 350, 350, 350, 320, 320, 280, 280, 250, 250,
+];
+// Preview-only service selections for the same first 11 demo profiles.
+export const TEMPORARY_DEMO_OFFERED_SERVICES = [
+  ["Acompanhante", "Beijo na boca", "Massagem tradicional"],
+  ["Acompanhante", "Beijo na boca", "Striptease"],
+  ["Acompanhante", "Massagem tradicional", "Sexo oral com preservativo"],
+  ["Acompanhante", "Masturbacao", "Uso de roupas de fantasia/uniformes"],
+  ["Acompanhante", "Beijo na boca", "Sexo virtual"],
+  ["Acompanhante", "Massagem tantrica", "Viagem"],
+  ["Acompanhante", "Beijo na boca", "Fetiches"],
+  ["Acompanhante", "Massagem tradicional", "Podolatria"],
+  ["Acompanhante", "Striptease", "Sexo oral com preservativo"],
+  ["Acompanhante", "Beijo na boca", "Massagem tradicional"],
+  ["Acompanhante", "Masturbacao", "Sexo virtual"],
 ];
 
 export const TEMPORARY_CITY_DISTRIBUTION = [
