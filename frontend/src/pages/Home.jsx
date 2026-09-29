@@ -109,6 +109,11 @@ function HomeFeaturedModelCard({ model, priority = false }) {
       <div className="model-info">
         <h3>{model.name}</h3>
         <p>{model.city || "Brasil"}</p>
+        {model.temporaryHourlyPrice ? (
+          <p className="home-model-hourly-price">
+            R$ {Number(model.priceHour).toLocaleString("pt-BR")} / hora
+          </p>
+        ) : null}
       </div>
     </Link>
   );

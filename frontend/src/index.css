@@ -1104,6 +1104,13 @@ select {
   max-width: 310px;
 }
 
+.home-model-hourly-price {
+  margin-top: 8px;
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .home-featured-section {
   margin-top: 28px;
   width: min(100%, 440px);

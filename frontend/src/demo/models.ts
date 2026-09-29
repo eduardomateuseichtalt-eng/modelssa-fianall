@@ -8,6 +8,8 @@ import orhidiMore3Models from "../../modelos.fake/orhidi_more3_perfis.json";
 import {
   TEMPORARY_CITY_DISTRIBUTION,
   TEMPORARY_CITY_DISTRIBUTION_ENABLED,
+  TEMPORARY_DEMO_HOURLY_PRICES,
+  TEMPORARY_DEMO_PRICING_ENABLED,
 } from "./temporaryCityDistribution";
 
 export const DEMO_MODEL_PREFIX = "demo-model-";
@@ -187,45 +189,72 @@ export const getDemoModels = () => {
     .map((model, index) => normalizeDemoModel(model, index, offlineIds))
     .filter(Boolean);
 
-  if (!TEMPORARY_CITY_DISTRIBUTION_ENABLED) {
-    return models;
-  }
+  let distributedModels = models;
 
-  const multiPhotoModels = models.filter(
-    (model) => model.galleryPreviewPhotos.length > 1
-  );
-  const singlePhotoModels = models.filter(
-    (model) => model.galleryPreviewPhotos.length === 1
-  );
-  const candidates = [...multiPhotoModels, ...singlePhotoModels];
-  const assignedCities = new Map();
-  let candidateIndex = 0;
-  const maxCityCount = Math.max(
-    ...TEMPORARY_CITY_DISTRIBUTION.map(({ count }) => count)
-  );
+  if (TEMPORARY_CITY_DISTRIBUTION_ENABLED) {
+    const multiPhotoModels = models.filter(
+      (model) => model.galleryPreviewPhotos.length > 1
+    );
+    const singlePhotoModels = models.filter(
+      (model) => model.galleryPreviewPhotos.length === 1
+    );
+    const candidates = [...multiPhotoModels, ...singlePhotoModels];
+    const assignedCities = new Map();
+    let candidateIndex = 0;
+    const maxCityCount = Math.max(
+      ...TEMPORARY_CITY_DISTRIBUTION.map(({ count }) => count)
+    );
 
-  for (let position = 0; position < maxCityCount; position += 1) {
-    for (const { city, count } of TEMPORARY_CITY_DISTRIBUTION) {
-      if (position >= count) continue;
-      const model = candidates[candidateIndex];
-      if (!model) break;
-      assignedCities.set(model.id, city);
-      candidateIndex += 1;
+    for (let position = 0; position < maxCityCount; position += 1) {
+      for (const { city, count } of TEMPORARY_CITY_DISTRIBUTION) {
+        if (position >= count) continue;
+        const model = candidates[candidateIndex];
+        if (!model) break;
+        assignedCities.set(model.id, city);
+        candidateIndex += 1;
+      }
     }
+
+    distributedModels = models.map((model) => {
+      const assignedCity = assignedCities.get(model.id);
+      return assignedCity
+        ? {
+            ...model,
+            city: assignedCity,
+            temporaryCityAssignment: true,
+          }
+        : {
+            ...model,
+            searchOnlyDemo: true,
+          };
+    });
   }
 
-  return models.map((model) => {
-    const assignedCity = assignedCities.get(model.id);
-    return assignedCity
-      ? {
-          ...model,
-          city: assignedCity,
-          temporaryCityAssignment: true,
-        }
-      : {
-          ...model,
-          searchOnlyDemo: true,
-        };
+  if (!TEMPORARY_DEMO_PRICING_ENABLED) {
+    return distributedModels;
+  }
+
+  const featuredDemoIds = [...distributedModels]
+    .sort((left, right) => {
+      const photoCountDifference =
+        right.galleryPreviewPhotos.length - left.galleryPreviewPhotos.length;
+      if (photoCountDifference !== 0) return photoCountDifference;
+      return Number(Boolean(left.searchOnlyDemo)) - Number(Boolean(right.searchOnlyDemo));
+    })
+    .slice(0, TEMPORARY_DEMO_HOURLY_PRICES.length)
+    .map((model) => model.id);
+  const priceById = new Map(
+    featuredDemoIds.map((id, index) => [id, TEMPORARY_DEMO_HOURLY_PRICES[index]])
+  );
+
+  return distributedModels.map((model) => {
+    const temporaryPrice = priceById.get(model.id);
+    if (!temporaryPrice) return model;
+    return {
+      ...model,
+      priceHour: temporaryPrice,
+      temporaryHourlyPrice: true,
+    };
   });
 };
 

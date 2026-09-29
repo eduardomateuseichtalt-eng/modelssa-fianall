@@ -1,6 +1,12 @@
 export const TEMPORARY_CITY_DISTRIBUTION_ENABLED = true;
 
 // Roll back by setting TEMPORARY_CITY_DISTRIBUTION_ENABLED to false.
+export const TEMPORARY_DEMO_PRICING_ENABLED = true;
+// Temporary hourly values applied to the first 11 demo cards in Home order.
+export const TEMPORARY_DEMO_HOURLY_PRICES = [
+  500, 500, 350, 350, 350, 320, 320, 280, 280, 250, 250,
+];
+
 export const TEMPORARY_CITY_DISTRIBUTION = [
   { city: "São Paulo", count: 102 },
   { city: "Rio de Janeiro", count: 69 },
