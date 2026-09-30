@@ -9,17 +9,17 @@ export const TEMPORARY_DEMO_HOURLY_PRICES = [
 ];
 // Preview-only service selections for the same first 11 demo profiles.
 export const TEMPORARY_DEMO_OFFERED_SERVICES = [
-  ["Acompanhante", "Beijo na boca", "Massagem tradicional"],
-  ["Acompanhante", "Beijo na boca", "Striptease"],
-  ["Acompanhante", "Massagem tradicional", "Sexo oral com preservativo"],
-  ["Acompanhante", "Masturbacao", "Uso de roupas de fantasia/uniformes"],
-  ["Acompanhante", "Beijo na boca", "Sexo virtual"],
-  ["Acompanhante", "Massagem tantrica", "Viagem"],
-  ["Acompanhante", "Beijo na boca", "Fetiches"],
-  ["Acompanhante", "Massagem tradicional", "Podolatria"],
-  ["Acompanhante", "Striptease", "Sexo oral com preservativo"],
-  ["Acompanhante", "Beijo na boca", "Massagem tradicional"],
-  ["Acompanhante", "Masturbacao", "Sexo virtual"],
+  ["Acompanhante", "Beijo na boca", "Massagem tradicional", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Beijo na boca", "Striptease", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Massagem tradicional", "Sexo oral com preservativo", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Masturbacao", "Uso de roupas de fantasia/uniformes", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Beijo na boca", "Sexo virtual", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Massagem tantrica", "Viagem", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Beijo na boca", "Fetiches", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Massagem tradicional", "Podolatria", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Striptease", "Sexo oral com preservativo", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Beijo na boca", "Massagem tradicional", "Sexo vaginal com preservativo"],
+  ["Acompanhante", "Masturbacao", "Sexo virtual", "Sexo vaginal com preservativo"],
 ];
 
 export const TEMPORARY_CITY_DISTRIBUTION = [
