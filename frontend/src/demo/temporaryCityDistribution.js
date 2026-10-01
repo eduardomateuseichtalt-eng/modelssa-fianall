@@ -3,6 +3,7 @@ export const TEMPORARY_CITY_DISTRIBUTION_ENABLED = true;
 // Roll back by setting TEMPORARY_CITY_DISTRIBUTION_ENABLED to false.
 export const TEMPORARY_DEMO_PRICING_ENABLED = true;
 export const TEMPORARY_DEMO_SERVICES_ENABLED = true;
+export const TEMPORARY_DEMO_ATTENDANCE_ENABLED = true;
 // Temporary hourly values applied to the first 11 demo cards in Home order.
 export const TEMPORARY_DEMO_HOURLY_PRICES = [
   500, 500, 350, 350, 350, 320, 320, 280, 280, 250, 250,
@@ -20,6 +21,32 @@ export const TEMPORARY_DEMO_OFFERED_SERVICES = [
   ["Acompanhante", "Striptease", "Sexo oral com preservativo", "Sexo vaginal com preservativo"],
   ["Acompanhante", "Beijo na boca", "Massagem tradicional", "Sexo vaginal com preservativo"],
   ["Acompanhante", "Masturbacao", "Sexo virtual", "Sexo vaginal com preservativo"],
+];
+export const TEMPORARY_DEMO_ATTENDANCE_GROUPS = [
+  {
+    count: 20,
+    days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"],
+    start: "09:00",
+    end: "23:00",
+  },
+  {
+    count: 14,
+    days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+    start: "10:00",
+    end: "00:00",
+  },
+  {
+    count: 25,
+    days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"],
+    start: "09:00",
+    end: "23:00",
+  },
+  {
+    count: 41,
+    days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"],
+    start: "10:00",
+    end: "00:00",
+  },
 ];
 
 export const TEMPORARY_CITY_DISTRIBUTION = [

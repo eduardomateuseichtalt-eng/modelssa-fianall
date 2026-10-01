@@ -8,6 +8,8 @@ import orhidiMore3Models from "../../modelos.fake/orhidi_more3_perfis.json";
 import {
   TEMPORARY_CITY_DISTRIBUTION,
   TEMPORARY_CITY_DISTRIBUTION_ENABLED,
+  TEMPORARY_DEMO_ATTENDANCE_ENABLED,
+  TEMPORARY_DEMO_ATTENDANCE_GROUPS,
   TEMPORARY_DEMO_HOURLY_PRICES,
   TEMPORARY_DEMO_OFFERED_SERVICES,
   TEMPORARY_DEMO_PRICING_ENABLED,
@@ -232,17 +234,22 @@ export const getDemoModels = () => {
     });
   }
 
-  if (!TEMPORARY_DEMO_PRICING_ENABLED && !TEMPORARY_DEMO_SERVICES_ENABLED) {
+  if (
+    !TEMPORARY_DEMO_PRICING_ENABLED &&
+    !TEMPORARY_DEMO_SERVICES_ENABLED &&
+    !TEMPORARY_DEMO_ATTENDANCE_ENABLED
+  ) {
     return distributedModels;
   }
 
-  const featuredDemoIds = [...distributedModels]
+  const orderedDemoModels = [...distributedModels]
     .sort((left, right) => {
       const photoCountDifference =
         right.galleryPreviewPhotos.length - left.galleryPreviewPhotos.length;
       if (photoCountDifference !== 0) return photoCountDifference;
       return Number(Boolean(left.searchOnlyDemo)) - Number(Boolean(right.searchOnlyDemo));
-    })
+    });
+  const featuredDemoIds = orderedDemoModels
     .slice(
       0,
       Math.max(
@@ -271,11 +278,35 @@ export const getDemoModels = () => {
         ])
       : []
   );
+  const attendanceById = new Map();
+  if (TEMPORARY_DEMO_ATTENDANCE_ENABLED) {
+    let modelIndex = 0;
+    for (const group of TEMPORARY_DEMO_ATTENDANCE_GROUPS) {
+      for (let position = 0; position < group.count; position += 1) {
+        const model = orderedDemoModels[modelIndex];
+        if (!model) break;
+        const enabledDays = new Set(group.days);
+        attendanceById.set(
+          model.id,
+          ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].map(
+            (day) => ({
+              day,
+              enabled: enabledDays.has(day),
+              start: group.start,
+              end: group.end,
+            })
+          )
+        );
+        modelIndex += 1;
+      }
+    }
+  }
 
   return distributedModels.map((model) => {
     const temporaryPrice = priceById.get(model.id);
     const temporaryServices = servicesById.get(model.id);
-    if (!temporaryPrice && !temporaryServices) return model;
+    const temporaryAttendance = attendanceById.get(model.id);
+    if (!temporaryPrice && !temporaryServices && !temporaryAttendance) return model;
     return {
       ...model,
       ...(temporaryPrice
@@ -285,6 +316,12 @@ export const getDemoModels = () => {
         ? {
             offeredServices: temporaryServices,
             temporaryOfferedServices: true,
+          }
+        : {}),
+      ...(temporaryAttendance
+        ? {
+            attendanceSchedule: temporaryAttendance,
+            temporaryAttendanceSchedule: true,
           }
         : {}),
     };
