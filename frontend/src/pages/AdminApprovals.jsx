@@ -44,6 +44,7 @@ export default function AdminApprovals() {
   const [faqReportsError, setFaqReportsError] = useState("");
   const [faqReplyDrafts, setFaqReplyDrafts] = useState({});
   const [faqReplySavingId, setFaqReplySavingId] = useState("");
+  const [faqReportDeletingId, setFaqReportDeletingId] = useState("");
   const [explicitFlags, setExplicitFlags] = useState({});
   const [searchName, setSearchName] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -513,6 +514,42 @@ export default function AdminApprovals() {
     }
   };
 
+  const handleDeleteFaqReport = async (report) => {
+    if (report.status !== "ANSWERED") {
+      setError("Somente relatos respondidos podem ser excluidos.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Deseja excluir permanentemente este relato do FAQ?"
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setMessage("");
+    setError("");
+    setFaqReportDeletingId(report.id);
+    try {
+      await apiFetch(`/api/faq-reports/admin/${report.id}`, {
+        method: "DELETE",
+      });
+      setFaqReports((current) =>
+        current.filter((currentReport) => currentReport.id !== report.id)
+      );
+      setFaqReplyDrafts((current) => {
+        const next = { ...current };
+        delete next[report.id];
+        return next;
+      });
+      setMessage("Relato do FAQ excluido com sucesso.");
+    } catch (err) {
+      setError(err.message || "Erro ao excluir relato do FAQ.");
+    } finally {
+      setFaqReportDeletingId("");
+    }
+  };
+
   return (
     <div className="page">
       <h1 className="section-title">
@@ -802,15 +839,34 @@ export default function AdminApprovals() {
                   }
                 />
 
-                <button
-                  className="btn"
-                  type="button"
-                  style={{ marginTop: 12 }}
-                  onClick={() => handleRespondFaqReport(report.id)}
-                  disabled={faqReplySavingId === report.id}
-                >
-                  {faqReplySavingId === report.id ? "Salvando..." : "Salvar resposta"}
-                </button>
+                <div className="form-actions" style={{ marginTop: 12 }}>
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => handleRespondFaqReport(report.id)}
+                    disabled={
+                      faqReplySavingId === report.id ||
+                      faqReportDeletingId === report.id
+                    }
+                  >
+                    {faqReplySavingId === report.id ? "Salvando..." : "Salvar resposta"}
+                  </button>
+                  {report.status === "ANSWERED" ? (
+                    <button
+                      className="btn btn-outline"
+                      type="button"
+                      onClick={() => handleDeleteFaqReport(report)}
+                      disabled={
+                        faqReplySavingId === report.id ||
+                        faqReportDeletingId === report.id
+                      }
+                    >
+                      {faqReportDeletingId === report.id
+                        ? "Excluindo..."
+                        : "Excluir FAQ"}
+                    </button>
+                  ) : null}
+                </div>
 
                 {report.respondedAt ? (
                   <p className="muted" style={{ marginTop: 10 }}>

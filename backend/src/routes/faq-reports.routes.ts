@@ -278,6 +278,37 @@ router.patch(
   })
 );
 
-export default router;
+router.delete(
+  "/admin/:id",
+  requireAdmin,
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = String(req.params?.id || "").trim();
+    if (!id) {
+      return res.status(400).json({ error: "Id obrigatorio." });
+    }
 
+    const deletedRows = await prisma.$queryRaw<{ id: string }[]>`
+      DELETE FROM "FaqReport"
+      WHERE "id" = ${id} AND "status" = 'ANSWERED'
+      RETURNING "id"
+    `;
+
+    if (deletedRows.length === 0) {
+      const existingRows = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT "id"
+        FROM "FaqReport"
+        WHERE "id" = ${id}
+        LIMIT 1
+      `;
+      if (existingRows.length === 0) {
+        return res.status(404).json({ error: "Relato nao encontrado." });
+      }
+      return res.status(409).json({ error: "Somente relatos respondidos podem ser excluidos." });
+    }
+
+    return res.json({ status: "ok", id });
+  })
+);
+
+export default router;
 
