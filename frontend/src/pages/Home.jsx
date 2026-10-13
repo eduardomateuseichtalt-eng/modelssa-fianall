@@ -2,12 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ProgressiveImage from "../components/ProgressiveImage";
 import { apiFetch } from "../lib/api";
-import { formatMotelPrice } from "../lib/motelPrice";
-import {
-  enrichSouthCapitalMotelPartners,
-  isMotelPartnerFromCity,
-  mergeSouthCapitalFallbackMotels,
-} from "../lib/southMotelFallback";
 import { mergeModelsWithDemo } from "../demo/models.ts";
 
 const HOME_MODELS_PAGE_SIZE = 12;
@@ -200,9 +194,6 @@ export default function Home() {
   const [featuredGenderFilter, setFeaturedGenderFilter] = useState("WOMEN");
   const [citySearch, setCitySearch] = useState("");
   const [isComposing, setIsComposing] = useState(false);
-  const [motelPartners, setMotelPartners] = useState([]);
-  const [detectedMotelCity, setDetectedMotelCity] = useState("");
-  const [motelLocationStatus, setMotelLocationStatus] = useState("idle");
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -427,88 +418,6 @@ export default function Home() {
       }
     };
   }, [normalizedCitySearch]);
-
-  // Fetch motel partners once
-  useEffect(() => {
-    let mounted = true;
-    apiFetch("/api/motel-partners")
-      .then((data) => {
-        if (!mounted) return;
-        const safeData = Array.isArray(data) ? data : [];
-        setMotelPartners(
-          safeData.map((p) => ({
-            id: p.id,
-            name: p.name,
-            address: p.address || "",
-            city: p.city || "",
-            mapUrl: p.mapUrl || "",
-            logoUrl: p.photoUrl || "",
-            phone: p.phone || "",
-            priceText: p.priceText || "",
-          }))
-        );
-      })
-      .catch(() => setMotelPartners([]));
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // Detect geolocation to get city for motels (fallback if user doesn't search)
-  useEffect(() => {
-    if (!navigator?.geolocation) {
-      setDetectedMotelCity("");
-      setMotelLocationStatus("unsupported");
-      return;
-    }
-
-    setMotelLocationStatus("locating");
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const lat = Number(position.coords.latitude);
-          const lon = Number(position.coords.longitude);
-          const params = new URLSearchParams({
-            format: "jsonv2",
-            lat: String(lat),
-            lon: String(lon),
-            zoom: "10",
-            addressdetails: "1",
-          });
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?${params.toString()}`
-          );
-          if (!response.ok) {
-            setMotelLocationStatus("error");
-            return setDetectedMotelCity("");
-          }
-          const data = await response.json();
-          const address = data?.address || {};
-          const city =
-            address.city ||
-            address.town ||
-            address.municipality ||
-            address.village ||
-            address.county ||
-            "";
-          if (city) {
-            setDetectedMotelCity(String(city));
-            setMotelLocationStatus("ready");
-            return;
-          }
-          setMotelLocationStatus("error");
-        } catch (e) {
-          setDetectedMotelCity("");
-          setMotelLocationStatus("error");
-        }
-      },
-      () => {
-        setDetectedMotelCity("");
-        setMotelLocationStatus("denied");
-      },
-      { enableHighAccuracy: false, timeout: 9000, maximumAge: 5 * 60 * 1000 }
-    );
-  }, []);
 
   // Inicializa reconhecimento de voz para busca por cidade
   useEffect(() => {
@@ -762,70 +671,6 @@ export default function Home() {
               </div>
             </div>
 
-            {(() => {
-              const searchCity = stripUfSuffix((citySearch || "").trim()) || detectedMotelCity;
-              const fallbackPartners = mergeSouthCapitalFallbackMotels(motelPartners);
-              const enrichedPartners = enrichSouthCapitalMotelPartners(motelPartners);
-              const partnerBase = enrichedPartners.length > 0 ? enrichedPartners : fallbackPartners;
-              const shouldShowFallback =
-                !searchCity &&
-                (motelLocationStatus === "denied" ||
-                  motelLocationStatus === "unsupported" ||
-                  motelLocationStatus === "error");
-              const matched = shouldShowFallback
-                ? fallbackPartners
-                : searchCity
-                ? partnerBase.filter((p) => isMotelPartnerFromCity(p.city, searchCity))
-                : [];
-              if (!matched || matched.length === 0) return null;
-              return (
-                <div style={{ marginTop: 24, marginBottom: 12 }}>
-                  <h4 className="pill">
-                    {shouldShowFallback ? "Moteis parceiros no Sul" : "Moteis nesta cidade"}
-                  </h4>
-                  {shouldShowFallback ? (
-                    <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-                      Localizacao indisponivel. Exibindo parceiros das capitais do Sul.
-                    </p>
-                  ) : null}
-                  <div style={{ display: "flex", gap: 12, marginTop: 8, overflowX: "auto" }}>
-                    {matched.map((m) => (
-                      <a
-                        key={m.id}
-                        href={m.mapUrl || "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="model-card"
-                        style={{ minWidth: 220, padding: 12, display: "block" }}
-                      >
-                        {m.logoUrl ? (
-                          <img
-                            src={m.logoUrl}
-                            alt={`Logo do ${m.name}`}
-                            style={{
-                              width: "100%",
-                              height: 110,
-                              objectFit: "cover",
-                              borderRadius: 8,
-                              marginBottom: 10,
-                            }}
-                            loading="lazy"
-                          />
-                        ) : null}
-                        <strong style={{ color: "#ffffff" }}>{m.name}</strong>
-                        <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.city}</p>
-                        {m.phone ? (
-                          <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{m.phone}</p>
-                        ) : null}
-                        {m.priceText ? (
-                          <p className="muted" style={{ marginTop: 6, color: "rgba(255,255,255,0.85)" }}>{formatMotelPrice(m.priceText)}</p>
-                        ) : null}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
           </div>
 
         </div>
